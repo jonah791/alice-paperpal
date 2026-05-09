@@ -1,47 +1,52 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logging/logging.dart';
 import '../models/config.dart';
 
 final _log = Logger('ConfigService');
 
 class ConfigService {
-  static const _secure = FlutterSecureStorage();
   static const _keyLlmApiKey = 'llm_api_key';
   static const _keyMineruApiKey = 'mineru_api_key';
+  static const _keyLlmApiBase = 'llm_api_base';
+  static const _keyMineruEndpoint = 'mineru_api_endpoint';
 
   AppConfig _config = const AppConfig();
-  bool _initialized = false;
+  SharedPreferences? _prefs;
 
   AppConfig get config => _config;
 
   Future<void> load() async {
-    _config = const AppConfig();
-    _initialized = true;
-    _log.info('Config loaded with defaults');
+    _prefs = await SharedPreferences.getInstance();
+    _config = AppConfig(
+      llmApiBase: _prefs!.getString(_keyLlmApiBase) ?? 'https://api.deepseek.com',
+      mineruApiEndpoint: _prefs!.getString(_keyMineruEndpoint) ?? '',
+    );
+    _log.info('Config loaded');
   }
 
   Future<void> saveLlmApiKey(String key) async {
-    await _secure.write(key: _keyLlmApiKey, value: key);
+    await _prefs?.setString(_keyLlmApiKey, key);
     _log.info('LLM API key saved');
   }
 
   Future<String?> readLlmApiKey() async {
-    return await _secure.read(key: _keyLlmApiKey);
+    return _prefs?.getString(_keyLlmApiKey);
   }
 
   Future<void> saveMineruApiKey(String key) async {
-    await _secure.write(key: _keyMineruApiKey, value: key);
+    await _prefs?.setString(_keyMineruApiKey, key);
     _log.info('MinerU API key saved');
   }
 
   Future<String?> readMineruApiKey() async {
-    return await _secure.read(key: _keyMineruApiKey);
+    return _prefs?.getString(_keyMineruApiKey);
   }
 
   Future<void> updateConfig(AppConfig config) async {
     _config = config;
-    _log.info('Config updated: provider=${config.defaultProvider}, '
-        'model=${config.llmModel}, batchSize=${config.batchSize}');
+    await _prefs?.setString(_keyLlmApiBase, config.llmApiBase);
+    await _prefs?.setString(_keyMineruEndpoint, config.mineruApiEndpoint);
+    _log.info('Config updated');
   }
 
   bool get hasLlmKey => _config.llmApiBase.isNotEmpty;

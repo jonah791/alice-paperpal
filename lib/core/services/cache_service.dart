@@ -1,8 +1,7 @@
 import 'dart:io';
 
-import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
+import 'package:logging/logging.dart';
 
 final _log = Logger('CacheService');
 

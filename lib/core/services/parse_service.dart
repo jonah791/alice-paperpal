@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:logging/logging.dart';
 import '../api/mineru_api.dart';
 import '../models/parse_result.dart';
-import '../services/config_service.dart';
+
 
 final _log = Logger('ParseService');
 

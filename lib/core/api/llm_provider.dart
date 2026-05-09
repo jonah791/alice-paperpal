@@ -46,8 +46,8 @@ class LLMProvider {
     final systemPrompt = '''
 你是一个学术论文翻译助手。请将以下学术文本翻译为$target。
 规则：
-- 保留所有 LaTeX 公式 ($$...$$, \(...\), \[...\]) 原样不动
-- 保留所有引用标记 \cite{...} 和 [n] 不翻译
+- 保留所有 LaTeX 公式 (\\\$\\\$...\\\$\\\$, \\(...\\), \\[...\\]) 原样不动
+- 保留所有引用标记 \\cite{...} 和 [n] 不翻译
 - 保留 HTML 表格结构
 - 保留代码块缩进
 - 同一术语在全文中保持译法一致
@@ -61,7 +61,7 @@ class LLMProvider {
   }
 
   Future<String> summarize(String paperText) async {
-    final systemPrompt = '''
+    const systemPrompt = '''
 你是一个学术论文分析助手。请分析以下论文并输出结构化摘要：
 
 ## 一句话总结

@@ -10,13 +10,7 @@ class AppTheme {
       centerTitle: false,
       elevation: 0,
     ),
-    cardTheme: CardTheme(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-    ),
+
     navigationRailTheme: const NavigationRailThemeData(
       labelType: NavigationRailLabelType.all,
     ),
@@ -27,13 +21,7 @@ class AppTheme {
     brightness: Brightness.dark,
     colorSchemeSeed: const Color(0xFF42A5F5),
     scaffoldBackgroundColor: const Color(0xFF121212),
-    cardTheme: CardTheme(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade800),
-      ),
-    ),
+
     navigationRailTheme: const NavigationRailThemeData(
       labelType: NavigationRailLabelType.all,
     ),

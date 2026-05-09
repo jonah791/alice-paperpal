@@ -1,30 +1,37 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+class AppError {
+  final String type;
+  final String message;
+  final bool retryable;
+  final int? statusCode;
+  final int failedBatches;
+  final int totalBatches;
 
-part 'app_error.freezed.dart';
+  const AppError({
+    required this.type,
+    required this.message,
+    this.retryable = false,
+    this.statusCode,
+    this.failedBatches = 0,
+    this.totalBatches = 0,
+  });
 
-@freezed
-sealed class AppError with _$AppError {
-  const factory AppError.network({
-    int? statusCode,
-    required String message,
-    @Default(true) bool retryable,
-  }) = NetworkError;
+  factory AppError.network(String message, {int? statusCode, bool retryable = true}) {
+    return AppError(type: 'network', message: message, statusCode: statusCode, retryable: retryable);
+  }
 
-  const factory AppError.api({
-    required String code,
-    required String message,
-  }) = ApiError;
+  factory AppError.api(String code, String message) {
+    return AppError(type: 'api', message: '$code: $message');
+  }
 
-  const factory AppError.parse({
-    required int failedBatches,
-    required int totalBatches,
-  }) = ParseError;
+  factory AppError.parse(int failed, int total) {
+    return AppError(type: 'parse', message: '$failed/$total batches failed', failedBatches: failed, totalBatches: total);
+  }
 
-  const factory AppError.config({
-    required String message,
-  }) = ConfigError;
+  factory AppError.config(String message) {
+    return AppError(type: 'config', message: message);
+  }
 
-  const factory AppError.unknown({
-    required String message,
-  }) = UnknownError;
+  factory AppError.unknown(String message) {
+    return AppError(type: 'unknown', message: message);
+  }
 }

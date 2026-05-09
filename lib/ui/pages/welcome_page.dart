@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/services/config_service.dart';
-import '../../main.dart';
 
 class WelcomePage extends StatelessWidget {
   final VoidCallback onComplete;

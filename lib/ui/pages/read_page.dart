@@ -140,8 +140,9 @@ class _ReadPageState extends State<ReadPage> {
             ),
           );
         }
+        final textSeg = seg as _TextSegment;
         return SelectableText(
-          seg.text,
+          textSeg.text,
           style: theme.textTheme.bodyMedium?.copyWith(height: 1.7),
         );
       }).toList(),

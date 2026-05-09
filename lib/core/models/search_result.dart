@@ -1,17 +1,21 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+class SearchResult {
+  final String title;
+  final List<String> authors;
+  final int year;
+  final String abstract;
+  final String pdfUrl;
+  final String source;
+  final String doi;
+  final int citationCount;
 
-part 'search_result.freezed.dart';
-
-@freezed
-class SearchResult with _$SearchResult {
-  const factory SearchResult({
-    required String title,
-    required List<String> authors,
-    required int year,
-    required String abstract,
-    required String pdfUrl,
-    required String source,
-    @Default('') String doi,
-    @Default(0) int citationCount,
-  }) = _SearchResult;
+  const SearchResult({
+    required this.title,
+    this.authors = const [],
+    this.year = 0,
+    this.abstract = '',
+    this.pdfUrl = '',
+    this.source = '',
+    this.doi = '',
+    this.citationCount = 0,
+  });
 }

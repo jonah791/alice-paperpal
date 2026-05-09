@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart' as m;
-import 'package:freezed_annotation/freezed_annotation.dart';
-
-part 'config.freezed.dart';
-part 'config.g.dart';
 
 enum AppThemeMode { system, light, dark }
 
@@ -14,32 +10,56 @@ extension AppThemeModeX on AppThemeMode {
       AppThemeMode.dark => m.ThemeMode.dark,
     };
   }
-
-  static AppThemeMode fromFlutter(m.ThemeMode mode) {
-    return switch (mode) {
-      m.ThemeMode.system => AppThemeMode.system,
-      m.ThemeMode.light => AppThemeMode.light,
-      m.ThemeMode.dark => AppThemeMode.dark,
-    };
-  }
 }
 
-@freezed
-class AppConfig with _$AppConfig {
-  const factory AppConfig({
-    @Default('deepseek') String defaultProvider,
-    @Default('deepseek-v4-flash') String llmModel,
-    @Default('https://api.deepseek.com') String llmApiBase,
-    @Default('') String mineruApiEndpoint,
-    @Default('') String mineruApiKey,
-    @Default(true) bool autoTranslate,
-    @Default(false) bool forceDarkMode,
-    @Default(AppThemeMode.system) AppThemeMode themeMode,
-    @Default(16.0) double fontSize,
-    @Default(50) int batchSize,
-    @Default(7) int logRetentionDays,
-  }) = _AppConfig;
+class AppConfig {
+  final String defaultProvider;
+  final String llmModel;
+  final String llmApiBase;
+  final String mineruApiEndpoint;
+  final bool autoTranslate;
+  final bool forceDarkMode;
+  final AppThemeMode themeMode;
+  final double fontSize;
+  final int batchSize;
+  final int logRetentionDays;
 
-  factory AppConfig.fromJson(Map<String, dynamic> json) =>
-      _$AppConfigFromJson(json);
+  const AppConfig({
+    this.defaultProvider = 'deepseek',
+    this.llmModel = 'deepseek-v4-flash',
+    this.llmApiBase = 'https://api.deepseek.com',
+    this.mineruApiEndpoint = '',
+    this.autoTranslate = true,
+    this.forceDarkMode = false,
+    this.themeMode = AppThemeMode.system,
+    this.fontSize = 16.0,
+    this.batchSize = 50,
+    this.logRetentionDays = 7,
+  });
+
+  AppConfig copyWith({
+    String? defaultProvider,
+    String? llmModel,
+    String? llmApiBase,
+    String? mineruApiEndpoint,
+    bool? autoTranslate,
+    bool? forceDarkMode,
+    AppThemeMode? themeMode,
+    double? fontSize,
+    int? batchSize,
+    int? logRetentionDays,
+  }) {
+    return AppConfig(
+      defaultProvider: defaultProvider ?? this.defaultProvider,
+      llmModel: llmModel ?? this.llmModel,
+      llmApiBase: llmApiBase ?? this.llmApiBase,
+      mineruApiEndpoint: mineruApiEndpoint ?? this.mineruApiEndpoint,
+      autoTranslate: autoTranslate ?? this.autoTranslate,
+      forceDarkMode: forceDarkMode ?? this.forceDarkMode,
+      themeMode: themeMode ?? this.themeMode,
+      fontSize: fontSize ?? this.fontSize,
+      batchSize: batchSize ?? this.batchSize,
+      logRetentionDays: logRetentionDays ?? this.logRetentionDays,
+    );
+  }
 }

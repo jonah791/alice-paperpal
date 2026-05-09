@@ -1,25 +1,31 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+class ParseResult {
+  final String markdown;
+  final String title;
+  final List<String> imagePaths;
+  final String contentListJson;
+  final int startPage;
+  final int endPage;
 
-part 'parse_result.freezed.dart';
-
-@freezed
-class ParseResult with _$ParseResult {
-  const factory ParseResult({
-    required String markdown,
-    required String title,
-    @Default([]) List<String> imagePaths,
-    @Default('') String contentListJson,
-    @Default(0) int startPage,
-    @Default(0) int endPage,
-  }) = _ParseResult;
+  const ParseResult({
+    required this.markdown,
+    this.title = '',
+    this.imagePaths = const [],
+    this.contentListJson = '',
+    this.startPage = 0,
+    this.endPage = 0,
+  });
 }
 
-@freezed
-class ParseProgress with _$ParseProgress {
-  const factory ParseProgress({
-    required int currentBatch,
-    required int totalBatches,
-    @Default(0) int currentPage,
-    @Default(0) int totalPages,
-  }) = _ParseProgress;
+class ParseProgress {
+  final int currentBatch;
+  final int totalBatches;
+  final int currentPage;
+  final int totalPages;
+
+  const ParseProgress({
+    required this.currentBatch,
+    required this.totalBatches,
+    this.currentPage = 0,
+    this.totalPages = 0,
+  });
 }

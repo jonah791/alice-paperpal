@@ -26,7 +26,6 @@ class PaperService {
   late final ParseService _parse;
   late final TranslationService _translation;
   late final LLMProvider _llm;
-  bool _initialized = false;
 
   final _papers = <Paper>{};
   final _paperController = StreamController<List<Paper>>.broadcast();
@@ -56,7 +55,6 @@ class PaperService {
     );
     _parse = ParseService(api: mineruApi, batchSize: cfg.batchSize);
     _translation = TranslationService(_llm);
-    _initialized = true;
     _log.info('init: ready');
   }
 

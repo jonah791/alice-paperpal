@@ -4,8 +4,8 @@ import 'package:logging/logging.dart';
 import 'package:dio/dio.dart';
 
 import '../models/search_result.dart';
-import 'arxiv_api.dart';
-import 's2_api.dart';
+import '../api/arxiv_api.dart';
+import '../api/s2_api.dart';
 
 final _log = Logger('SearchService');
 

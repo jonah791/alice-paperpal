@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import '../../core/models/config.dart';
 import '../../main.dart';
 
 final _log = Logger('SettingsPage');

@@ -29,3 +29,7 @@ node_modules/
 *.exe
 *.msi
 dist/
+
+# Build output
+build/
+windows/flutter/ephemeral/
