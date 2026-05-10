@@ -6,7 +6,6 @@ import 'package:logging/logging.dart';
 import '../../core/models/paper.dart';
 import '../../core/models/note.dart';
 import '../../core/services/export_service.dart';
-import '../../core/services/note_service.dart';
 import '../../main.dart';
 import '../widgets/explain_dialog.dart';
 
@@ -56,6 +55,7 @@ class _ReadPageState extends State<ReadPage> {
   @override
   void dispose() {
     _qaController.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 

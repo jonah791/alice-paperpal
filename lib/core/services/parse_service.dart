@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:logging/logging.dart';
-import 'package:path_provider/path_provider.dart';
 import '../api/mineru_api.dart';
 import '../models/parse_result.dart';
 
@@ -10,28 +9,28 @@ final _log = Logger('ParseService');
 
 class ParseService {
   final MineruApi _api;
-  final int _batchSize;
 
-  ParseService({required MineruApi api, int batchSize = 50})
-      : _api = api,
-        _batchSize = batchSize;
+  ParseService({required MineruApi api}) : _api = api;
 
   final _progressController = StreamController<ParseProgress>.broadcast();
   Stream<ParseProgress> get progressStream => _progressController.stream;
 
-  Future<ParseResult> parsePdf(File pdfFile, int pageCount) async {
-    final tempDir = await getTemporaryDirectory();
-    final extractDir = '${tempDir.path}/mineru_${DateTime.now().millisecondsSinceEpoch}';
+  static const int _maxPagesPerTask = 200;
 
-    if (pageCount <= _batchSize) {
-      _log.info('parsePdf: single batch, $pageCount pages');
-      final result = await _api.parsePdf(
-        pdfFile: pdfFile,
-        outputDir: extractDir,
-      );
+  Future<ParseResult> parsePdf(File pdfFile, int pageCount) async {
+    final ranges = _buildPageRanges(pageCount);
+
+    if (ranges.isEmpty) {
+      _log.info('parsePdf: single task, $pageCount pages');
+      _progressController.add(ParseProgress(
+        currentBatch: 1, totalBatches: 1,
+        currentPage: 0, totalPages: pageCount,
+      ));
+      final result = await _api.parseFile(pdfFile);
+      final title = pdfFile.path.split(Platform.pathSeparator).last.replaceAll('.pdf', '');
       return ParseResult(
         markdown: result.markdown,
-        title: pdfFile.path.split(Platform.pathSeparator).last.replaceAll('.pdf', ''),
+        title: title,
         imagePaths: result.imagePaths,
         contentListJson: result.contentListJson,
         startPage: 0,
@@ -39,45 +38,56 @@ class ParseService {
       );
     }
 
-    _log.info('parsePdf: splitting into batches of $_batchSize, total $pageCount pages');
-    final totalBatches = (pageCount / _batchSize).ceil();
+    _log.info('parsePdf: splitting into ${ranges.length} tasks, $pageCount pages');
     final batchResults = <String>[];
 
-    for (var i = 0; i < totalBatches; i++) {
-      final start = i * _batchSize;
-      var end = start + _batchSize - 1;
-      if (end >= pageCount) end = pageCount - 1;
-
+    for (var i = 0; i < ranges.length; i++) {
+      final range = ranges[i];
       _progressController.add(ParseProgress(
         currentBatch: i + 1,
-        totalBatches: totalBatches,
-        currentPage: start,
+        totalBatches: ranges.length,
+        currentPage: range.start,
         totalPages: pageCount,
       ));
 
       try {
-        final result = await _api.parsePdf(
-          pdfFile: pdfFile,
-          outputDir: '${extractDir}_batch$i',
-          startPage: start,
-          endPage: end,
+        final result = await _api.parseFile(
+          pdfFile,
+          pageRanges: '${range.start + 1}-${range.end + 1}',
         );
         batchResults.add(result.markdown);
-        _log.info('parsePdf: batch ${i + 1}/$totalBatches OK, ${result.markdown.length} chars');
+        _log.info('parsePdf: batch ${i + 1}/${ranges.length} OK, ${result.markdown.length} chars');
       } catch (e) {
-        _log.warning('parsePdf: batch ${i + 1}/$totalBatches failed: $e');
+        _log.warning('parsePdf: batch ${i + 1}/${ranges.length} failed: $e');
         rethrow;
       }
     }
 
     final merged = MergeService.merge(batchResults);
-    _log.info('parsePdf: $totalBatches batches merged successfully');
+    _log.info('parsePdf: ${ranges.length} tasks merged successfully');
     return merged;
+  }
+
+  List<_PageRange> _buildPageRanges(int totalPages) {
+    if (totalPages <= _maxPagesPerTask) return [];
+    final ranges = <_PageRange>[];
+    for (var start = 0; start < totalPages; start += _maxPagesPerTask) {
+      var end = start + _maxPagesPerTask - 1;
+      if (end >= totalPages) end = totalPages - 1;
+      ranges.add(_PageRange(start, end));
+    }
+    return ranges;
   }
 
   void dispose() {
     _progressController.close();
   }
+}
+
+class _PageRange {
+  final int start;
+  final int end;
+  const _PageRange(this.start, this.end);
 }
 
 class MergeService {

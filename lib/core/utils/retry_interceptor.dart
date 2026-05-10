@@ -12,7 +12,7 @@ class RetryInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     final options = err.requestOptions;
-    if (!_isRetryable(err)) {
+    if (!isRetryable(err)) {
       handler.next(err);
       return;
     }
@@ -38,7 +38,7 @@ class RetryInterceptor extends Interceptor {
     });
   }
 
-  bool _isRetryable(DioException err) {
+  bool isRetryable(DioException err) {
     if (err.type == DioExceptionType.connectionTimeout ||
         err.type == DioExceptionType.sendTimeout ||
         err.type == DioExceptionType.receiveTimeout ||

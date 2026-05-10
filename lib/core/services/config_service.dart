@@ -12,7 +12,10 @@ class ConfigService {
   static const _keyMineruApiKey = 'mineru_api_key';
   static const _keyLlmApiBase = 'llm_api_base';
   static const _keyLlmModel = 'llm_model';
+  static const _keyMineruModelVersion = 'mineru_model_version';
   static const _keyMineruEndpoint = 'mineru_api_endpoint';
+  static const _keyEnableFormula = 'enable_formula';
+  static const _keyEnableTable = 'enable_table';
 
   AppConfig _config = const AppConfig();
   SharedPreferences? _prefs;
@@ -24,7 +27,10 @@ class ConfigService {
     _config = AppConfig(
       llmApiBase: _prefs!.getString(_keyLlmApiBase) ?? 'https://api.deepseek.com',
       llmModel: _prefs!.getString(_keyLlmModel) ?? 'deepseek-v4-flash',
+      mineruModelVersion: _prefs!.getString(_keyMineruModelVersion) ?? 'vlm',
       mineruApiEndpoint: _prefs!.getString(_keyMineruEndpoint) ?? '',
+      enableFormula: _prefs!.getBool(_keyEnableFormula) ?? true,
+      enableTable: _prefs!.getBool(_keyEnableTable) ?? true,
     );
     _log.info('Config loaded');
   }
@@ -81,7 +87,10 @@ class ConfigService {
     _config = config;
     await _prefs?.setString(_keyLlmApiBase, config.llmApiBase);
     await _prefs?.setString(_keyLlmModel, config.llmModel);
+    await _prefs?.setString(_keyMineruModelVersion, config.mineruModelVersion);
     await _prefs?.setString(_keyMineruEndpoint, config.mineruApiEndpoint);
+    await _prefs?.setBool(_keyEnableFormula, config.enableFormula);
+    await _prefs?.setBool(_keyEnableTable, config.enableTable);
     _log.info('Config updated: provider=${config.defaultProvider}, model=${config.llmModel}');
   }
 }

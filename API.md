@@ -2,30 +2,60 @@
 
 本文档记录 PaperPal 调用的所有外部 API，供 Desktop (Flutter) 和 Mobile (Flutter) 端实现参考。
 
-## 1. MinerU API
+## 1. MinerU API (v4)
 
-解析 PDF 文档为结构化 Markdown。
+解析 PDF 文档为结构化 Markdown。异步任务模式。
 
 ### 端点
 
-`POST /file_parse`
-
-### 请求
-
-multipart/form-data:
-
-| 字段 | 类型 | 说明 |
+| 操作 | 方法 | 路径 |
 |---|---|---|
-| `file` | File | PDF 文件 |
-| `start_page_id` | int (Form) | 起始页（从 0 开始），默认 0 |
-| `end_page_id` | int (Form) | 结束页（从 0 开始），默认 99999 |
+| 提交 URL 解析任务 | POST | `/api/v4/extract/task` |
+| 获取上传链接（本地文件） | POST | `/api/v4/file-urls/batch` |
+| 查询任务结果 | GET | `/api/v4/extract/task/{task_id}` |
+| 查询批量结果 | GET | `/api/v4/extract-results/batch/{batch_id}` |
 
-### 响应
+### 请求（URL 解析）
 
-ZIP 文件，包含:
+```json
+{
+  "url": "https://cdn-mineru.openxlab.org.cn/demo/example.pdf",
+  "model_version": "vlm"
+}
+```
+
+### 请求（本地文件上传）
+
+1. 获取预签名上传 URL: `POST /api/v4/file-urls/batch`
+2. `PUT` 文件到预签名 URL
+3. 轮询批量结果
+
+### 响应（URL 查询完成时）
+
+```json
+{
+  "code": 0,
+  "data": {
+    "task_id": "...",
+    "state": "done",
+    "full_zip_url": "https://cdn-mineru.openxlab.org.cn/pdf/..."
+  }
+}
+```
+
+### ZIP 内容
+
 - `*.md` — Markdown 输出
 - `*_content_list.json` — 结构化数据
 - `images/` — 提取的图片
+
+### 模型版本
+
+| 值 | 说明 |
+|---|---|
+| `pipeline` | 默认 pipeline 模型 |
+| `vlm` | VLM 模型（推荐） |
+| `MinerU-HTML` | HTML 专用
 
 ## 2. DeepSeek API
 

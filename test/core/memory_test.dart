@@ -2,8 +2,8 @@
 import 'package:paperpal/core/services/memory_service.dart';
 
 void main() {
-  group('MemoryService', () {
-    test('MemoryItem toJson and fromJson round-trip', () {
+  group('MemoryItem model', () {
+    test('toJson and fromJson round-trip', () {
       final now = DateTime(2026, 5, 10, 12, 0, 0);
       final item = MemoryItem(
         id: 'mem_1',
@@ -19,7 +19,7 @@ void main() {
       expect(restored.timestamp.toIso8601String(), now.toIso8601String());
     });
 
-    test('MemoryItem handles null paperId', () {
+    test('handles null paperId', () {
       final item = MemoryItem(
         id: 'mem_2',
         summary: 'summary',
@@ -28,17 +28,58 @@ void main() {
       expect(item.paperId, isNull);
     });
 
-    test('MemoryItem handles missing fields gracefully', () {
+    test('handles missing fields gracefully', () {
       final restored = MemoryItem.fromJson({'id': 'mem_3', 'summary': 'test'});
       expect(restored.id, 'mem_3');
       expect(restored.summary, 'test');
       expect(restored.paperId, isNull);
     });
 
-    test('summarizeRecent returns empty for empty list', () {
-      // Direct test: create service, approach via static-like check
-      // MemoryService requires init, but MemoryItem model tests are standalone
-      expect(true, isTrue); // placeholder for init-dependent tests
+    test('handles invalid timestamp falls back to now', () {
+      final restored = MemoryItem.fromJson({
+        'id': 'mem_4',
+        'summary': 'test',
+        'timestamp': 'not-a-date',
+      });
+      expect(restored.id, 'mem_4');
+      expect(restored.timestamp, isA<DateTime>());
+    });
+
+    test('handles missing timestamp', () {
+      final restored = MemoryItem.fromJson({'id': 'mem_5', 'summary': 'test'});
+      expect(restored.timestamp, isA<DateTime>());
+    });
+
+    test('handles empty summary', () {
+      final restored = MemoryItem.fromJson({'id': 'mem_6', 'summary': ''});
+      expect(restored.summary, '');
+    });
+  });
+
+  group('MemoryService state logic', () {
+    test('getRecent returns empty before init', () {
+      final service = MemoryService();
+      expect(service.getRecent(), isEmpty);
+    });
+
+    test('getRecent with custom limit', () {
+      final service = MemoryService();
+      expect(service.getRecent(limit: 5), isEmpty);
+    });
+
+    test('summarizeRecent returns empty for empty memories', () {
+      final service = MemoryService();
+      expect(service.summarizeRecent(), isEmpty);
+    });
+
+    test('summarizeRecent with limit returns empty', () {
+      final service = MemoryService();
+      expect(service.summarizeRecent(limit: 3), isEmpty);
+    });
+
+    test('summarizeRecent empty string for zero limit', () {
+      final service = MemoryService();
+      expect(service.summarizeRecent(limit: 0), isEmpty);
     });
   });
 }

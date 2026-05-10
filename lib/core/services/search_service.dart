@@ -45,7 +45,7 @@ class SearchService {
     }
   }
 
-  Future<File?> downloadPdf(SearchResult result, String saveDir) async {
+  Future<File?> downloadPdf(SearchResult result, String saveDir, {void Function(int, int)? onProgress}) async {
     if (result.pdfUrl.isEmpty) return null;
 
     try {
@@ -62,7 +62,11 @@ class SearchService {
       final dir = Directory(saveDir);
       if (!await dir.exists()) await dir.create(recursive: true);
 
-      await dio.download(result.pdfUrl, savePath);
+      await dio.download(
+        result.pdfUrl,
+        savePath,
+        onReceiveProgress: onProgress,
+      );
       _log.info('downloadPdf: ${result.title} → $savePath');
       return File(savePath);
     } catch (e) {

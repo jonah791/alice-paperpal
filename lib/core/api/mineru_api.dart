@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:archive/archive.dart';
 import 'package:dio/dio.dart';
@@ -19,55 +20,220 @@ class MineruResult {
   });
 }
 
-class MineruApi {
-  final String baseUrl;
-  final String? apiKey;
-  late final Dio _dio;
+enum MineruTaskState { pending, running, done, failed, converting }
 
-  MineruApi({required this.baseUrl, this.apiKey}) {
+class MineruTask {
+  final String id;
+  final MineruTaskState state;
+  final String? zipUrl;
+  final String? errorMessage;
+  final int extractedPages;
+  final int totalPages;
+
+  const MineruTask({
+    required this.id,
+    required this.state,
+    this.zipUrl,
+    this.errorMessage,
+    this.extractedPages = 0,
+    this.totalPages = 0,
+  });
+
+  bool get isTerminal =>
+      state == MineruTaskState.done || state == MineruTaskState.failed;
+}
+
+class MineruApi {
+  final String apiKey;
+  final String modelVersion;
+  final bool enableFormula;
+  final bool enableTable;
+  late final Dio _dio;
+  late final Dio _downloadDio;
+
+  MineruApi({
+    required this.apiKey,
+    this.modelVersion = 'vlm',
+    this.enableFormula = true,
+    this.enableTable = true,
+  }) {
     _dio = createApiClient(
-      baseUrl: '',
+      baseUrl: 'https://mineru.net',
       authToken: apiKey,
-      connectTimeout: const Duration(seconds: 60),
-      receiveTimeout: const Duration(seconds: 300),
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 60),
     );
+    _downloadDio = Dio(BaseOptions(
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 300),
+    ));
   }
 
-  Future<MineruResult> parsePdf({
-    required File pdfFile,
-    required String outputDir,
-    int startPage = 0,
-    int endPage = 99999,
+  Future<MineruResult> parseUrl(String pdfUrl, {
+    String? pageRanges,
+    Duration pollTimeout = const Duration(minutes: 10),
   }) async {
-    final formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(
-        pdfFile.path,
-        filename: pdfFile.path.split(Platform.pathSeparator).last,
-      ),
-      'start_page_id': startPage.toString(),
-      'end_page_id': endPage.toString(),
-    });
-
-    final url = baseUrl.endsWith('/file_parse')
-        ? baseUrl
-        : '$baseUrl/file_parse';
-
-    try {
-      final response = await _dio.post(
-        url,
-        data: formData,
-        options: Options(responseType: ResponseType.bytes),
-      );
-
-      final bytes = response.data as List<int>;
-      _log.info('parsePdf: pages=$startPage-$endPage, zip=${bytes.length} bytes');
-
-      return _extractZip(bytes, outputDir);
-    } on DioException catch (e) {
-      _log.warning('parsePdf failed: pages=$startPage-$endPage, '
-          '${e.response?.statusCode} ${e.message}');
-      rethrow;
+    final taskId = await _submitUrlTask(pdfUrl, pageRanges: pageRanges);
+    final task = await _pollTask(taskId, timeout: pollTimeout);
+    if (task.state == MineruTaskState.failed) {
+      throw Exception('Parse failed: ${task.errorMessage}');
     }
+    final tempDir = await Directory.systemTemp.createTemp('mineru_');
+    return _downloadAndExtract(task.zipUrl!, tempDir.path);
+  }
+
+  Future<MineruResult> parseFile(File pdfFile, {
+    String? pageRanges,
+    Duration pollTimeout = const Duration(minutes: 10),
+  }) async {
+    final batchId = await _submitFileUpload(pdfFile, pageRanges: pageRanges);
+    final task = await _pollBatch(batchId, timeout: pollTimeout);
+    if (task.state == MineruTaskState.failed) {
+      throw Exception('Parse failed: ${task.errorMessage}');
+    }
+    final tempDir = await Directory.systemTemp.createTemp('mineru_');
+    return _downloadAndExtract(task.zipUrl!, tempDir.path);
+  }
+
+  Future<String> _submitUrlTask(String url, {String? pageRanges}) async {
+    final body = <String, dynamic>{
+      'url': url,
+      'model_version': modelVersion,
+      'enable_formula': enableFormula,
+      'enable_table': enableTable,
+    };
+    if (pageRanges != null && pageRanges.isNotEmpty) {
+      body['page_ranges'] = pageRanges;
+    }
+
+    final response = await _dio.post('/api/v4/extract/task', data: body);
+    final data = response.data as Map<String, dynamic>;
+    if (data['code'] != 0) {
+      throw Exception('MinerU submit failed: ${data['msg']}');
+    }
+    final taskId = (data['data']['task_id'] as String?) ?? '';
+    _log.info('submitUrlTask: task_id=$taskId');
+    return taskId;
+  }
+
+  Future<String> _submitFileUpload(File pdfFile, {String? pageRanges}) async {
+    final body = <String, dynamic>{
+      'files': [
+        {
+          'name': pdfFile.path.split(Platform.pathSeparator).last,
+          if (pageRanges != null && pageRanges.isNotEmpty)
+            'page_ranges': pageRanges,
+        },
+      ],
+      'model_version': modelVersion,
+      'enable_formula': enableFormula,
+      'enable_table': enableTable,
+    };
+
+    final response = await _dio.post('/api/v4/file-urls/batch', data: body);
+    final data = response.data as Map<String, dynamic>;
+    if (data['code'] != 0) {
+      throw Exception('MinerU presign failed: ${data['msg']}');
+    }
+    final batchId = data['data']['batch_id'] as String;
+    final uploadUrls = List<String>.from(data['data']['file_urls'] as List);
+
+    if (uploadUrls.isEmpty) {
+      throw Exception('MinerU: no upload URL returned');
+    }
+
+    final uploadUrl = uploadUrls.first;
+    final fileBytes = await pdfFile.readAsBytes();
+    await _downloadDio.put(
+      uploadUrl,
+      data: Stream.fromIterable([fileBytes]),
+      options: Options(
+        headers: {'Content-Type': 'application/octet-stream'},
+      ),
+    );
+    _log.info('submitFileUpload: batch_id=$batchId, file uploaded');
+    return batchId;
+  }
+
+  Future<MineruTask> _pollTask(String taskId, {required Duration timeout}) async {
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      final response = await _dio.get('/api/v4/extract/task/$taskId');
+      final data = response.data as Map<String, dynamic>;
+      if (data['code'] != 0) {
+        throw Exception('MinerU poll failed: ${data['msg']}');
+      }
+      final result = data['data'] as Map<String, dynamic>;
+      final state = _parseState(result['state'] as String? ?? '');
+      final task = MineruTask(
+        id: taskId,
+        state: state,
+        zipUrl: result['full_zip_url'] as String?,
+        errorMessage: result['err_msg'] as String?,
+        extractedPages: result['extract_progress']?['extracted_pages'] as int? ?? 0,
+        totalPages: result['extract_progress']?['total_pages'] as int? ?? 0,
+      );
+      if (task.isTerminal) return task;
+
+      _log.info('pollTask: $taskId state=$state '
+          '${task.extractedPages}/${task.totalPages} pages');
+      await Future.delayed(const Duration(seconds: 2));
+    }
+    throw TimeoutException('MinerU poll timed out after ${timeout.inSeconds}s');
+  }
+
+  Future<MineruTask> _pollBatch(String batchId, {required Duration timeout}) async {
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      final response = await _dio.get('/api/v4/extract-results/batch/$batchId');
+      final data = response.data as Map<String, dynamic>;
+      if (data['code'] != 0) {
+        throw Exception('MinerU batch poll failed: ${data['msg']}');
+      }
+      final results = data['data']['extract_result'] as List? ?? [];
+      if (results.isEmpty) {
+        _log.info('pollBatch: $batchId no results yet');
+        await Future.delayed(const Duration(seconds: 2));
+        continue;
+      }
+      final r = results.first as Map<String, dynamic>;
+      final state = _parseState(r['state'] as String? ?? '');
+      final task = MineruTask(
+        id: batchId,
+        state: state,
+        zipUrl: r['full_zip_url'] as String?,
+        errorMessage: r['err_msg'] as String?,
+      );
+      if (task.isTerminal) return task;
+
+      _log.info('pollBatch: $batchId state=$state');
+      await Future.delayed(const Duration(seconds: 2));
+    }
+    throw TimeoutException('MinerU batch poll timed out after ${timeout.inSeconds}s');
+  }
+
+  MineruTaskState _parseState(String s) {
+    return switch (s) {
+      'done' => MineruTaskState.done,
+      'failed' => MineruTaskState.failed,
+      'running' => MineruTaskState.running,
+      'converting' => MineruTaskState.converting,
+      'pending' => MineruTaskState.pending,
+      'waiting-file' => MineruTaskState.pending,
+      'uploading' => MineruTaskState.running,
+      _ => MineruTaskState.pending,
+    };
+  }
+
+  Future<MineruResult> _downloadAndExtract(String zipUrl, String outputDir) async {
+    _log.info('downloadAndExtract: downloading $zipUrl');
+    final response = await _downloadDio.get(
+      zipUrl,
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final bytes = response.data as List<int>;
+    _log.info('downloadAndExtract: ${bytes.length} bytes');
+    return _extractZip(bytes, outputDir);
   }
 
   MineruResult _extractZip(List<int> bytes, String outputDir) {

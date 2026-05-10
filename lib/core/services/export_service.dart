@@ -24,7 +24,7 @@ class ExportService {
   }
 
   static Future<void> exportBibtex(Paper paper) async {
-    final bibtex = _generateBibtex(paper);
+    final bibtex = generateBibtex(paper);
     final path = await FilePicker.saveFile(
       dialogTitle: '导出 BibTeX',
       fileName: '${paper.title.replaceAll(RegExp(r'[^\w\s-]'), '')}.bib',
@@ -40,7 +40,7 @@ class ExportService {
     }
   }
 
-  static String _generateBibtex(Paper paper) {
+  static String generateBibtex(Paper paper) {
     final key = paper.doi.isNotEmpty
         ? paper.doi.replaceAll(RegExp(r'[/.-]'), '_')
         : paper.title.split(RegExp(r'\s+')).take(3).join('_');

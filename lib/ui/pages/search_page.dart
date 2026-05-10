@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:logging/logging.dart';
@@ -76,10 +75,28 @@ class _SearchPageState extends State<SearchPage> {
     try {
       final deps = Dependencies.of(context);
       final tempDir = await Directory.systemTemp.createTemp('paperwise_');
-      final savePath = '${tempDir.path}/paper.pdf';
-      final dio = Dio();
-      await dio.download(pdfUrl!, savePath);
-      final file = File(savePath);
+      final result = SearchResult(
+        title: title ?? url,
+        authors: [],
+        pdfUrl: pdfUrl!,
+        source: 'url',
+      );
+      final file = await deps.searchService.downloadPdf(result, tempDir.path,
+        onProgress: (received, total) {
+          if (total > 0) {
+            final pct = (received / total * 100).toInt();
+            _statusMessage = '下载中... $pct%';
+            if (mounted) setState(() {});
+          }
+        },
+      );
+      if (file == null) {
+        setState(() {
+          _statusMessage = '下载失败';
+          _loading = false;
+        });
+        return;
+      }
 
       final paper = await deps.paperService.importPdf(file, title: title);
       if (paper != null) {
@@ -257,7 +274,13 @@ class _SearchPageState extends State<SearchPage> {
         onTap: () async {
           setState(() => _statusMessage = '正在下载: ${result.title}');
           final deps = Dependencies.of(context);
-          final paper = await deps.paperService.importFromSearch(result);
+          final paper = await deps.paperService.importFromSearch(result,
+            onProgress: (received, total) {
+              if (total > 0 && mounted) {
+                setState(() => _statusMessage = '下载中... ${(received / total * 100).toInt()}%');
+              }
+            },
+          );
           if (paper != null) {
             _log.info('importFromSearch: ${paper.id}');
             setState(() => _statusMessage = '导入成功: ${paper.title}');

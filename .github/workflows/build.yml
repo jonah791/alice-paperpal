@@ -40,16 +40,20 @@ jobs:
           channel: stable
       - run: flutter pub get
       - run: flutter build windows --release
-      - name: Upload EXE
+      - name: Package distribution
+        run: |
+          cd build/windows/x64/runner/Release
+          Compress-Archive -Path * -DestinationPath ALICE-PaperPal-${{ github.ref_name }}.zip
+      - name: Upload ZIP
         uses: actions/upload-artifact@v4
         with:
           name: ALICE-PaperPal-${{ github.ref_name }}
-          path: build/windows/x64/runner/Release/
+          path: build/windows/x64/runner/Release/ALICE-PaperPal-*.zip
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            build/windows/x64/runner/Release/paperpal.exe
+            build/windows/x64/runner/Release/ALICE-PaperPal-*.zip
           body: |
             Download ALICE PaperPal ${{ github.ref_name }}
 

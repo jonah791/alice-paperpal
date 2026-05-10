@@ -17,7 +17,7 @@ class WelcomePage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('PaperWise', style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold)),
+                Text('PaperPal', style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Text('基于 MinerU + DeepSeek 的论文辅助阅读工具',
                     style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant)),

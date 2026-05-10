@@ -47,7 +47,7 @@ class SoulService {
     d = Directory('$_soulsDir/custom');
     if (!await d.exists()) await d.create(recursive: true);
 
-    for (final entry in _presetDefinitions.entries) {
+    for (final entry in presetDefinitions.entries) {
       final file = File('$_soulsDir/preset/${entry.key}.json');
       if (!await file.exists()) {
         await file.writeAsString(jsonEncode(entry.value));
@@ -56,7 +56,7 @@ class SoulService {
   }
 
   List<Soul> _loadPresets() {
-    return _presetDefinitions.entries.map((e) => Soul.fromJson(e.value)).toList();
+    return presetDefinitions.entries.map((e) => Soul.fromJson(e.value)).toList();
   }
 
   Future<List<Soul>> _loadCustom() async {
@@ -155,7 +155,7 @@ class SoulService {
     _log.info('deleteCustom: $id');
   }
 
-  static const Map<String, Map<String, dynamic>> _presetDefinitions = {
+  static const Map<String, Map<String, dynamic>> presetDefinitions = {
     'academic_mentor': {
       'id': 'academic_mentor',
       'name': '学术导师',

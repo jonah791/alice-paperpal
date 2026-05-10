@@ -264,7 +264,7 @@ Stream<String> chatStream(List<Map<String, String>> messages) async* {
 
 | API | 端点 | 用途 | 限频 |
 |---|---|---|---|
-| MinerU | `POST /file_parse` | PDF 解析 | 取决于套餐 |
+| MinerU | `POST /api/v4/extract/task`（异步提交）<br>`GET /api/v4/extract/task/{task_id}`（轮询） | PDF 解析 | 取决于套餐 |
 | DeepSeek | `POST /v1/chat/completions` | LLM 问答 | 500 RPM（免费用户） |
 | arXiv | `GET http://export.arxiv.org/api/query` | 论文搜索 | 1 req/3s |
 | Semantic Scholar | `GET https://api.semanticscholar.org/graph/v1/paper/search` | 论文搜索 | 100 req/5min |
@@ -353,7 +353,7 @@ git push origin v0.1.1
 | 问题 | 说明 |
 |---|---|
 | API Key 存 SharedPreferences | 加密后存 SharedPreferences，但加密仅在 Windows 上生效（DPAPI） |
-| MinerU API 定价 | 云端 MinerU API 定价未公开，超免费额度后需付费或自部署 |
+| MinerU API 定价 | 云端 MinerU API 日限额 1000 页，超出后优先级降低；需付费或自部署 |
 | 小语种检测 | 语言检测仅支持中/日/韩/英/俄，其他语言统一判断为英文 |
 | 翻译后格式校验 | 仅校验 `$$` 成对性，复杂 LaTeX 结构可能被 LLM 破坏 |
 | 记忆注入上限 | 每次对话最多注入最近 10 条记忆，超出部分被忽略 |

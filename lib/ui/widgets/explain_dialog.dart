@@ -34,7 +34,6 @@ class ExplainDialog {
       builder: (ctx) => _ExplainDialogContent(
         latex: '',
         contextText: 'Table: $caption',
-        paperService: null,
         isTable: true,
         tableContent: tableHtml,
         paperId: paperId,
@@ -46,7 +45,6 @@ class ExplainDialog {
 class _ExplainDialogContent extends StatefulWidget {
   final String latex;
   final String contextText;
-  final PaperService? paperService;
   final bool isTable;
   final String tableContent;
   final String paperId;
@@ -54,7 +52,6 @@ class _ExplainDialogContent extends StatefulWidget {
   const _ExplainDialogContent({
     required this.latex,
     required this.contextText,
-    this.paperService,
     this.isTable = false,
     this.tableContent = '',
     this.paperId = '',

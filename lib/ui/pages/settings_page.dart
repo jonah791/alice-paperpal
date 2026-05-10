@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import '../../main.dart';
+import '../../core/models/config.dart';
 import '../widgets/soul_selector.dart';
 import '../widgets/avatar_picker.dart';
 
@@ -16,9 +17,18 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final _llmKeyController = TextEditingController();
   final _llmBaseController = TextEditingController();
-  final _mineruEndpointController = TextEditingController();
   final _mineruKeyController = TextEditingController();
   bool _loading = true;
+  String _mineruModelVersion = 'vlm';
+  bool _enableFormula = true;
+  bool _enableTable = true;
+
+  static const _modelVersions = ['vlm', 'pipeline', 'MinerU-HTML'];
+  static const _modelVersionLabels = {
+    'vlm': 'VLM（推荐）',
+    'pipeline': 'Pipeline',
+    'MinerU-HTML': 'MinerU-HTML',
+  };
 
   @override
   void initState() {
@@ -34,8 +44,10 @@ class _SettingsPageState extends State<SettingsPage> {
 
     _llmKeyController.text = llmKey ?? '';
     _llmBaseController.text = cfg.llmApiBase;
-    _mineruEndpointController.text = cfg.mineruApiEndpoint;
     _mineruKeyController.text = mineruKey ?? '';
+    _mineruModelVersion = cfg.mineruModelVersion;
+    _enableFormula = cfg.enableFormula;
+    _enableTable = cfg.enableTable;
 
     setState(() => _loading = false);
   }
@@ -44,7 +56,6 @@ class _SettingsPageState extends State<SettingsPage> {
   void dispose() {
     _llmKeyController.dispose();
     _llmBaseController.dispose();
-    _mineruEndpointController.dispose();
     _mineruKeyController.dispose();
     super.dispose();
   }
@@ -115,25 +126,46 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 Text('MinerU 解析引擎', style: theme.textTheme.titleMedium),
                 const SizedBox(height: 4),
-                Text('⚠️ 论文 PDF 将上传至 MinerU 云端进行解析。如需私有化，可填写自部署地址。',
+                Text('论文 PDF 将上传至 MinerU 云端进行解析（v4 API）。',
                     style: theme.textTheme.bodySmall),
                 const SizedBox(height: 16),
-                TextField(
-                  controller: _mineruEndpointController,
-                  decoration: const InputDecoration(
-                    labelText: 'API Endpoint',
-                    hintText: 'https://mineru.net/api/v2',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
                 TextField(
                   controller: _mineruKeyController,
                   obscureText: true,
                   decoration: const InputDecoration(
-                    labelText: 'API Key（选填）',
+                    labelText: 'API Key',
                     border: OutlineInputBorder(),
                   ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _mineruModelVersion,
+                  decoration: const InputDecoration(
+                    labelText: '模型版本',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: _modelVersions.map((v) => DropdownMenuItem(
+                    value: v,
+                    child: Text(_modelVersionLabels[v] ?? v),
+                  )).toList(),
+                  onChanged: (v) {
+                    if (v != null) setState(() => _mineruModelVersion = v);
+                  },
+                ),
+                const SizedBox(height: 12),
+                CheckboxListTile(
+                  title: const Text('公式识别'),
+                  subtitle: const Text('识别并提取数学公式'),
+                  value: _enableFormula,
+                  onChanged: (v) => setState(() => _enableFormula = v ?? true),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                CheckboxListTile(
+                  title: const Text('表格识别'),
+                  subtitle: const Text('识别并提取表格结构'),
+                  value: _enableTable,
+                  onChanged: (v) => setState(() => _enableTable = v ?? true),
+                  contentPadding: EdgeInsets.zero,
                 ),
               ],
             ),
@@ -164,16 +196,16 @@ class _SettingsPageState extends State<SettingsPage> {
       llmApiBase: _llmBaseController.text.isNotEmpty
           ? _llmBaseController.text
           : deps.configService.config.llmApiBase,
-      mineruApiEndpoint: _mineruEndpointController.text.isNotEmpty
-          ? _mineruEndpointController.text
-          : deps.configService.config.mineruApiEndpoint,
+      mineruModelVersion: _mineruModelVersion,
+      enableFormula: _enableFormula,
+      enableTable: _enableTable,
     );
     await deps.configService.updateConfig(updatedConfig);
 
     if (mounted) {
-      _log.info('settings saved');
+      _log.info('settings saved: modelVersion=$_mineruModelVersion');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('设置已保存')),
+        const SnackBar(content: Text('设置已保存（部分更改下次启动生效）')),
       );
     }
   }

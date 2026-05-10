@@ -57,12 +57,12 @@ class PaperService {
   Future<void> init() async {
     final cfg = _config.config;
     final mineruApi = MineruApi(
-      baseUrl: cfg.mineruApiEndpoint.isNotEmpty
-          ? cfg.mineruApiEndpoint
-          : 'https://mineru.net/api/v2',
-      apiKey: await _config.readMineruApiKey(),
+      apiKey: await _config.readMineruApiKey() ?? '',
+      modelVersion: cfg.mineruModelVersion,
+      enableFormula: cfg.enableFormula,
+      enableTable: cfg.enableTable,
     );
-    _parse = ParseService(api: mineruApi, batchSize: cfg.batchSize);
+    _parse = ParseService(api: mineruApi);
     _translation = TranslationService(_llm);
 
     final persisted = await _cache.loadAllPapers();
@@ -77,9 +77,9 @@ class PaperService {
   Stream<ParseProgress> get parseProgress => _parse.progressStream;
   Future<List<SearchResult>> search(String query) => _search.search(query);
 
-  Future<Paper?> importFromSearch(SearchResult result) async {
+  Future<Paper?> importFromSearch(SearchResult result, {void Function(int, int)? onProgress}) async {
     final tempDir = await getTemporaryDirectory();
-    final pdf = await _search.downloadPdf(result, '${tempDir.path}/downloads');
+    final pdf = await _search.downloadPdf(result, '${tempDir.path}/downloads', onProgress: onProgress);
     if (pdf == null) return null;
     return importPdf(pdf, title: result.title);
   }
@@ -264,6 +264,13 @@ class PaperService {
   }
 
   List<Paper> get papers => _papers.toList();
+
+  Future<void> deletePaper(String paperId) async {
+    _papers.removeWhere((p) => p.id == paperId);
+    _emitPapers();
+    await _cache.deletePaper(paperId);
+    _log.info('deletePaper: $paperId');
+  }
 
   void dispose() {
     _parse.dispose();

@@ -34,7 +34,7 @@ void _cleanOldLogs() {
   }
 }
 
-String _sanitize(String message) {
+String sanitize(String message) {
   return message
       .replaceAllMapped(
         RegExp(r'(api[_-]?key|apikey|token|authorization)[=:]\s*\S+',
@@ -52,7 +52,7 @@ Future<void> _writeLogEntry(LogRecord record) async {
     final date = DateTime.now();
     final fileName = 'paperwise_${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}.log';
     final file = File('${_logDir.path}/$fileName');
-    final line = '${date.toIso8601String()} [${record.level.name}] ${record.loggerName}: ${_sanitize(record.message)}\n';
+    final line = '${date.toIso8601String()} [${record.level.name}] ${record.loggerName}: ${sanitize(record.message)}\n';
     await file.writeAsString(line, mode: FileMode.append);
   });
 }

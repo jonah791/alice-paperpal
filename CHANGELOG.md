@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.1.1] - 2026-05-11
+
+### Changed
+
+- **MinerU API v4 迁移**：从已废弃的 v2 `/file_parse` 同步接口迁移至 v4 异步任务架构（`/api/v4/extract/task` 提交 → 轮询 → 下载 ZIP），支持 URL 提交和本地文件预签名上传两种模式
+- **ParseService 重构**：移除手动分批逻辑，改为 API 原生 `page_ranges` 参数；`batchSize` 配置项移除
+- **配置模型扩展**：`AppConfig` 新增 `mineruModelVersion`、`enableFormula`、`enableTable` 字段
+
+### Added
+
+- **论文库删除**：支持单篇删除（右键菜单）和多选批量删除
+- **论文库筛选**：顶部 `FilterChip` 栏按状态（全部/已解析/已翻译/错误）过滤
+- **下载进度**：`SearchService.downloadPdf()` 支持 `onProgress` 回调，搜索页展示实时下载百分比
+- **设置页扩展**：模型版本选择器（VLM/Pipeline/MinerU-HTML）+ 公式/表格识别开关
+- **全方位测试**：测试数从 27 提升至 131，覆盖 AppError、ExportService BibTeX、MergeService、PortraitService deepMerge、SoulService presetDefinitions、RetryInterceptor isRetryable、Logger sanitize、多语种检测、DioClient、MergeService 等
+
+### Fixed
+
+- **设置页**：提示 URL 从 `api/v2` 改为 `api/v4`
+- **默认 Base URL**：`paper_service.dart` 从 `https://mineru.net/api/v2` 修正为 `https://mineru.net`
+- **ReadPage 内存泄漏**：新增 `_noteController.dispose()`
+- **WelcomePage**：应用名从 "PaperWise" 统一为 "PaperPal"
+- **未使用 imports 清理**：soul_selector、explain_dialog
+- **API.md / HANDOVER.md**：更新为 v4 契约
+
 ## [0.2.0] - 2026-05-10
 
 ### Added

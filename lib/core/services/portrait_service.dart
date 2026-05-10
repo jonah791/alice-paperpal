@@ -82,7 +82,7 @@ AI 说：$assistantResponse
       final update = jsonDecode(trimmed) as Map<String, dynamic>;
       if (update.isEmpty) return;
 
-      _deepMerge(_portrait, update);
+      deepMerge(_portrait, update);
       _portrait['last_updated'] = DateTime.now().toIso8601String();
       await _save();
       _log.info('updateFromConversation: portrait updated');
@@ -91,10 +91,10 @@ AI 说：$assistantResponse
     }
   }
 
-  void _deepMerge(Map<String, dynamic> target, Map<String, dynamic> source) {
+  void deepMerge(Map<String, dynamic> target, Map<String, dynamic> source) {
     for (final key in source.keys) {
       if (source[key] is Map<String, dynamic> && target[key] is Map<String, dynamic>) {
-        _deepMerge(target[key] as Map<String, dynamic>, source[key] as Map<String, dynamic>);
+        deepMerge(target[key] as Map<String, dynamic>, source[key] as Map<String, dynamic>);
       } else {
         target[key] = source[key];
       }
