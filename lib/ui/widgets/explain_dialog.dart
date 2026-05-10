@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:logging/logging.dart';
-import '../../core/models/paper.dart';
 import '../../core/services/paper_service.dart';
 import '../../main.dart';
 
@@ -9,37 +8,33 @@ final _log = Logger('ExplainDialog');
 
 class ExplainDialog {
   static Future<void> showFormula(
-    BuildContext context,
-    String latex,
-    String sectionContext,
-  ) async {
-    final deps = Dependencies.of(context);
-    final content = await deps.paperService.getMarkdown('');
-    if (content == null) return;
-
+    BuildContext context, {
+    required String paperId,
+    required String latex,
+    required String sectionContext,
+  }) async {
     showDialog(
       context: context,
       builder: (ctx) => _ExplainDialogContent(
         latex: latex,
         contextText: sectionContext,
-        paperService: deps.paperService,
+        paperId: paperId,
       ),
     );
   }
 
   static Future<void> showTable(
-    BuildContext context,
-    String tableHtml,
-    String caption,
-    String paperId,
-  ) async {
-    final deps = Dependencies.of(context);
+    BuildContext context, {
+    required String paperId,
+    required String tableHtml,
+    required String caption,
+  }) async {
     showDialog(
       context: context,
       builder: (ctx) => _ExplainDialogContent(
         latex: '',
         contextText: 'Table: $caption',
-        paperService: deps.paperService,
+        paperService: null,
         isTable: true,
         tableContent: tableHtml,
         paperId: paperId,
@@ -51,7 +46,7 @@ class ExplainDialog {
 class _ExplainDialogContent extends StatefulWidget {
   final String latex;
   final String contextText;
-  final PaperService paperService;
+  final PaperService? paperService;
   final bool isTable;
   final String tableContent;
   final String paperId;
@@ -59,7 +54,7 @@ class _ExplainDialogContent extends StatefulWidget {
   const _ExplainDialogContent({
     required this.latex,
     required this.contextText,
-    required this.paperService,
+    this.paperService,
     this.isTable = false,
     this.tableContent = '',
     this.paperId = '',
@@ -82,11 +77,12 @@ class _ExplainDialogContentState extends State<_ExplainDialogContent> {
   Future<void> _fetchExplanation() async {
     setState(() => _loading = true);
     try {
+      final deps = Dependencies.of(context);
       final prompt = widget.isTable
           ? '请解读以下学术论文中的表格并总结关键数据趋势和发现：\n\n${widget.tableContent}\n\n上下文：${widget.contextText}'
           : '请用通俗的语言解释以下学术论文中的数学公式的含义：\n\n```\n${widget.latex}\n```\n\n上下文：${widget.contextText}';
-      final answer = await widget.paperService.askQuestion(
-        widget.paperId.isNotEmpty ? widget.paperId : '',
+      final answer = await deps.paperService.askQuestion(
+        widget.paperId,
         prompt,
       );
       setState(() {

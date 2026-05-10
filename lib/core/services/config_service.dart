@@ -8,6 +8,7 @@ class ConfigService {
   static const _keyLlmApiKey = 'llm_api_key';
   static const _keyMineruApiKey = 'mineru_api_key';
   static const _keyLlmApiBase = 'llm_api_base';
+  static const _keyLlmModel = 'llm_model';
   static const _keyMineruEndpoint = 'mineru_api_endpoint';
 
   AppConfig _config = const AppConfig();
@@ -19,6 +20,7 @@ class ConfigService {
     _prefs = await SharedPreferences.getInstance();
     _config = AppConfig(
       llmApiBase: _prefs!.getString(_keyLlmApiBase) ?? 'https://api.deepseek.com',
+      llmModel: _prefs!.getString(_keyLlmModel) ?? 'deepseek-v4-flash',
       mineruApiEndpoint: _prefs!.getString(_keyMineruEndpoint) ?? '',
     );
     _log.info('Config loaded');
@@ -33,6 +35,11 @@ class ConfigService {
     return _prefs?.getString(_keyLlmApiKey);
   }
 
+  bool get hasLlmApiKey {
+    final key = _prefs?.getString(_keyLlmApiKey);
+    return key != null && key.isNotEmpty;
+  }
+
   Future<void> saveMineruApiKey(String key) async {
     await _prefs?.setString(_keyMineruApiKey, key);
     _log.info('MinerU API key saved');
@@ -45,9 +52,9 @@ class ConfigService {
   Future<void> updateConfig(AppConfig config) async {
     _config = config;
     await _prefs?.setString(_keyLlmApiBase, config.llmApiBase);
+    await _prefs?.setString(_keyLlmModel, config.llmModel);
     await _prefs?.setString(_keyMineruEndpoint, config.mineruApiEndpoint);
-    _log.info('Config updated');
+    _log.info('Config updated: provider=${config.defaultProvider}, '
+        'model=${config.llmModel}');
   }
-
-  bool get hasLlmKey => _config.llmApiBase.isNotEmpty;
 }

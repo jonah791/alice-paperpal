@@ -49,19 +49,35 @@ class LLMProvider {
 
   Map<String, dynamic> _buildBody(List<Map<String, String>> messages) {
     return switch (config.type) {
-      LLMProviderType.claude => {
-        'model': config.model,
-        'max_tokens': 4096,
-        'messages': messages.map((m) => {
-          'role': m['role'] == 'assistant' ? 'assistant' : 'user',
-          'content': m['content'],
-        }).toList(),
-      },
+      LLMProviderType.claude => _buildClaudeBody(messages),
       _ => {
         'model': config.model,
         'messages': messages,
         'max_tokens': 4096,
       },
+    };
+  }
+
+  Map<String, dynamic> _buildClaudeBody(List<Map<String, String>> messages) {
+    String? system;
+    final chatMessages = <Map<String, String>>[];
+
+    for (final m in messages) {
+      if (m['role'] == 'system') {
+        system = m['content'];
+      } else {
+        chatMessages.add({
+          'role': m['role'] == 'assistant' ? 'assistant' : 'user',
+          'content': m['content'] ?? '',
+        });
+      }
+    }
+
+    return {
+      'model': config.model,
+      'max_tokens': 4096,
+      if (system != null) 'system': system,
+      'messages': chatMessages,
     };
   }
 

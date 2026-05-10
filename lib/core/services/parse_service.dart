@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:logging/logging.dart';
+import 'package:path_provider/path_provider.dart';
 import '../api/mineru_api.dart';
 import '../models/parse_result.dart';
-
 
 final _log = Logger('ParseService');
 
@@ -20,12 +20,20 @@ class ParseService {
   Stream<ParseProgress> get progressStream => _progressController.stream;
 
   Future<ParseResult> parsePdf(File pdfFile, int pageCount) async {
+    final tempDir = await getTemporaryDirectory();
+    final extractDir = '${tempDir.path}/mineru_${DateTime.now().millisecondsSinceEpoch}';
+
     if (pageCount <= _batchSize) {
       _log.info('parsePdf: single batch, $pageCount pages');
-      final result = await _api.parsePdf(pdfFile: pdfFile);
+      final result = await _api.parsePdf(
+        pdfFile: pdfFile,
+        outputDir: extractDir,
+      );
       return ParseResult(
-        markdown: result,
+        markdown: result.markdown,
         title: pdfFile.path.split(Platform.pathSeparator).last.replaceAll('.pdf', ''),
+        imagePaths: result.imagePaths,
+        contentListJson: result.contentListJson,
         startPage: 0,
         endPage: pageCount - 1,
       );
@@ -50,11 +58,12 @@ class ParseService {
       try {
         final result = await _api.parsePdf(
           pdfFile: pdfFile,
+          outputDir: '${extractDir}_batch$i',
           startPage: start,
           endPage: end,
         );
-        batchResults.add(result);
-        _log.info('parsePdf: batch ${i + 1}/$totalBatches OK');
+        batchResults.add(result.markdown);
+        _log.info('parsePdf: batch ${i + 1}/$totalBatches OK, ${result.markdown.length} chars');
       } catch (e) {
         _log.warning('parsePdf: batch ${i + 1}/$totalBatches failed: $e');
         rethrow;

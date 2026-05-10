@@ -62,21 +62,11 @@ class TranslationService {
   }
 
   String _validateLatex(String text) {
-    var result = text;
+    final result = text;
 
     final dollarPairs = RegExp(r'\$\$').allMatches(result).length;
     if (dollarPairs.isOdd) {
-      result = result.replaceAll(r'$$', '');
-    }
-
-    final citePattern = RegExp(r'\\cite\{[^}]*\}');
-    if (!citePattern.hasMatch(result) && text.contains(r'\cite')) {
-      final citeMatches = RegExp(r'\\cite\{[^}]*\}').allMatches(text);
-      for (final m in citeMatches) {
-        if (!result.contains(m.group(0)!)) {
-          result = result.replaceFirst('}', m.group(0)!);
-        }
-      }
+      _log.warning('_validateLatex: odd number of double-dollar signs found');
     }
 
     return result;

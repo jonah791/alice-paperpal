@@ -165,7 +165,12 @@ class _ReadPageState extends State<ReadPage> {
   }
 
   Future<void> _explainFormula(String latex, String sectionContext) async {
-    await ExplainDialog.showFormula(context, latex, sectionContext);
+    await ExplainDialog.showFormula(
+      context,
+      paperId: widget.paper.id,
+      latex: latex,
+      sectionContext: sectionContext,
+    );
   }
 
   List<_Segment> _splitByLatex(String text) {
