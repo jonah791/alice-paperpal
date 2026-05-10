@@ -22,11 +22,11 @@ class WelcomePage extends StatelessWidget {
                 Text('基于 MinerU + DeepSeek 的论文辅助阅读工具',
                     style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                 const SizedBox(height: 32),
-                Text('首次使用？在设置页配置 API Key 后即可开始。', style: theme.textTheme.bodyMedium),
+                Text('首次使用？请在设置页配置 API Key 后开始使用。', style: theme.textTheme.bodyMedium),
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: onComplete,
-                  child: const Text('开始使用'),
+                  child: const Text('进入设置'),
                 ),
               ],
             ),

@@ -1,13 +1,11 @@
+import 'dart:convert';
+
 class Paper {
   final String id;
   final String title;
   final List<String> authors;
   final int year;
   final String source;
-  final String abstract;
-  final String pdfPath;
-  final String markdownPath;
-  final String translatedPath;
   final String doi;
   final PaperStatus status;
   final int pageCount;
@@ -21,10 +19,6 @@ class Paper {
     this.authors = const [],
     this.year = 0,
     this.source = 'local',
-    this.abstract = '',
-    this.pdfPath = '',
-    this.markdownPath = '',
-    this.translatedPath = '',
     this.doi = '',
     this.status = PaperStatus.importing,
     this.pageCount = 0,
@@ -39,10 +33,6 @@ class Paper {
     List<String>? authors,
     int? year,
     String? source,
-    String? abstract,
-    String? pdfPath,
-    String? markdownPath,
-    String? translatedPath,
     String? doi,
     PaperStatus? status,
     int? pageCount,
@@ -56,10 +46,6 @@ class Paper {
       authors: authors ?? this.authors,
       year: year ?? this.year,
       source: source ?? this.source,
-      abstract: abstract ?? this.abstract,
-      pdfPath: pdfPath ?? this.pdfPath,
-      markdownPath: markdownPath ?? this.markdownPath,
-      translatedPath: translatedPath ?? this.translatedPath,
       doi: doi ?? this.doi,
       status: status ?? this.status,
       pageCount: pageCount ?? this.pageCount,
@@ -68,6 +54,41 @@ class Paper {
       tags: tags ?? this.tags,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'authors': authors,
+    'year': year,
+    'source': source,
+    'doi': doi,
+    'status': status.name,
+    'pageCount': pageCount,
+    'importedAt': importedAt?.toIso8601String(),
+    'lastReadAt': lastReadAt?.toIso8601String(),
+    'tags': tags,
+  };
+
+  factory Paper.fromJson(Map<String, dynamic> json) => Paper(
+    id: json['id'] as String? ?? '',
+    title: json['title'] as String? ?? '',
+    authors: (json['authors'] as List?)?.cast<String>() ?? [],
+    year: json['year'] as int? ?? 0,
+    source: json['source'] as String? ?? 'local',
+    doi: json['doi'] as String? ?? '',
+    status: PaperStatus.values.firstWhere(
+      (s) => s.name == json['status'],
+      orElse: () => PaperStatus.importing,
+    ),
+    pageCount: json['pageCount'] as int? ?? 0,
+    importedAt: json['importedAt'] != null
+        ? DateTime.tryParse(json['importedAt'] as String)
+        : null,
+    lastReadAt: json['lastReadAt'] != null
+        ? DateTime.tryParse(json['lastReadAt'] as String)
+        : null,
+    tags: (json['tags'] as List?)?.cast<String>() ?? [],
+  );
 }
 
 enum PaperStatus {

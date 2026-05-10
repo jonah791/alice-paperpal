@@ -23,6 +23,7 @@ class _ReadPageState extends State<ReadPage> {
   final _qaController = TextEditingController();
   final _qaMessages = <Map<String, String>>[];
   bool _qaLoading = false;
+  double _fontSize = 14.0;
 
   @override
   void initState() {
@@ -85,8 +86,8 @@ class _ReadPageState extends State<ReadPage> {
           ),
           IconButton(
             icon: const Icon(Icons.font_download),
-            tooltip: '切换字体大小',
-            onPressed: () {},
+            tooltip: '字体大小',
+            onPressed: _showFontSizePicker,
           ),
         ],
       ),
@@ -147,7 +148,7 @@ class _ReadPageState extends State<ReadPage> {
         final textSeg = seg as _TextSegment;
         return SelectableText(
           textSeg.text,
-          style: theme.textTheme.bodyMedium?.copyWith(height: 1.7),
+          style: theme.textTheme.bodyMedium?.copyWith(height: 1.7, fontSize: _fontSize),
         );
       }).toList(),
     );
@@ -312,6 +313,35 @@ class _ReadPageState extends State<ReadPage> {
     } catch (e) {
       _log.warning('summarize failed: $e');
     }
+  }
+
+  void _showFontSizePicker() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('字体大小'),
+        content: SizedBox(
+          width: 200,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('预览：学术论文阅读示例', style: TextStyle(fontSize: _fontSize)),
+              const SizedBox(height: 16),
+              Slider(
+                value: _fontSize,
+                min: 10,
+                max: 24,
+                divisions: 14,
+                label: _fontSize.round().toString(),
+                onChanged: (v) => setState(() => _fontSize = v),
+              ),
+              Text('${_fontSize.round()} px'),
+            ],
+          ),
+        ),
+        actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('确定'))],
+      ),
+    );
   }
 }
 

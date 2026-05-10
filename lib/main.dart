@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:tray_manager/tray_manager.dart';
 import 'core/services/config_service.dart';
 import 'core/services/cache_service.dart';
 import 'core/services/search_service.dart';
@@ -10,6 +13,7 @@ import 'core/utils/logger.dart';
 import 'ui/pages/search_page.dart';
 import 'ui/pages/library_page.dart';
 import 'ui/pages/settings_page.dart';
+import 'ui/pages/welcome_page.dart';
 import 'ui/theme/app_theme.dart';
 
 void main() async {
@@ -31,22 +35,30 @@ void main() async {
   );
   await paperService.init();
 
-  windowManager.waitUntilReadyToShow().then((_) async {
-    await windowManager.setTitle('PaperWise');
-    await windowManager.setMinimumSize(const Size(1024, 700));
-    await windowManager.setSize(const Size(1280, 860));
-    await windowManager.center();
-    await windowManager.show();
+  await windowManager.waitUntilReadyToShow();
+  await windowManager.setTitle('PaperWise');
+  await windowManager.setMinimumSize(const Size(1024, 700));
+  await windowManager.setSize(const Size(1280, 860));
+  await windowManager.center();
+  await windowManager.show();
 
-    // System tray
-    // tray_manager.setTooltip and setContextMenu require tray_manager package
-    // which needs platform-specific setup; enabled in full build
-  });
+  // System tray
+  await trayManager.setToolTip('PaperWise');
+  if (await File('resources/icon.ico').exists()) {
+    await trayManager.setIcon('resources/icon.ico', iconSize: 32);
+  }
+  await trayManager.setContextMenu(Menu(items: [
+    MenuItem(key: 'show', label: '显示'),
+    MenuItem.separator(),
+    MenuItem(key: 'quit', label: '退出'),
+  ]));
 
+  final showWelcome = !configService.hasLlmApiKey;
   runApp(PaperWiseApp(
     configService: configService,
     paperService: paperService,
     searchService: searchService,
+    showWelcome: showWelcome,
   ));
 }
 
@@ -77,30 +89,58 @@ class PaperWiseApp extends StatefulWidget {
   final ConfigService configService;
   final PaperService paperService;
   final SearchService searchService;
+  final bool showWelcome;
 
   const PaperWiseApp({
     super.key,
     required this.configService,
     required this.paperService,
     required this.searchService,
+    this.showWelcome = false,
   });
 
   @override
   State<PaperWiseApp> createState() => _PaperWiseAppState();
 }
 
-class _PaperWiseAppState extends State<PaperWiseApp> {
+class _PaperWiseAppState extends State<PaperWiseApp> with TrayListener {
   ThemeMode _themeMode = ThemeMode.system;
+  bool _welcomeShown = false;
 
   @override
   void initState() {
     super.initState();
     _themeMode = widget.configService.config.themeMode.toFlutterThemeMode();
+    _welcomeShown = !widget.showWelcome;
+    trayManager.addListener(this);
   }
 
   @override
   void dispose() {
+    trayManager.removeListener(this);
     super.dispose();
+  }
+
+  @override
+  void onTrayMenuItemClick(MenuItem menuItem) {
+    switch (menuItem.key) {
+      case 'show':
+        windowManager.show();
+        windowManager.focus();
+      case 'quit':
+        windowManager.close();
+        break;
+    }
+  }
+
+  @override
+  void onTrayIconMouseDown() {
+    windowManager.show();
+    windowManager.focus();
+  }
+
+  void _dismissWelcome() {
+    setState(() => _welcomeShown = true);
   }
 
   @override
@@ -115,11 +155,11 @@ class _PaperWiseAppState extends State<PaperWiseApp> {
         themeMode: _themeMode,
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
-        home: _AppShell(
-          onThemeChanged: (mode) {
-            setState(() => _themeMode = mode);
-          },
-        ),
+        home: _welcomeShown
+            ? _AppShell(
+                onThemeChanged: (mode) => setState(() => _themeMode = mode),
+              )
+            : WelcomePage(onComplete: _dismissWelcome),
       ),
     );
   }
@@ -178,33 +218,23 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
           focusNode: _focusNode,
           autofocus: true,
           child: Row(
-        children: [
-          NavigationRail(
-            selectedIndex: _currentIndex,
-            onDestinationSelected: (i) => setState(() => _currentIndex = i),
-            labelType: NavigationRailLabelType.all,
-            destinations: const [
-              NavigationRailDestination(
-                icon: Icon(Icons.search),
-                label: Text('搜索'),
+            children: [
+              NavigationRail(
+                selectedIndex: _currentIndex,
+                onDestinationSelected: (i) => setState(() => _currentIndex = i),
+                labelType: NavigationRailLabelType.all,
+                destinations: const [
+                  NavigationRailDestination(icon: Icon(Icons.search), label: Text('搜索')),
+                  NavigationRailDestination(icon: Icon(Icons.library_books), label: Text('论文库')),
+                  NavigationRailDestination(icon: Icon(Icons.settings), label: Text('设置')),
+                ],
               ),
-              NavigationRailDestination(
-                icon: Icon(Icons.library_books),
-                label: Text('论文库'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.settings),
-                label: Text('设置'),
-              ),
+              const VerticalDivider(width: 1),
+              Expanded(child: _pages[_currentIndex]),
             ],
           ),
-          const VerticalDivider(width: 1),
-          Expanded(child: _pages[_currentIndex]),
-        ],
+        ),
       ),
-    ),
-  ),
-);
+    );
+  }
 }
-}
-

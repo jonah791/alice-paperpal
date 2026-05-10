@@ -57,7 +57,20 @@ class PaperService {
     );
     _parse = ParseService(api: mineruApi, batchSize: cfg.batchSize);
     _translation = TranslationService(_llm);
-    _log.info('init: ready');
+
+    // Load persisted papers from disk
+    final persisted = await _cache.loadAllPapers();
+    _papers.addAll(persisted);
+    _emitPapers();
+    _log.info('init: ready, ${_papers.length} papers loaded');
+  }
+
+  void _emitPapers() {
+    _paperController.add(_papers.toList());
+  }
+
+  Future<void> _persistPaper(Paper paper) async {
+    await _cache.savePaperMeta(paper);
   }
 
   Stream<ParseProgress> get parseProgress => _parse.progressStream;
@@ -88,7 +101,7 @@ class PaperService {
     );
 
     _papers.add(paper);
-    _paperController.add(_papers.toList());
+    _emitPapers();
     _cache.savePdf(paperId, pdfFile);
 
     try {
@@ -104,7 +117,8 @@ class PaperService {
       );
       _papers.remove(paper);
       _papers.add(updated);
-      _paperController.add(_papers.toList());
+      _emitPapers();
+      await _persistPaper(updated);
 
       if (_config.config.autoTranslate) {
         await _autoTranslate(updated);
@@ -116,7 +130,7 @@ class PaperService {
       final failed = paper.copyWith(status: PaperStatus.error);
       _papers.remove(paper);
       _papers.add(failed);
-      _paperController.add(_papers.toList());
+      _emitPapers();
       return failed;
     }
   }
@@ -131,7 +145,7 @@ class PaperService {
     final updated = paper.copyWith(status: PaperStatus.translating);
     _papers.remove(paper);
     _papers.add(updated);
-    _paperController.add(_papers.toList());
+    _emitPapers();
 
     try {
       final translated = await _translation.translate(md);
@@ -140,14 +154,14 @@ class PaperService {
       final done = updated.copyWith(status: PaperStatus.translated);
       _papers.remove(updated);
       _papers.add(done);
-      _paperController.add(_papers.toList());
-      _log.info('_autoTranslate: ${paper.id} done');
+      _emitPapers();
+      await _persistPaper(done);
     } catch (e) {
       _log.warning('_autoTranslate failed: ${paper.id} → $e');
       final failed = updated.copyWith(status: PaperStatus.error);
       _papers.remove(updated);
       _papers.add(failed);
-      _paperController.add(_papers.toList());
+      _emitPapers();
     }
   }
 
