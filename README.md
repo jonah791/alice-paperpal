@@ -38,12 +38,12 @@ flutter build windows --release
 | **对话记忆** | 每次对话自动生成摘要，跨 session 注入，AI 伙伴记得你之前讨论过什么 |
 | **用户画像** | LLM 自动维护你的兴趣和偏好，你不需要做任何操作 |
 | **头像系统** | 内置默认头像 + 从相册选择，AI 伙伴有一个"脸" |
-| **论文搜索** | arXiv + Semantic Scholar 一键搜索，下载即解析 |
+| **论文搜索** | arXiv + Semantic Scholar 一键搜索，实时下载进度 |
 | **本地上传** | 选择本地 PDF，自动解析 |
 | **URL 导入** | 粘贴 arXiv 链接或 PDF 直链，自动下载 |
 | **PDF 文件关联** | 双击 .pdf 自动用 PaperPal 打开（运行 `windows/install_assoc.bat`） |
-| **自动解析** | MinerU 引擎：公式 → LaTeX、表格 → HTML、图片提取 |
-| **大 PDF 分批** | 超过 50 页自动分批，合并后无感 |
+| **自动解析** | MinerU v4 API 异步解析：公式 → LaTeX、表格 → HTML、图片提取 |
+| **论文库管理** | 按状态筛选（已解析/已翻译/错误），支持批量删除 |
 | **自动翻译** | 非中文论文自动检测 + DeepSeek 全文翻译，原文/译文/对照三模式 |
 | **AI 问答** | 流式输出，逐字显示，基于灵魂+记忆+画像的个性化回答 |
 | **摘要生成** | 一句话 + 结构化摘要 |
@@ -59,10 +59,10 @@ flutter build windows --release
 ```
 ALICE PaperPal (Flutter Desktop)
     │
-    ├── MinerU API       PDF → Markdown/LaTeX/HTML
-    ├── DeepSeek V4 API  问答 / 翻译 / 摘要
-    ├── arXiv API        论文搜索
-    └── Semantic Scholar 论文搜索
+    ├── MinerU v4 API     PDF → Markdown/LaTeX/HTML（异步任务提交 → 轮询）
+    ├── DeepSeek V4 API   问答 / 翻译 / 摘要
+    ├── arXiv API         论文搜索
+    └── Semantic Scholar  论文搜索
 ```
 
 **无自建后端服务器。** 所有 API 直连外部服务，用户自备 API Key。
@@ -82,7 +82,7 @@ paperpal/
 │       ├── pages/                   # 页面
 │       ├── widgets/                 # 组件
 │       └── theme/                   # 主题
-├── test/
+├── test/                            # 131 个单元测试
 ├── pubspec.yaml
 ├── API.md                           # 外部 API 契约
 └── THIRD_PARTY_NOTICES.md           # 第三方许可
@@ -94,18 +94,21 @@ paperpal/
 |---|---|---|
 | LLM API Key | DeepSeek / OpenAI / Claude | 必填 |
 | LLM API Base | OpenAI 兼容 API 地址 | `https://api.deepseek.com` |
-| MinerU Endpoint | 解析服务地址 | `https://mineru.net/api/v2` |
+| MinerU API Key | MinerU 解析服务 Token | 必填 |
+| MinerU 模型版本 | vlm（推荐）/ pipeline / MinerU-HTML | `vlm` |
+| 公式识别 | 是否提取 LaTeX 公式 | 开启 |
+| 表格识别 | 是否提取 HTML 表格 | 开启 |
 | 自动翻译 | 非中文论文自动翻译 | 开启 |
-| 批次大小 | 大 PDF 每批页数 | 50 |
 
 ## 技术栈
 
 - **框架:** Flutter (Dart)
 - **桌面:** 原生 Flutter Windows（无需 Python）
-- **解析:** MinerU API（可自部署）
+- **解析:** MinerU v4 API（异步任务模型，支持预签名上传）
 - **LLM:** DeepSeek V4 / OpenAI / Claude
 - **搜索:** arXiv + Semantic Scholar
 - **安全:** HTTPS 强制 / DPAPI 加密 Key 存储 / 日志脱敏
+- **测试:** 131 个单元测试覆盖 models/services/utils/API
 - **CI:** GitHub Actions (analyze → test → build → release)
 
 ## 许可
