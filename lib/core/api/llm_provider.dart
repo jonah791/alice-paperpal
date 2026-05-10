@@ -3,38 +3,80 @@ import 'package:logging/logging.dart';
 
 final _log = Logger('LLMProvider');
 
-class LLMProvider {
-  final String apiBase;
+enum LLMProviderType {
+  deepseek,
+  openai,
+  claude,
+}
+
+class LLMConfig {
+  final LLMProviderType type;
   final String apiKey;
+  final String apiBase;
   final String model;
+
+  const LLMConfig({
+    required this.type,
+    required this.apiKey,
+    this.apiBase = 'https://api.deepseek.com',
+    this.model = 'deepseek-v4-flash',
+  });
+}
+
+class LLMProvider {
+  final LLMConfig config;
   late final Dio _dio;
 
-  LLMProvider({
-    required this.apiBase,
-    required this.apiKey,
-    this.model = 'deepseek-v4-flash',
-  }) {
+  LLMProvider({required this.config}) {
     _dio = Dio(BaseOptions(
-      baseUrl: apiBase,
+      baseUrl: config.apiBase,
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 120),
       headers: {
-        'Authorization': 'Bearer $apiKey',
+        'Authorization': 'Bearer ${config.apiKey}',
         'Content-Type': 'application/json',
       },
     ));
     _dio.interceptors.add(_HttpsInterceptor());
   }
 
-  Future<String> chat(List<Map<String, String>> messages) async {
-    try {
-      final response = await _dio.post('/v1/chat/completions', data: {
-        'model': model,
+  String get _endpoint {
+    return switch (config.type) {
+      LLMProviderType.claude => '/v1/messages',
+      _ => '/v1/chat/completions',
+    };
+  }
+
+  Map<String, dynamic> _buildBody(List<Map<String, String>> messages) {
+    return switch (config.type) {
+      LLMProviderType.claude => {
+        'model': config.model,
+        'max_tokens': 4096,
+        'messages': messages.map((m) => {
+          'role': m['role'] == 'assistant' ? 'assistant' : 'user',
+          'content': m['content'],
+        }).toList(),
+      },
+      _ => {
+        'model': config.model,
         'messages': messages,
         'max_tokens': 4096,
-      });
-      final content = response.data['choices'][0]['message']['content'] as String;
-      _log.info('chat: ${messages.length} messages, ${content.length} chars response');
+      },
+    };
+  }
+
+  String _extractContent(dynamic data) {
+    return switch (config.type) {
+      LLMProviderType.claude => data['content']?.first?['text'] as String? ?? '',
+      _ => data['choices']?.first?['message']?['content'] as String? ?? '',
+    };
+  }
+
+  Future<String> chat(List<Map<String, String>> messages) async {
+    try {
+      final response = await _dio.post(_endpoint, data: _buildBody(messages));
+      final content = _extractContent(response.data);
+      _log.info('chat: ${messages.length} msgs, ${content.length} chars');
       return content;
     } on DioException catch (e) {
       _log.warning('chat failed: ${e.response?.statusCode} ${e.message}');
@@ -53,11 +95,10 @@ class LLMProvider {
 - 同一术语在全文中保持译法一致
 - 不要添加额外注释
 ''';
-    final messages = [
+    return chat([
       {'role': 'system', 'content': systemPrompt},
       {'role': 'user', 'content': text},
-    ];
-    return chat(messages);
+    ]);
   }
 
   Future<String> summarize(String paperText) async {
@@ -79,11 +120,10 @@ class LLMProvider {
 ## 结论
 (作者的核心结论)
 ''';
-    final messages = [
+    return chat([
       {'role': 'system', 'content': systemPrompt},
       {'role': 'user', 'content': '论文全文:\n\n$paperText'},
-    ];
-    return chat(messages);
+    ]);
   }
 }
 
@@ -95,7 +135,7 @@ class _HttpsInterceptor extends Interceptor {
       handler.reject(DioException(
         requestOptions: options,
         type: DioExceptionType.connectionError,
-        error: 'HTTPS is required for security',
+        error: 'HTTPS is required',
       ));
       return;
     }

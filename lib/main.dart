@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 import 'core/services/config_service.dart';
 import 'core/services/cache_service.dart';
@@ -36,6 +37,10 @@ void main() async {
     await windowManager.setSize(const Size(1280, 860));
     await windowManager.center();
     await windowManager.show();
+
+    // System tray
+    // tray_manager.setTooltip and setContextMenu require tray_manager package
+    // which needs platform-specific setup; enabled in full build
   });
 
   runApp(PaperWiseApp(
@@ -94,6 +99,11 @@ class _PaperWiseAppState extends State<PaperWiseApp> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Dependencies(
       configService: widget.configService,
@@ -123,7 +133,7 @@ class _AppShell extends StatefulWidget {
   State<_AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<_AppShell> {
+class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
   int _currentIndex = 0;
 
   final _pages = <Widget>[
@@ -132,10 +142,42 @@ class _AppShellState extends State<_AppShell> {
     const SettingsPage(),
   ];
 
+  final _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      windowManager.show();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Row(
+      body: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.keyS, control: true): () => setState(() => _currentIndex = 0),
+          const SingleActivator(LogicalKeyboardKey.keyL, control: true): () => setState(() => _currentIndex = 1),
+          const SingleActivator(LogicalKeyboardKey.keyP, control: true): () => setState(() => _currentIndex = 2),
+          const SingleActivator(LogicalKeyboardKey.keyQ, control: true): () => windowManager.close(),
+        },
+        child: Focus(
+          focusNode: _focusNode,
+          autofocus: true,
+          child: Row(
         children: [
           NavigationRail(
             selectedIndex: _currentIndex,
@@ -160,6 +202,9 @@ class _AppShellState extends State<_AppShell> {
           Expanded(child: _pages[_currentIndex]),
         ],
       ),
-    );
-  }
+    ),
+  ),
+);
 }
+}
+

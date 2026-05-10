@@ -3,6 +3,7 @@ import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:logging/logging.dart';
 import '../../core/models/paper.dart';
 import '../../main.dart';
+import '../widgets/explain_dialog.dart';
 
 final _log = Logger('ReadPage');
 
@@ -130,12 +131,15 @@ class _ReadPageState extends State<ReadPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: segments.map((seg) {
         if (seg is _LatexSegment) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Math.tex(
-              seg.latex,
-              textStyle: TextStyle(
-                fontSize: theme.textTheme.bodyMedium?.fontSize ?? 14,
+          return GestureDetector(
+            onTap: () => _explainFormula(seg.latex, _findContext(text, seg.latex)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Math.tex(
+                seg.latex,
+                textStyle: TextStyle(
+                  fontSize: theme.textTheme.bodyMedium?.fontSize ?? 14,
+                ),
               ),
             ),
           );
@@ -147,6 +151,21 @@ class _ReadPageState extends State<ReadPage> {
         );
       }).toList(),
     );
+  }
+
+  String _findContext(String fullText, String target) {
+    final index = fullText.indexOf(target);
+    if (index == -1) return '';
+    final start = (index - 200).clamp(0, fullText.length);
+    final end = (index + target.length + 200).clamp(0, fullText.length);
+    var context = fullText.substring(start, end);
+    if (start > 0) context = '...$context';
+    if (end < fullText.length) context = '$context...';
+    return context;
+  }
+
+  Future<void> _explainFormula(String latex, String sectionContext) async {
+    await ExplainDialog.showFormula(context, latex, sectionContext);
   }
 
   List<_Segment> _splitByLatex(String text) {

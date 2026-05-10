@@ -10,6 +10,7 @@ import '../api/mineru_api.dart';
 import '../models/paper.dart';
 import '../models/parse_result.dart';
 import '../models/search_result.dart';
+import '../utils/page_counter.dart';
 import 'cache_service.dart';
 import 'config_service.dart';
 import 'parse_service.dart';
@@ -42,11 +43,12 @@ class PaperService {
   Future<void> init() async {
     final cfg = _config.config;
     final apiKey = await _config.readLlmApiKey();
-    _llm = LLMProvider(
-      apiBase: cfg.llmApiBase,
+    _llm = LLMProvider(config: LLMConfig(
+      type: LLMProviderType.deepseek,
       apiKey: apiKey ?? '',
+      apiBase: cfg.llmApiBase,
       model: cfg.llmModel,
-    );
+    ));
     final mineruApi = MineruApi(
       baseUrl: cfg.mineruApiEndpoint.isNotEmpty
           ? cfg.mineruApiEndpoint
@@ -90,8 +92,8 @@ class PaperService {
     _cache.savePdf(paperId, pdfFile);
 
     try {
-      final pageCount = 0; // placeholder - syncfusion at UI layer
-      final result = await _parse.parsePdf(pdfFile, pageCount > 0 ? pageCount : 50);
+      final pageCount = await PageCounter.getPageCount(pdfFile.path);
+      final result = await _parse.parsePdf(pdfFile, pageCount);
 
       await _cache.saveMarkdown(paperId, result.markdown);
 
