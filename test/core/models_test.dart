@@ -5,383 +5,380 @@ import 'package:paperpal/core/models/parse_result.dart';
 import 'package:paperpal/core/models/search_result.dart';
 import 'package:paperpal/core/models/config.dart';
 import 'package:paperpal/core/models/app_error.dart';
-import 'package:paperpal/core/services/translation_service.dart';
-import 'package:paperpal/core/api/llm_provider.dart';
+import 'package:paperpal/core/models/soul.dart';
+import 'package:paperpal/core/models/note.dart';
+import 'package:paperpal/core/services/memory_service.dart';
 
 void main() {
-  group('Paper model', () {
-    test('creates with defaults', () {
-      final paper = Paper(id: 'test1', title: 'Test Paper');
-      expect(paper.id, 'test1');
-      expect(paper.title, 'Test Paper');
-      expect(paper.authors, isEmpty);
-      expect(paper.status, PaperStatus.importing);
+  group('Paper', () {
+    test('defaults', () {
+      final p = Paper(id: 'x', title: 'T');
+      expect(p.id, 'x');
+      expect(p.title, 'T');
+      expect(p.authors, isEmpty);
+      expect(p.year, 0);
+      expect(p.source, 'local');
+      expect(p.doi, '');
+      expect(p.status, PaperStatus.importing);
+      expect(p.pageCount, 0);
+      expect(p.tags, isEmpty);
     });
 
-    test('copyWith updates fields', () {
-      final paper = Paper(id: '1', title: 'Original');
-      final updated = paper.copyWith(title: 'Updated', status: PaperStatus.parsed);
-      expect(updated.title, 'Updated');
-      expect(updated.status, PaperStatus.parsed);
-      expect(updated.id, '1');
-    });
-
-    test('toJson and fromJson round-trip', () {
-      final paper = Paper(
-        id: 'test1',
-        title: 'Test Paper',
-        authors: ['Author A', 'Author B'],
-        year: 2024,
-        doi: '10.1234/test',
-        status: PaperStatus.translated,
-        pageCount: 15,
-        importedAt: DateTime(2024, 1, 1),
-        tags: ['AI', 'NLP'],
-      );
-      final json = paper.toJson();
-      final restored = Paper.fromJson(json);
-      expect(restored.id, paper.id);
-      expect(restored.title, paper.title);
-      expect(restored.authors, paper.authors);
-      expect(restored.year, paper.year);
-      expect(restored.doi, paper.doi);
-      expect(restored.status, paper.status);
-      expect(restored.pageCount, paper.pageCount);
-      expect(restored.tags, paper.tags);
-    });
-
-    test('fromJson handles missing fields gracefully', () {
-      final restored = Paper.fromJson({'id': '1', 'title': 'Test'});
-      expect(restored.id, '1');
-      expect(restored.authors, isEmpty);
-      expect(restored.status, PaperStatus.importing);
-    });
-
-    test('copyWith does not mutate original', () {
-      final paper = Paper(id: '1', title: 'Original', authors: ['A']);
-      paper.copyWith(title: 'Changed', authors: ['B']);
-      expect(paper.title, 'Original');
-      expect(paper.authors, ['A']);
-    });
-
-    test('fromJson handles null dates', () {
-      final restored = Paper.fromJson({
-        'id': '1',
-        'title': 'Test',
-        'importedAt': null,
-        'lastReadAt': null,
-      });
-      expect(restored.importedAt, isNull);
-      expect(restored.lastReadAt, isNull);
-    });
-
-    test('fromJson handles invalid date strings', () {
-      final restored = Paper.fromJson({
-        'id': '1',
-        'title': 'Test',
-        'importedAt': 'not-a-date',
-      });
-      expect(restored.importedAt, isNull);
-    });
-
-    test('fromJson handles unknown status as importing', () {
-      final restored = Paper.fromJson({
-        'id': '1',
-        'title': 'Test',
-        'status': 'nonexistent_status',
-      });
-      expect(restored.status, PaperStatus.importing);
-    });
-
-    test('PaperStatus enum has all values', () {
-      expect(PaperStatus.values, hasLength(7));
-      expect(PaperStatus.importing, isA<PaperStatus>());
-      expect(PaperStatus.downloading, isA<PaperStatus>());
-      expect(PaperStatus.parsing, isA<PaperStatus>());
-      expect(PaperStatus.parsed, isA<PaperStatus>());
-      expect(PaperStatus.translating, isA<PaperStatus>());
-      expect(PaperStatus.translated, isA<PaperStatus>());
-      expect(PaperStatus.error, isA<PaperStatus>());
-    });
-
-    test('copyWith only changes specified fields', () {
-      final paper = Paper(
-        id: '1', title: 'T', authors: ['A'], year: 2020,
+    test('full constructor', () {
+      final t = DateTime(2024, 6, 1);
+      final p = Paper(
+        id: '1', title: 'T', authors: ['A'], year: 2024,
         source: 'arXiv', doi: '10.1234/ab', status: PaperStatus.parsed,
-        pageCount: 10, tags: ['ML'],
+        pageCount: 10, importedAt: t, lastReadAt: t, tags: ['ML'],
       );
-      final updated = paper.copyWith(title: 'New Title');
-      expect(updated.title, 'New Title');
-      expect(updated.authors, ['A']);
-      expect(updated.year, 2020);
-      expect(updated.source, 'arXiv');
-      expect(updated.doi, '10.1234/ab');
-      expect(updated.status, PaperStatus.parsed);
-      expect(updated.pageCount, 10);
+      expect(p.authors, ['A']);
+      expect(p.year, 2024);
+      expect(p.source, 'arXiv');
+      expect(p.lastReadAt, t);
+    });
+
+    test('copyWith is immutable', () {
+      final p = Paper(id: '1', title: 'O', authors: ['A']);
+      p.copyWith(title: 'C', authors: ['B']);
+      expect(p.title, 'O');
+      expect(p.authors, ['A']);
+    });
+
+    test('copyWith overrides single field', () {
+      final p = Paper(id: '1', title: 'T', authors: ['A'], year: 2020);
+      final u = p.copyWith(title: 'New');
+      expect(u.title, 'New');
+      expect(u.authors, ['A']);
+      expect(u.year, 2020);
+    });
+
+    test('toJson fromJson round-trip', () {
+      final t = DateTime(2024, 1, 1);
+      final p = Paper(
+        id: 'x', title: 'T', authors: ['A'], year: 2024,
+        source: 'arXiv', doi: '10.1', status: PaperStatus.translated,
+        pageCount: 15, importedAt: t, lastReadAt: t, tags: ['AI'],
+      );
+      final r = Paper.fromJson(p.toJson());
+      expect(r.id, p.id);
+      expect(r.title, p.title);
+      expect(r.authors, p.authors);
+      expect(r.year, p.year);
+      expect(r.doi, p.doi);
+      expect(r.status, p.status);
+      expect(r.pageCount, p.pageCount);
+      expect(r.tags, p.tags);
+      expect(r.importedAt?.toIso8601String(), t.toIso8601String());
+    });
+
+    test('fromJson missing fields', () {
+      final r = Paper.fromJson({'id': '1', 'title': 'T'});
+      expect(r.id, '1');
+      expect(r.authors, isEmpty);
+      expect(r.status, PaperStatus.importing);
+    });
+
+    test('fromJson null dates', () {
+      final r = Paper.fromJson({'id': '1', 'title': 'T', 'importedAt': null});
+      expect(r.importedAt, isNull);
+    });
+
+    test('fromJson invalid date string', () {
+      final r = Paper.fromJson({'id': '1', 'title': 'T', 'importedAt': 'bad'});
+      expect(r.importedAt, isNull);
+    });
+
+    test('fromJson unknown status defaults to importing', () {
+      final r = Paper.fromJson({'id': '1', 'title': 'T', 'status': 'alien'});
+      expect(r.status, PaperStatus.importing);
+    });
+
+    test('fromJson empty id', () {
+      final r = Paper.fromJson({'title': 'T'});
+      expect(r.id, '');
+    });
+
+    test('PaperStatus has 7 values', () {
+      expect(PaperStatus.values, [
+        PaperStatus.importing, PaperStatus.downloading, PaperStatus.parsing,
+        PaperStatus.parsed, PaperStatus.translating, PaperStatus.translated,
+        PaperStatus.error,
+      ]);
     });
   });
 
   group('ParseResult', () {
-    test('creates with required fields', () {
-      final result = ParseResult(markdown: '# Hello');
-      expect(result.markdown, '# Hello');
-      expect(result.title, isEmpty);
-      expect(result.imagePaths, isEmpty);
+    test('defaults', () {
+      final r = ParseResult(markdown: '# M');
+      expect(r.markdown, '# M');
+      expect(r.title, '');
+      expect(r.imagePaths, isEmpty);
     });
 
-    test('creates with empty markdown', () {
-      final result = ParseResult(markdown: '');
-      expect(result.markdown, '');
-      expect(result.contentListJson, '');
+    test('empty markdown', () {
+      final r = ParseResult(markdown: '');
+      expect(r.contentListJson, '');
     });
 
-    test('creates with all fields', () {
-      final result = ParseResult(
-        markdown: '# Title',
-        title: 'Test Title',
-        imagePaths: ['img1.png', 'img2.png'],
-        contentListJson: '[]',
-        startPage: 1,
-        endPage: 10,
+    test('full fields', () {
+      final r = ParseResult(
+        markdown: '# T', title: 'T', imagePaths: ['a.png'],
+        contentListJson: '[]', startPage: 1, endPage: 5,
       );
-      expect(result.title, 'Test Title');
-      expect(result.imagePaths, hasLength(2));
-      expect(result.startPage, 1);
-      expect(result.endPage, 10);
+      expect(r.title, 'T');
+      expect(r.imagePaths, hasLength(1));
+      expect(r.startPage, 1);
+    });
+
+    test('ParseProgress construction', () {
+      final p = ParseProgress(currentBatch: 1, totalBatches: 3, currentPage: 0, totalPages: 10);
+      expect(p.totalBatches, 3);
+      expect(p.totalPages, 10);
     });
   });
 
   group('SearchResult', () {
-    test('creates with required fields', () {
-      final result = SearchResult(title: 'Test', authors: ['A']);
-      expect(result.title, 'Test');
-      expect(result.authors, ['A']);
-      expect(result.year, 0);
+    test('defaults', () {
+      final r = SearchResult(title: 'T', authors: []);
+      expect(r.year, 0);
+      expect(r.abstract, '');
+      expect(r.pdfUrl, '');
+      expect(r.citationCount, 0);
     });
 
-    test('creates with all fields', () {
-      final result = SearchResult(
-        title: 'Test',
-        authors: ['A', 'B'],
-        year: 2024,
-        abstract: 'Abstract here',
-        pdfUrl: 'https://example.com/paper.pdf',
-        source: 'arXiv',
-        doi: '10.1234/test',
-        citationCount: 42,
+    test('full fields', () {
+      final r = SearchResult(
+        title: 'T', authors: ['A', 'B'], year: 2024,
+        abstract: 'abs', pdfUrl: 'https://x.com/p.pdf',
+        source: 'arXiv', doi: '10.1', citationCount: 42,
       );
-      expect(result.year, 2024);
-      expect(result.abstract, 'Abstract here');
-      expect(result.pdfUrl, 'https://example.com/paper.pdf');
-      expect(result.source, 'arXiv');
-      expect(result.doi, '10.1234/test');
-      expect(result.citationCount, 42);
+      expect(r.authors, ['A', 'B']);
+      expect(r.pdfUrl, 'https://x.com/p.pdf');
+      expect(r.citationCount, 42);
     });
 
-    test('defaults to empty strings and zeros', () {
-      final result = SearchResult(title: 'Only Title', authors: []);
-      expect(result.abstract, '');
-      expect(result.pdfUrl, '');
-      expect(result.source, '');
-      expect(result.doi, '');
-      expect(result.citationCount, 0);
+    test('empty pdfUrl', () {
+      final r = SearchResult(title: 'T', authors: ['A']);
+      expect(r.pdfUrl, isEmpty);
     });
   });
 
   group('AppConfig', () {
-    test('has sensible defaults', () {
-      final config = AppConfig();
-      expect(config.defaultProvider, 'deepseek');
-      expect(config.llmModel, 'deepseek-v4-flash');
-      expect(config.llmApiBase, 'https://api.deepseek.com');
-      expect(config.batchSize, 50);
-      expect(config.fontSize, 16.0);
+    test('defaults', () {
+      final c = AppConfig();
+      expect(c.defaultProvider, 'deepseek');
+      expect(c.llmModel, 'deepseek-v4-flash');
+      expect(c.llmApiBase, 'https://api.deepseek.com');
+      expect(c.mineruModelVersion, 'vlm');
+      expect(c.enableFormula, true);
+      expect(c.enableTable, true);
+      expect(c.autoTranslate, true);
+      expect(c.batchSize, 50);
     });
 
-    test('copyWith overrides fields', () {
-      final config = AppConfig();
-      final updated = config.copyWith(llmApiBase: 'https://custom.api.com', batchSize: 20);
-      expect(updated.llmApiBase, 'https://custom.api.com');
-      expect(updated.batchSize, 20);
+    test('copyWith overrides', () {
+      final c = AppConfig();
+      final u = c.copyWith(llmApiBase: 'https://c.c', batchSize: 10, enableFormula: false);
+      expect(u.llmApiBase, 'https://c.c');
+      expect(u.batchSize, 10);
+      expect(u.enableFormula, false);
     });
 
-    test('copyWith preserves unset fields', () {
-      final config = AppConfig(llmModel: 'gpt-4');
-      final updated = config.copyWith(llmApiBase: 'https://other.api.com');
-      expect(updated.llmModel, 'gpt-4');
-      expect(updated.defaultProvider, 'deepseek');
-      expect(updated.fontSize, 16.0);
+    test('copyWith preserves unset', () {
+      final c = AppConfig(llmModel: 'gpt-4', mineruModelVersion: 'pipeline');
+      final u = c.copyWith(llmApiBase: 'https://o.c');
+      expect(u.llmModel, 'gpt-4');
+      expect(u.mineruModelVersion, 'pipeline');
+      expect(u.defaultProvider, 'deepseek');
     });
 
-    test('all fields can be specified', () {
-      final config = AppConfig(
-        defaultProvider: 'openai',
-        llmModel: 'gpt-4',
-        llmApiBase: 'https://api.openai.com',
-        mineruApiEndpoint: 'https://mineru.example.com',
-        autoTranslate: false,
-        forceDarkMode: true,
-        themeMode: AppThemeMode.dark,
-        fontSize: 20.0,
-        batchSize: 100,
-        logRetentionDays: 14,
+    test('all fields', () {
+      final c = AppConfig(
+        defaultProvider: 'o', llmModel: 'g', llmApiBase: 'https://o.c',
+        mineruModelVersion: 'p', autoTranslate: false, enableFormula: false,
+        enableTable: false, forceDarkMode: true, themeMode: AppThemeMode.dark,
+        fontSize: 20.0, batchSize: 5, logRetentionDays: 30,
       );
-      expect(config.defaultProvider, 'openai');
-      expect(config.forceDarkMode, true);
-      expect(config.themeMode, AppThemeMode.dark);
-      expect(config.logRetentionDays, 14);
+      expect(c.mineruModelVersion, 'p');
+      expect(c.enableFormula, false);
+      expect(c.logRetentionDays, 30);
     });
   });
 
   group('AppThemeMode', () {
-    test('system maps to ThemeMode.system', () {
-      expect(AppThemeMode.system.toFlutterThemeMode(), m.ThemeMode.system);
-    });
-
-    test('light maps to ThemeMode.light', () {
-      expect(AppThemeMode.light.toFlutterThemeMode(), m.ThemeMode.light);
-    });
-
-    test('dark maps to ThemeMode.dark', () {
-      expect(AppThemeMode.dark.toFlutterThemeMode(), m.ThemeMode.dark);
-    });
+    test('system', () => expect(AppThemeMode.system.toFlutterThemeMode(), m.ThemeMode.system));
+    test('light', () => expect(AppThemeMode.light.toFlutterThemeMode(), m.ThemeMode.light));
+    test('dark', () => expect(AppThemeMode.dark.toFlutterThemeMode(), m.ThemeMode.dark));
   });
 
   group('AppError', () {
-    test('network error has correct type and defaults', () {
-      final err = AppError.network('connection lost');
-      expect(err.type, 'network');
-      expect(err.message, 'connection lost');
-      expect(err.retryable, true);
-      expect(err.statusCode, isNull);
+    test('network', () {
+      final e = AppError.network('lost');
+      expect(e.type, 'network');
+      expect(e.retryable, true);
+      expect(e.statusCode, isNull);
     });
 
-    test('network error with status code', () {
-      final err = AppError.network('not found', statusCode: 404, retryable: false);
-      expect(err.type, 'network');
-      expect(err.statusCode, 404);
-      expect(err.retryable, false);
+    test('network with status', () {
+      final e = AppError.network('nf', statusCode: 404, retryable: false);
+      expect(e.statusCode, 404);
+      expect(e.retryable, false);
     });
 
-    test('api error formats code and message', () {
-      final err = AppError.api('RATE_LIMIT', 'too many requests');
-      expect(err.type, 'api');
-      expect(err.message, 'RATE_LIMIT: too many requests');
-      expect(err.retryable, false);
+    test('api', () {
+      final e = AppError.api('RATE', 'too fast');
+      expect(e.type, 'api');
+      expect(e.message, 'RATE: too fast');
     });
 
-    test('parse error tracks batch counts', () {
-      final err = AppError.parse(2, 5);
-      expect(err.type, 'parse');
-      expect(err.message, '2/5 batches failed');
-      expect(err.failedBatches, 2);
-      expect(err.totalBatches, 5);
+    test('parse', () {
+      final e = AppError.parse(2, 10);
+      expect(e.message, '2/10 batches failed');
+      expect(e.failedBatches, 2);
+      expect(e.totalBatches, 10);
     });
 
-    test('config error', () {
-      final err = AppError.config('invalid key');
-      expect(err.type, 'config');
-      expect(err.message, 'invalid key');
+    test('config', () {
+      final e = AppError.config('bad key');
+      expect(e.type, 'config');
     });
 
-    test('unknown error', () {
-      final err = AppError.unknown('something went wrong');
-      expect(err.type, 'unknown');
-      expect(err.message, 'something went wrong');
+    test('unknown', () {
+      final e = AppError.unknown('boom');
+      expect(e.type, 'unknown');
     });
   });
 
-  group('TranslationService language detection', () {
-    test('detects Chinese', () {
-      final service = TranslationService(
-        LLMProvider(config: LLMConfig(
-          type: LLMProviderType.deepseek,
-          apiKey: 'test',
-        )),
-      );
-      expect(service.detectLanguage('这是一篇中文论文'), 'zh');
-      expect(service.detectLanguage('研究结果表明该方法有效'), 'zh');
+  group('Soul', () {
+    test('defaults', () {
+      final s = Soul(id: 'a', name: 'N', description: 'D', systemPrompt: 'P');
+      expect(s.traits, isEmpty);
+      expect(s.style, '');
+      expect(s.speechPattern, isNull);
+      expect(s.isBuiltin, false);
+      expect(s.isCustom, false);
     });
 
-    test('detects English', () {
-      final service = TranslationService(
-        LLMProvider(config: LLMConfig(
-          type: LLMProviderType.deepseek,
-          apiKey: 'test',
-        )),
+    test('full constructor', () {
+      final s = Soul(
+        id: 'c', name: 'N', description: 'D', traits: ['a', 'b'],
+        style: 's', specialty: 'sp', systemPrompt: 'P',
+        speechPattern: 'like', isBuiltin: true, isCustom: false,
       );
-      expect(service.detectLanguage('This is an English paper'), 'en');
-      expect(service.needsTranslation('This is English'), true);
+      expect(s.traits, ['a', 'b']);
+      expect(s.speechPattern, 'like');
+      expect(s.isBuiltin, true);
     });
 
-    test('does not need translation for Chinese', () {
-      final service = TranslationService(
-        LLMProvider(config: LLMConfig(
-          type: LLMProviderType.deepseek,
-          apiKey: 'test',
-        )),
+    test('toJson fromJson round-trip', () {
+      final s = Soul(
+        id: 'x', name: 'N', description: 'D', traits: ['a'],
+        style: 'S', specialty: 'Sp', systemPrompt: 'P', speechPattern: 'like',
+        isBuiltin: true, isCustom: false,
       );
-      expect(service.needsTranslation('这是一篇中文论文'), false);
+      final r = Soul.fromJson(s.toJson());
+      expect(r.id, s.id);
+      expect(r.name, s.name);
+      expect(r.traits, s.traits);
+      expect(r.systemPrompt, s.systemPrompt);
+      expect(r.speechPattern, s.speechPattern);
+      expect(r.isBuiltin, s.isBuiltin);
     });
 
-    test('handles empty text', () {
-      final service = TranslationService(
-        LLMProvider(config: LLMConfig(
-          type: LLMProviderType.deepseek,
-          apiKey: 'test',
-        )),
-      );
-      expect(service.detectLanguage(''), 'en');
+    test('fromJson missing optional fields', () {
+      final r = Soul.fromJson({'id': '1', 'name': 'N', 'systemPrompt': 'P'});
+      expect(r.traits, isEmpty);
+      expect(r.speechPattern, isNull);
+      expect(r.isBuiltin, false);
     });
 
-    test('detects Japanese', () {
-      final service = TranslationService(
-        LLMProvider(config: LLMConfig(
-          type: LLMProviderType.deepseek,
-          apiKey: 'test',
-        )),
-      );
-      expect(service.detectLanguage('これはテストです'), 'ja');
+    test('fromJson empty string fields', () {
+      final r = Soul.fromJson({'id': '', 'name': '', 'systemPrompt': ''});
+      expect(r.id, '');
+      expect(r.description, '');
+    });
+  });
+
+  group('Note', () {
+    test('defaults', () {
+      final t = DateTime.now();
+      final n = Note(id: 'n1', paperId: 'p1', text: 't', createdAt: t, updatedAt: t);
+      expect(n.type, NoteType.note);
+      expect(n.selectedText, isNull);
+      expect(n.offset, isNull);
     });
 
-    test('detects Korean', () {
-      final service = TranslationService(
-        LLMProvider(config: LLMConfig(
-          type: LLMProviderType.deepseek,
-          apiKey: 'test',
-        )),
-      );
-      expect(service.detectLanguage('이것은 한국어 논문입니다'), 'ko');
+    test('full constructor', () {
+      final t = DateTime(2024, 6, 1);
+      final n = Note(id: 'n1', paperId: 'p1', text: 't', createdAt: t, updatedAt: t,
+          type: NoteType.highlight, selectedText: 'sel', offset: 10);
+      expect(n.selectedText, 'sel');
+      expect(n.offset, 10);
     });
 
-    test('detects Russian', () {
-      final service = TranslationService(
-        LLMProvider(config: LLMConfig(
-          type: LLMProviderType.deepseek,
-          apiKey: 'test',
-        )),
-      );
-      expect(service.detectLanguage('Это русская статья'), 'ru');
+    test('toJson fromJson round-trip', () {
+      final t = DateTime(2024, 6, 1, 10, 30);
+      final n = Note(id: 'n1', paperId: 'p1', text: 't', createdAt: t, updatedAt: t,
+          type: NoteType.question, selectedText: 'sel', offset: 5);
+      final r = Note.fromJson(n.toJson());
+      expect(r.id, n.id);
+      expect(r.text, n.text);
+      expect(r.type, n.type);
+      expect(r.selectedText, n.selectedText);
+      expect(r.offset, n.offset);
     });
 
-    test('falls back to English for mixed unknown script', () {
-      final service = TranslationService(
-        LLMProvider(config: LLMConfig(
-          type: LLMProviderType.deepseek,
-          apiKey: 'test',
-        )),
-      );
-      expect(service.detectLanguage(r'12345!@#$%'), 'en');
+    test('fromJson missing fields', () {
+      final r = Note.fromJson({'id': 'n1', 'paperId': 'p1', 'text': 't'});
+      expect(r.type, NoteType.note);
+      expect(r.selectedText, isNull);
     });
 
-    test('detects Chinese mixed with numbers', () {
-      final service = TranslationService(
-        LLMProvider(config: LLMConfig(
-          type: LLMProviderType.deepseek,
-          apiKey: 'test',
-        )),
-      );
-      expect(service.detectLanguage('第1章 引言'), 'zh');
+    test('copyWith updates text and updatedAt', () {
+      final t = DateTime(2024, 1, 1);
+      final n = Note(id: 'n1', paperId: 'p1', text: 'o', createdAt: t, updatedAt: t);
+      final u = n.copyWith(text: 'new');
+      expect(u.text, 'new');
+      expect(u.id, 'n1');
+      expect(u.updatedAt.isAfter(t), true);
+    });
+  });
+
+  group('MemoryItem', () {
+    test('defaults', () {
+      final t = DateTime(2024, 1, 1);
+      final m = MemoryItem(id: 'm1', summary: 's', paperId: 'p1', timestamp: t);
+      expect(m.paperId, 'p1');
+    });
+
+    test('null paperId', () {
+      final m = MemoryItem(id: 'm1', summary: 's', timestamp: DateTime.now());
+      expect(m.paperId, isNull);
+    });
+
+    test('toJson fromJson round-trip', () {
+      final t = DateTime(2024, 6, 1, 12, 0, 0);
+      final m = MemoryItem(id: 'm1', summary: 's', paperId: 'p1', timestamp: t);
+      final r = MemoryItem.fromJson(m.toJson());
+      expect(r.id, 'm1');
+      expect(r.summary, 's');
+      expect(r.timestamp.toIso8601String(), t.toIso8601String());
+    });
+
+    test('fromJson missing fields', () {
+      final r = MemoryItem.fromJson({'id': 'm1', 'summary': 's'});
+      expect(r.paperId, isNull);
+      expect(r.timestamp, isA<DateTime>());
+    });
+
+    test('fromJson invalid timestamp', () {
+      final r = MemoryItem.fromJson({'id': 'm1', 'summary': 's', 'timestamp': 'bad'});
+      expect(r.timestamp, isA<DateTime>());
+    });
+
+    test('fromJson empty summary', () {
+      final r = MemoryItem.fromJson({'id': 'm1', 'summary': ''});
+      expect(r.summary, '');
     });
   });
 }

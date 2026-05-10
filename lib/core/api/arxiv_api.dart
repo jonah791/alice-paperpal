@@ -28,7 +28,7 @@ class ArxivApi {
       );
 
       final xml = response.data as String;
-      final results = _parseXml(xml);
+      final results = parseXml(xml);
       _log.info('search: "$query" → ${results.length} results from arXiv');
       return results;
     } on DioException catch (e) {
@@ -37,7 +37,7 @@ class ArxivApi {
     }
   }
 
-  List<SearchResult> _parseXml(String xml) {
+  List<SearchResult> parseXml(String xml) {
     final results = <SearchResult>[];
     final entries = xml.split('<entry>');
     if (entries.length <= 1) return results;
@@ -45,12 +45,12 @@ class ArxivApi {
     for (var i = 1; i < entries.length; i++) {
       final entry = entries[i];
       try {
-        final title = _extractTag(entry, 'title').replaceAll('\n  ', '').trim();
-        final summary = _extractTag(entry, 'summary').replaceAll('\n', ' ').trim();
-        final published = _extractTag(entry, 'published');
-        final pdfLink = _extractPdfLink(entry);
-        final doi = _extractDoi(entry);
-        final authors = _extractAuthors(entry);
+        final title = extractTag(entry, 'title').replaceAll('\n  ', '').trim();
+        final summary = extractTag(entry, 'summary').replaceAll('\n', ' ').trim();
+        final published = extractTag(entry, 'published');
+        final pdfLink = extractPdfLink(entry);
+        final doi = extractDoi(entry);
+        final authors = extractAuthors(entry);
 
         final year = published.isNotEmpty
             ? int.tryParse(published.substring(0, 4)) ?? 0
@@ -74,7 +74,7 @@ class ArxivApi {
     return results;
   }
 
-  String _extractTag(String xml, String tag) {
+  String extractTag(String xml, String tag) {
     final start = xml.indexOf('<$tag>');
     if (start == -1) return '';
     final end = xml.indexOf('</$tag>', start);
@@ -82,19 +82,19 @@ class ArxivApi {
     return xml.substring(start + tag.length + 2, end);
   }
 
-  String _extractPdfLink(String xml) {
+  String extractPdfLink(String xml) {
     final pattern = RegExp(r'<link[^>]*title="pdf"[^>]*href="([^"]+)"');
     final match = pattern.firstMatch(xml);
     return match?.group(1) ?? '';
   }
 
-  String _extractDoi(String xml) {
+  String extractDoi(String xml) {
     final pattern = RegExp(r'<arxiv:doi[^>]*>([^<]+)</arxiv:doi>');
     final match = pattern.firstMatch(xml);
     return match?.group(1) ?? '';
   }
 
-  List<String> _extractAuthors(String xml) {
+  List<String> extractAuthors(String xml) {
     final authors = <String>[];
     final namePattern = RegExp(r'<name>([^<]+)</name>');
     final matches = namePattern.allMatches(xml);

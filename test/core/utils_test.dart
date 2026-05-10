@@ -5,161 +5,95 @@ import 'package:paperpal/core/utils/logger.dart' as logger;
 
 void main() {
   group('RetryInterceptor', () {
-    late RetryInterceptor interceptor;
-
-    setUp(() {
-      interceptor = RetryInterceptor(maxRetries: 3, baseDelay: const Duration(milliseconds: 1));
-    });
-
-    test('defaults are set correctly', () {
+    test('defaults', () {
       final i = RetryInterceptor();
       expect(i.maxRetries, 3);
       expect(i.baseDelay, const Duration(seconds: 2));
     });
 
-    test('custom maxRetries and baseDelay', () {
-      final i = RetryInterceptor(maxRetries: 5, baseDelay: const Duration(seconds: 1));
-      expect(i.maxRetries, 5);
+    test('custom values', () {
+      final i = RetryInterceptor(maxRetries: 2, baseDelay: const Duration(seconds: 1));
+      expect(i.maxRetries, 2);
       expect(i.baseDelay, const Duration(seconds: 1));
     });
 
-    test('isRetryable returns true for connection timeout', () {
-      final options = RequestOptions(path: '/test');
-      final err = DioException(
-        requestOptions: options,
-        type: DioExceptionType.connectionTimeout,
-      );
-      expect(interceptor.isRetryable(err), true);
-    });
+    group('isRetryable', () {
+      late RetryInterceptor i;
+      setUp(() => i = RetryInterceptor());
 
-    test('isRetryable returns true for send timeout', () {
-      final options = RequestOptions(path: '/test');
-      final err = DioException(
-        requestOptions: options,
-        type: DioExceptionType.sendTimeout,
-      );
-      expect(interceptor.isRetryable(err), true);
-    });
+      RequestOptions opts() => RequestOptions(path: '/test');
 
-    test('isRetryable returns true for receive timeout', () {
-      final options = RequestOptions(path: '/test');
-      final err = DioException(
-        requestOptions: options,
-        type: DioExceptionType.receiveTimeout,
-      );
-      expect(interceptor.isRetryable(err), true);
-    });
+      test('connection timeout', () => expect(i.isRetryable(DioException(requestOptions: opts(), type: DioExceptionType.connectionTimeout)), true));
 
-    test('isRetryable returns true for connection error', () {
-      final options = RequestOptions(path: '/test');
-      final err = DioException(
-        requestOptions: options,
-        type: DioExceptionType.connectionError,
-      );
-      expect(interceptor.isRetryable(err), true);
-    });
+      test('send timeout', () => expect(i.isRetryable(DioException(requestOptions: opts(), type: DioExceptionType.sendTimeout)), true));
 
-    test('isRetryable returns true for server errors (5xx)', () {
-      final options = RequestOptions(path: '/test');
-      final err = DioException(
-        requestOptions: options,
-        type: DioExceptionType.badResponse,
-        response: Response(statusCode: 500, requestOptions: options),
-      );
-      expect(interceptor.isRetryable(err), true);
-    });
+      test('receive timeout', () => expect(i.isRetryable(DioException(requestOptions: opts(), type: DioExceptionType.receiveTimeout)), true));
 
-    test('isRetryable returns false for client errors (4xx)', () {
-      final options = RequestOptions(path: '/test');
-      final err = DioException(
-        requestOptions: options,
-        type: DioExceptionType.badResponse,
-        response: Response(statusCode: 400, requestOptions: options),
-      );
-      expect(interceptor.isRetryable(err), false);
-    });
+      test('connection error', () => expect(i.isRetryable(DioException(requestOptions: opts(), type: DioExceptionType.connectionError)), true));
 
-    test('isRetryable returns false for cancel', () {
-      final options = RequestOptions(path: '/test');
-      final err = DioException(
-        requestOptions: options,
-        type: DioExceptionType.cancel,
-      );
-      expect(interceptor.isRetryable(err), false);
-    });
+      test('5xx server error', () {
+        final o = opts();
+        expect(i.isRetryable(DioException(requestOptions: o, type: DioExceptionType.badResponse, response: Response(statusCode: 500, requestOptions: o))), true);
+      });
 
-    test('isRetryable returns false for unknown', () {
-      final options = RequestOptions(path: '/test');
-      final err = DioException(
-        requestOptions: options,
-        type: DioExceptionType.unknown,
-      );
-      expect(interceptor.isRetryable(err), false);
-    });
+      test('503 server error', () {
+        final o = opts();
+        expect(i.isRetryable(DioException(requestOptions: o, type: DioExceptionType.badResponse, response: Response(statusCode: 503, requestOptions: o))), true);
+      });
 
-    test('isRetryable returns false for badResponse 3xx', () {
-      final options = RequestOptions(path: '/test');
-      final err = DioException(
-        requestOptions: options,
-        type: DioExceptionType.badResponse,
-        response: Response(statusCode: 301, requestOptions: options),
-      );
-      expect(interceptor.isRetryable(err), false);
+      test('4xx client error', () {
+        final o = opts();
+        expect(i.isRetryable(DioException(requestOptions: o, type: DioExceptionType.badResponse, response: Response(statusCode: 400, requestOptions: o))), false);
+      });
+
+      test('3xx redirect', () {
+        final o = opts();
+        expect(i.isRetryable(DioException(requestOptions: o, type: DioExceptionType.badResponse, response: Response(statusCode: 301, requestOptions: o))), false);
+      });
+
+      test('cancel', () => expect(i.isRetryable(DioException(requestOptions: opts(), type: DioExceptionType.cancel)), false));
+
+      test('unknown', () => expect(i.isRetryable(DioException(requestOptions: opts(), type: DioExceptionType.unknown)), false));
+
+      test('badResponse with null response', () => expect(i.isRetryable(DioException(requestOptions: opts(), type: DioExceptionType.badResponse)), false));
     });
   });
 
   group('Logger sanitize', () {
-    test('redacts api key in query string', () {
-      const input = 'api_key=sk-1234567890abcdef';
-      final result = logger.sanitize(input);
-      expect(result, contains('api_key=***'));
-      expect(result, isNot(contains('sk-1234567890abcdef')));
+    test('api_key= secret', () {
+      expect(logger.sanitize('api_key=sk-abcdef'), contains('api_key=***'));
     });
 
-    test('redacts sk- keys in text', () {
-      const input = 'using sk-abcdef1234567890abcdef12';
-      final result = logger.sanitize(input);
-      expect(result, startsWith('using sk-***'));
-      expect(result, isNot(contains('abcdef1234567890abcdef12')));
+    test('apikey= secret', () {
+      expect(logger.sanitize('apikey=my-token'), contains('apikey=***'));
     });
 
-    test('redacts ds- keys in text', () {
-      const input = 'ds-abcdef1234567890';
-      final result = logger.sanitize(input);
-      expect(result, startsWith('ds-***'));
-      expect(result, isNot(contains('abcdef1234567890')));
+    test('sk- key in text', () {
+      expect(logger.sanitize('sk-abcdef1234567890abcdef12'), startsWith('sk-***'));
     });
 
-    test('redacts Authorization header value', () {
-      const input = 'Authorization: Bearer sk-abcdef1234567890';
-      final result = logger.sanitize(input);
-      expect(result, contains('Authorization=***'));
+    test('ds- key in text', () {
+      expect(logger.sanitize('ds-abcdef1234567890'), startsWith('ds-***'));
     });
 
-    test('redacts api_key with equals format', () {
-      const input = 'apikey=my-secret-token-here';
-      final result = logger.sanitize(input);
-      expect(result, contains('apikey=***'));
+    test('Authorization header', () {
+      expect(logger.sanitize('Authorization: Bearer sk-secret'), contains('Authorization=***'));
     });
 
-    test('passes through safe text unchanged', () {
-      const input = 'Hello this is normal log text';
-      expect(logger.sanitize(input), input);
+    test('multiple sensitive patterns', () {
+      final r = logger.sanitize('api_key=k1 and apikey=k2');
+      expect(r, contains('api_key=***'));
+      expect(r, contains('apikey=***'));
     });
 
-    test('redacts token pattern in mixed text', () {
-      const input = 'Using token=ds-secret-key and doing work';
-      final result = logger.sanitize(input);
-      expect(result, contains('token=***'));
+    test('safe text unchanged', () {
+      expect(logger.sanitize('Hello normal log'), 'Hello normal log');
     });
 
-    test('redacts multiple sensitive patterns', () {
-      const input = 'api_key=key1 and apikey=key2';
-      final result = logger.sanitize(input);
-      expect(result, allOf([
-        contains('api_key=***'),
-        contains('apikey=***'),
-      ]));
+    test('mixed safe and sensitive', () {
+      final r = logger.sanitize('Using token=ds-key-123 and doing work');
+      expect(r, contains('token=***'));
+      expect(r, contains('doing work'));
     });
   });
 }

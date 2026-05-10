@@ -164,7 +164,7 @@ class MineruApi {
         throw Exception('MinerU poll failed: ${data['msg']}');
       }
       final result = data['data'] as Map<String, dynamic>;
-      final state = _parseState(result['state'] as String? ?? '');
+      final state = parseState(result['state'] as String? ?? '');
       final task = MineruTask(
         id: taskId,
         state: state,
@@ -197,7 +197,7 @@ class MineruApi {
         continue;
       }
       final r = results.first as Map<String, dynamic>;
-      final state = _parseState(r['state'] as String? ?? '');
+      final state = parseState(r['state'] as String? ?? '');
       final task = MineruTask(
         id: batchId,
         state: state,
@@ -212,7 +212,7 @@ class MineruApi {
     throw TimeoutException('MinerU batch poll timed out after ${timeout.inSeconds}s');
   }
 
-  MineruTaskState _parseState(String s) {
+  MineruTaskState parseState(String s) {
     return switch (s) {
       'done' => MineruTaskState.done,
       'failed' => MineruTaskState.failed,

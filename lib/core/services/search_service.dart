@@ -52,6 +52,9 @@ class SearchService {
       final dio = Dio(BaseOptions(
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 120),
+        headers: {
+          'User-Agent': 'PaperPal/0.1.1 (Academic Paper Reader; mailto:paperpal@alice.app)',
+        },
       ));
 
       final safeName = result.title
@@ -67,6 +70,18 @@ class SearchService {
         savePath,
         onReceiveProgress: onProgress,
       );
+
+      // Verify it looks like a real PDF, not an HTML error page
+      final file = File(savePath);
+      if (await file.exists()) {
+        final header = await file.readAsBytes();
+        if (header.length < 4 || header[0] != 0x25 || header[1] != 0x50 || header[2] != 0x44 || header[3] != 0x46) {
+          await file.delete();
+          _log.warning('downloadPdf: not a valid PDF: ${result.title}');
+          return null;
+        }
+      }
+
       _log.info('downloadPdf: ${result.title} → $savePath');
       return File(savePath);
     } catch (e) {
