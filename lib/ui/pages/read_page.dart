@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:logging/logging.dart';
 import '../../core/models/paper.dart';
+import '../../core/models/note.dart';
 import '../../core/services/export_service.dart';
+import '../../core/services/note_service.dart';
 import '../../main.dart';
 import '../widgets/explain_dialog.dart';
 
@@ -27,6 +29,9 @@ class _ReadPageState extends State<ReadPage> {
   final _qaMessages = <Map<String, String>>[];
   bool _qaLoading = false;
   double _fontSize = 14.0;
+  bool _showNotes = false;
+  final _noteController = TextEditingController();
+  List<Note> _notes = [];
 
   @override
   void initState() {
@@ -38,6 +43,7 @@ class _ReadPageState extends State<ReadPage> {
     final deps = Dependencies.of(context);
     final md = await deps.paperService.getMarkdown(widget.paper.id);
     final translation = await deps.paperService.getTranslation(widget.paper.id);
+    _notes = deps.noteService.getNotesForPaper(widget.paper.id);
 
     setState(() {
       _markdown = md;
@@ -97,21 +103,37 @@ class _ReadPageState extends State<ReadPage> {
             tooltip: '字体大小',
             onPressed: _showFontSizePicker,
           ),
+          IconButton(
+            icon: Icon(_showNotes ? Icons.notes : Icons.note_add_outlined),
+            tooltip: '笔记',
+            onPressed: () => setState(() => _showNotes = !_showNotes),
+          ),
           const SizedBox(width: 4),
         ],
       ),
       body: Column(
         children: [
           Expanded(
-            child: _viewMode == _ViewMode.sideBySide
-                ? Row(
-                    children: [
-                      Expanded(child: _buildContent(theme, _markdown ?? '')),
-                      const VerticalDivider(width: 1),
-                      Expanded(child: _buildContent(theme, _translation ?? _markdown ?? '')),
-                    ],
-                  )
-                : _buildContent(theme, displayText),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _viewMode == _ViewMode.sideBySide
+                      ? Row(
+                          children: [
+                            Expanded(child: _buildContent(theme, _markdown ?? '')),
+                            const VerticalDivider(width: 1),
+                            Expanded(child: _buildContent(theme, _translation ?? _markdown ?? '')),
+                          ],
+                        )
+                      : _buildContent(theme, displayText),
+                ),
+                if (_showNotes)
+                  SizedBox(
+                    width: 280,
+                    child: _buildNotesPanel(theme),
+                  ),
+              ],
+            ),
           ),
           _buildQAPanel(theme),
         ],
@@ -403,6 +425,125 @@ class _ReadPageState extends State<ReadPage> {
       _log.warning('open PDF failed: $e');
     }
   }
+
+  Widget _buildNotesPanel(ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        border: Border(left: BorderSide(color: theme.dividerColor)),
+      ),
+      child: Column(
+        children: [
+          Expanded(
+            child: _notes.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text('暂无笔记\n选中文本后点击"添加笔记"',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          )),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(8),
+                    itemCount: _notes.length,
+                    itemBuilder: (ctx, i) => _buildNoteCard(_notes[i], theme),
+                  ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _noteController,
+                    decoration: InputDecoration(
+                      hintText: '添加笔记...',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      filled: true,
+                      fillColor: theme.colorScheme.surface,
+                    ),
+                    maxLines: 2,
+                    minLines: 1,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.send, size: 18),
+                  onPressed: _addNote,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoteCard(Note note, ThemeData theme) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 6),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (note.selectedText != null && note.selectedText!.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(4),
+                margin: const EdgeInsets.only(bottom: 4),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(note.selectedText!,
+                    style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
+              ),
+            Text(note.text, style: theme.textTheme.bodySmall),
+            Row(
+              children: [
+                Text(_formatDate(note.createdAt),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    )),
+                const Spacer(),
+                InkWell(
+                  onTap: () => _deleteNote(note.id),
+                  child: Icon(Icons.delete_outline, size: 14,
+                      color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _addNote() async {
+    if (_noteController.text.trim().isEmpty) return;
+    final deps = Dependencies.of(context);
+    await deps.noteService.addNote(
+      paperId: widget.paper.id,
+      text: _noteController.text.trim(),
+    );
+    _noteController.clear();
+    _notes = deps.noteService.getNotesForPaper(widget.paper.id);
+    setState(() {});
+  }
+
+  Future<void> _deleteNote(String noteId) async {
+    final deps = Dependencies.of(context);
+    await deps.noteService.deleteNote(noteId);
+    _notes = deps.noteService.getNotesForPaper(widget.paper.id);
+    setState(() {});
+  }
+
+  String _formatDate(DateTime d) =>
+      '${d.month}/${d.day} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 
   void _showFontSizePicker() {
     showDialog(

@@ -11,6 +11,7 @@ import 'core/services/paper_service.dart';
 import 'core/services/network_service.dart';
 import 'core/models/config.dart';
 import 'core/services/network_service.dart';
+import 'core/services/note_service.dart';
 import 'core/utils/logger.dart';
 import 'ui/pages/search_page.dart';
 import 'ui/pages/library_page.dart';
@@ -40,6 +41,9 @@ void main() async {
   final networkService = NetworkService();
   networkService.init();
 
+  final noteService = NoteService();
+  await noteService.init();
+
   await windowManager.waitUntilReadyToShow();
   await windowManager.setTitle('PaperWise');
   await windowManager.setMinimumSize(const Size(1024, 700));
@@ -65,6 +69,7 @@ void main() async {
     searchService: searchService,
     cacheService: cacheService,
     networkService: networkService,
+    noteService: noteService,
     showWelcome: showWelcome,
   ));
 }
@@ -75,6 +80,7 @@ class Dependencies extends InheritedWidget {
   final SearchService searchService;
   final CacheService cacheService;
   final NetworkService networkService;
+  final NoteService noteService;
 
   const Dependencies({
     super.key,
@@ -83,6 +89,7 @@ class Dependencies extends InheritedWidget {
     required this.searchService,
     required this.cacheService,
     required this.networkService,
+    required this.noteService,
     required super.child,
   });
 
@@ -102,6 +109,7 @@ class PaperWiseApp extends StatefulWidget {
   final SearchService searchService;
   final CacheService cacheService;
   final NetworkService networkService;
+  final NoteService noteService;
   final bool showWelcome;
 
   const PaperWiseApp({
@@ -111,6 +119,7 @@ class PaperWiseApp extends StatefulWidget {
     required this.searchService,
     required this.cacheService,
     required this.networkService,
+    required this.noteService,
     this.showWelcome = false,
   });
 
@@ -166,6 +175,7 @@ class _PaperWiseAppState extends State<PaperWiseApp> with TrayListener {
       searchService: widget.searchService,
       cacheService: widget.cacheService,
       networkService: widget.networkService,
+      noteService: widget.noteService,
       child: MaterialApp(
         title: 'PaperWise',
         debugShowCheckedModeBanner: false,
