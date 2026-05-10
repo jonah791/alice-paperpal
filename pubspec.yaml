@@ -15,7 +15,6 @@ dependencies:
   path_provider: any
   shared_preferences: any
   archive: any
-  flutter_markdown: any
   flutter_math_fork: any
   window_manager: any
   tray_manager: any
