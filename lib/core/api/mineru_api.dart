@@ -130,29 +130,40 @@ class MineruApi {
       'enable_table': enableTable,
     };
 
-    final response = await _dio.post('/api/v4/file-urls/batch', data: body);
-    final data = response.data as Map<String, dynamic>;
-    if (data['code'] != 0) {
-      throw Exception('MinerU presign failed: ${data['msg']}');
-    }
-    final batchId = data['data']['batch_id'] as String;
-    final uploadUrls = List<String>.from(data['data']['file_urls'] as List);
+    try {
+      final response = await _dio.post('/api/v4/file-urls/batch', data: body);
+      final data = response.data as Map<String, dynamic>;
+      if (data['code'] != 0) {
+        throw Exception('MinerU presign failed: ${data['msg']}');
+      }
+      final batchId = data['data']['batch_id'] as String?;
+      if (batchId == null || batchId.isEmpty) {
+        throw Exception('MinerU: missing batch_id in response');
+      }
+      final uploadUrlsRaw = data['data']['file_urls'];
+      if (uploadUrlsRaw is! List) {
+        throw Exception('MinerU: missing file_urls in response');
+      }
+      final uploadUrls = List<String>.from(uploadUrlsRaw);
+      if (uploadUrls.isEmpty) {
+        throw Exception('MinerU: no upload URL returned');
+      }
 
-    if (uploadUrls.isEmpty) {
-      throw Exception('MinerU: no upload URL returned');
+      final uploadUrl = uploadUrls.first;
+      final fileBytes = await pdfFile.readAsBytes();
+      await _downloadDio.put(
+        uploadUrl,
+        data: Stream.fromIterable([fileBytes]),
+        options: Options(
+          headers: {'Content-Type': 'application/octet-stream'},
+        ),
+      );
+      _log.info('submitFileUpload: batch_id=$batchId, file uploaded (${fileBytes.length} bytes)');
+      return batchId;
+    } on DioException catch (e) {
+      final msg = e.response?.data is Map ? (e.response!.data as Map)['msg'] ?? e.message : e.message;
+      throw Exception('MinerU upload failed: $msg (${e.response?.statusCode})');
     }
-
-    final uploadUrl = uploadUrls.first;
-    final fileBytes = await pdfFile.readAsBytes();
-    await _downloadDio.put(
-      uploadUrl,
-      data: Stream.fromIterable([fileBytes]),
-      options: Options(
-        headers: {'Content-Type': 'application/octet-stream'},
-      ),
-    );
-    _log.info('submitFileUpload: batch_id=$batchId, file uploaded');
-    return batchId;
   }
 
   Future<MineruTask> _pollTask(String taskId, {required Duration timeout}) async {
@@ -185,29 +196,35 @@ class MineruApi {
   Future<MineruTask> _pollBatch(String batchId, {required Duration timeout}) async {
     final deadline = DateTime.now().add(timeout);
     while (DateTime.now().isBefore(deadline)) {
-      final response = await _dio.get('/api/v4/extract-results/batch/$batchId');
-      final data = response.data as Map<String, dynamic>;
-      if (data['code'] != 0) {
-        throw Exception('MinerU batch poll failed: ${data['msg']}');
-      }
-      final results = data['data']['extract_result'] as List? ?? [];
-      if (results.isEmpty) {
-        _log.info('pollBatch: $batchId no results yet');
-        await Future.delayed(const Duration(seconds: 2));
-        continue;
-      }
-      final r = results.first as Map<String, dynamic>;
-      final state = parseState(r['state'] as String? ?? '');
-      final task = MineruTask(
-        id: batchId,
-        state: state,
-        zipUrl: r['full_zip_url'] as String?,
-        errorMessage: r['err_msg'] as String?,
-      );
-      if (task.isTerminal) return task;
+      try {
+        final response = await _dio.get('/api/v4/extract-results/batch/$batchId');
+        final data = response.data as Map<String, dynamic>;
+        if (data['code'] != 0) {
+          throw Exception('MinerU batch poll failed: ${data['msg']}');
+        }
+        final resultsRaw = data['data']['extract_result'];
+        final results = (resultsRaw is List) ? resultsRaw : <dynamic>[];
+        if (results.isEmpty) {
+          _log.info('pollBatch: $batchId no results yet');
+          await Future.delayed(const Duration(seconds: 2));
+          continue;
+        }
+        final r = results.first as Map<String, dynamic>;
+        final state = parseState(r['state'] as String? ?? '');
+        final task = MineruTask(
+          id: batchId,
+          state: state,
+          zipUrl: r['full_zip_url'] as String?,
+          errorMessage: r['err_msg'] as String?,
+        );
+        if (task.isTerminal) return task;
 
-      _log.info('pollBatch: $batchId state=$state');
-      await Future.delayed(const Duration(seconds: 2));
+        _log.info('pollBatch: $batchId state=$state');
+        await Future.delayed(const Duration(seconds: 2));
+      } on DioException catch (e) {
+        _log.warning('pollBatch: $batchId network error, retrying: $e');
+        await Future.delayed(const Duration(seconds: 3));
+      }
     }
     throw TimeoutException('MinerU batch poll timed out after ${timeout.inSeconds}s');
   }

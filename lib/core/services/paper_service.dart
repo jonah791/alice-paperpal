@@ -137,7 +137,7 @@ class PaperService {
       return updated;
     } catch (e) {
       _log.warning('importPdf failed: $paperId → $e');
-      final failed = paper.copyWith(status: PaperStatus.error);
+      final failed = paper.copyWith(status: PaperStatus.error, errorMessage: e.toString());
       _papers.remove(paper);
       _papers.add(failed);
       _emitPapers();
