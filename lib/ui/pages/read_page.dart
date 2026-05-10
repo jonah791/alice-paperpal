@@ -226,6 +226,9 @@ class _ReadPageState extends State<ReadPage> {
   }
 
   Widget _buildQAPanel(ThemeData theme) {
+    final deps = Dependencies.of(context);
+    final soul = deps.soulService.getActiveOrDefault();
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
@@ -243,22 +246,32 @@ class _ReadPageState extends State<ReadPage> {
                 itemBuilder: (context, index) {
                   final msg = _qaMessages[index];
                   final isUser = msg['role'] == 'user';
-                  return Align(
-                    alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 2),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: isUser
-                            ? theme.colorScheme.primaryContainer
-                            : theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(12),
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (!isUser)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6, top: 2),
+                          child: deps.avatarService.buildDefaultAvatar(soul.name, 20),
+                        ),
+                      Flexible(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isUser
+                                ? theme.colorScheme.primaryContainer
+                                : theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            msg['content'] ?? '',
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                        ),
                       ),
-                      child: Text(
-                        msg['content'] ?? '',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ),
+                    ],
                   );
                 },
               ),
@@ -309,21 +322,25 @@ class _ReadPageState extends State<ReadPage> {
 
     setState(() {
       _qaMessages.add({'role': 'user', 'content': question});
+      _qaMessages.add({'role': 'assistant', 'content': ''});
       _qaLoading = true;
     });
     _qaController.clear();
 
     try {
       final deps = Dependencies.of(context);
-      final answer = await deps.paperService.askQuestion(widget.paper.id, question);
-      setState(() {
-        _qaMessages.add({'role': 'assistant', 'content': answer});
-        _qaLoading = false;
-      });
+      final buffer = StringBuffer();
+      await for (final chunk in deps.paperService.askQuestionStream(widget.paper.id, question)) {
+        buffer.write(chunk);
+        setState(() {
+          _qaMessages.last['content'] = buffer.toString();
+        });
+      }
+      setState(() => _qaLoading = false);
     } catch (e) {
       _log.warning('askQuestion failed: $e');
       setState(() {
-        _qaMessages.add({'role': 'assistant', 'content': '抱歉，回答时出现错误。'});
+        _qaMessages.last['content'] = '抱歉，回答时出现错误。';
         _qaLoading = false;
       });
     }

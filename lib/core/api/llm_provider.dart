@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:logging/logging.dart';
 
@@ -47,18 +49,18 @@ class LLMProvider {
     };
   }
 
-  Map<String, dynamic> _buildBody(List<Map<String, String>> messages) {
+  Map<String, dynamic> _buildBody(List<Map<String, String>> messages, {int? maxTokens}) {
     return switch (config.type) {
-      LLMProviderType.claude => _buildClaudeBody(messages),
+      LLMProviderType.claude => _buildClaudeBody(messages, maxTokens: maxTokens),
       _ => {
         'model': config.model,
         'messages': messages,
-        'max_tokens': 4096,
+        'max_tokens': maxTokens ?? 4096,
       },
     };
   }
 
-  Map<String, dynamic> _buildClaudeBody(List<Map<String, String>> messages) {
+  Map<String, dynamic> _buildClaudeBody(List<Map<String, String>> messages, {int? maxTokens}) {
     String? system;
     final chatMessages = <Map<String, String>>[];
 
@@ -75,7 +77,7 @@ class LLMProvider {
 
     return {
       'model': config.model,
-      'max_tokens': 4096,
+      'max_tokens': maxTokens ?? 4096,
       if (system != null) 'system': system,
       'messages': chatMessages,
     };
@@ -88,15 +90,46 @@ class LLMProvider {
     };
   }
 
-  Future<String> chat(List<Map<String, String>> messages) async {
+  Future<String> chat(List<Map<String, String>> messages, {int? maxTokens}) async {
     try {
-      final response = await _dio.post(_endpoint, data: _buildBody(messages));
+      final response = await _dio.post(_endpoint, data: _buildBody(messages, maxTokens: maxTokens));
       final content = _extractContent(response.data);
       _log.info('chat: ${messages.length} msgs, ${content.length} chars');
       return content;
     } on DioException catch (e) {
       _log.warning('chat failed: ${e.response?.statusCode} ${e.message}');
       rethrow;
+    }
+  }
+
+  Stream<String> chatStream(List<Map<String, String>> messages, {int? maxTokens}) async* {
+    try {
+      final response = await _dio.post(
+        _endpoint,
+        data: _buildBody(messages, maxTokens: maxTokens),
+        options: Options(
+          responseType: ResponseType.stream,
+          headers: {'Accept': 'text/event-stream'},
+        ),
+      );
+
+      final stream = response.data.stream as Stream<List<int>>;
+      final lines = stream.transform(const Utf8Decoder()).transform(const LineSplitter());
+      await for (final line in lines) {
+        if (line.startsWith('data: ')) {
+          final data = line.substring(6);
+          if (data == '[DONE]') break;
+          try {
+            final json = jsonDecode(data);
+            final delta = json['choices']?[0]?['delta']?['content'] as String?;
+            if (delta != null && delta.isNotEmpty) {
+              yield delta;
+            }
+          } catch (_) {}
+        }
+      }
+    } on DioException catch (e) {
+      _log.warning('chatStream failed: ${e.response?.statusCode} ${e.message}');
     }
   }
 

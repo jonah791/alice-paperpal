@@ -10,6 +10,11 @@ import 'core/services/search_service.dart';
 import 'core/services/paper_service.dart';
 import 'core/services/network_service.dart';
 import 'core/services/note_service.dart';
+import 'core/services/soul_service.dart';
+import 'core/services/memory_service.dart';
+import 'core/services/portrait_service.dart';
+import 'core/services/avatar_service.dart';
+import 'core/api/llm_provider.dart';
 import 'core/models/config.dart';
 import 'core/utils/logger.dart';
 import 'ui/pages/search_page.dart';
@@ -29,11 +34,35 @@ void main() async {
   final cacheService = CacheService();
   await cacheService.init();
 
+  final apiKey = await configService.readLlmApiKey();
+  final llmProvider = LLMProvider(config: LLMConfig(
+    type: LLMProviderType.deepseek,
+    apiKey: apiKey ?? '',
+    apiBase: configService.config.llmApiBase,
+    model: configService.config.llmModel,
+  ));
+
+  final soulService = SoulService();
+  await soulService.init();
+
+  final memoryService = MemoryService();
+  await memoryService.init();
+
+  final portraitService = PortraitService();
+  await portraitService.init();
+
+  final avatarService = AvatarService();
+  await avatarService.init();
+
   final searchService = SearchService();
   final paperService = PaperService(
     cache: cacheService,
     search: searchService,
     config: configService,
+    llmProvider: llmProvider,
+    soulService: soulService,
+    memoryService: memoryService,
+    portraitService: portraitService,
   );
   await paperService.init();
 
@@ -50,7 +79,6 @@ void main() async {
   await windowManager.center();
   await windowManager.show();
 
-  // System tray
   await trayManager.setToolTip('PaperWise');
   if (await File('resources/icon.ico').exists()) {
     await trayManager.setIcon('resources/icon.ico', iconSize: 32);
@@ -63,7 +91,6 @@ void main() async {
 
   final showWelcome = !configService.hasLlmApiKey;
 
-  // Check for PDF file passed via command line (file association)
   String? pdfFileArg;
   try {
     final pdfPath = Platform.environment['PAPERWISE_PDF_PATH'];
@@ -79,6 +106,11 @@ void main() async {
     cacheService: cacheService,
     networkService: networkService,
     noteService: noteService,
+    soulService: soulService,
+    memoryService: memoryService,
+    portraitService: portraitService,
+    avatarService: avatarService,
+    llmProvider: llmProvider,
     showWelcome: showWelcome,
     initialPdfPath: pdfFileArg,
   ));
@@ -91,6 +123,11 @@ class Dependencies extends InheritedWidget {
   final CacheService cacheService;
   final NetworkService networkService;
   final NoteService noteService;
+  final SoulService soulService;
+  final MemoryService memoryService;
+  final PortraitService portraitService;
+  final AvatarService avatarService;
+  final LLMProvider llmProvider;
 
   const Dependencies({
     super.key,
@@ -100,6 +137,11 @@ class Dependencies extends InheritedWidget {
     required this.cacheService,
     required this.networkService,
     required this.noteService,
+    required this.soulService,
+    required this.memoryService,
+    required this.portraitService,
+    required this.avatarService,
+    required this.llmProvider,
     required super.child,
   });
 
@@ -120,6 +162,11 @@ class PaperWiseApp extends StatefulWidget {
   final CacheService cacheService;
   final NetworkService networkService;
   final NoteService noteService;
+  final SoulService soulService;
+  final MemoryService memoryService;
+  final PortraitService portraitService;
+  final AvatarService avatarService;
+  final LLMProvider llmProvider;
   final bool showWelcome;
   final String? initialPdfPath;
 
@@ -131,6 +178,11 @@ class PaperWiseApp extends StatefulWidget {
     required this.cacheService,
     required this.networkService,
     required this.noteService,
+    required this.soulService,
+    required this.memoryService,
+    required this.portraitService,
+    required this.avatarService,
+    required this.llmProvider,
     this.showWelcome = false,
     this.initialPdfPath,
   });
@@ -150,12 +202,14 @@ class _PaperWiseAppState extends State<PaperWiseApp> with TrayListener {
     _welcomeShown = !widget.showWelcome;
     trayManager.addListener(this);
 
-    // Import PDF from command-line argument (file association)
     if (widget.initialPdfPath != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _importFromArg(widget.initialPdfPath!);
       });
     }
+
+    // Startup greeting
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startupGreeting());
   }
 
   Future<void> _importFromArg(String path) async {
@@ -164,6 +218,33 @@ class _PaperWiseAppState extends State<PaperWiseApp> with TrayListener {
     await widget.paperService.importPdf(file);
     _welcomeShown = true;
     if (mounted) setState(() {});
+  }
+
+  Future<void> _startupGreeting() async {
+    // Wait a moment for UI to settle
+    await Future.delayed(const Duration(milliseconds: 800));
+    final memories = widget.memoryService.getRecent(limit: 1);
+    if (memories.isEmpty) return;
+    final soul = widget.soulService.getActiveOrDefault();
+    final greeting = await widget.llmProvider.chat([
+      {'role': 'system', 'content': '根据最近记忆和时间生成一句自然的问候。简短亲切，不要说"早上好/下午好"。'},
+      {'role': 'user', 'content': '最近记忆：${memories.first.summary}'},
+    ], maxTokens: 80);
+    if (greeting.isNotEmpty && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              widget.avatarService.buildDefaultAvatar(soul.name, 20),
+              const SizedBox(width: 8),
+              Expanded(child: Text(greeting, style: const TextStyle(fontSize: 13))),
+            ],
+          ),
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -203,6 +284,11 @@ class _PaperWiseAppState extends State<PaperWiseApp> with TrayListener {
       cacheService: widget.cacheService,
       networkService: widget.networkService,
       noteService: widget.noteService,
+      soulService: widget.soulService,
+      memoryService: widget.memoryService,
+      portraitService: widget.portraitService,
+      avatarService: widget.avatarService,
+      llmProvider: widget.llmProvider,
       child: MaterialApp(
         title: 'PaperWise',
         debugShowCheckedModeBanner: false,
@@ -260,7 +346,6 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final network = Dependencies.of(context).networkService;
     return Scaffold(
       body: CallbackShortcuts(

@@ -13,8 +13,11 @@ import '../models/search_result.dart';
 import '../utils/page_counter.dart';
 import 'cache_service.dart';
 import 'config_service.dart';
+import 'memory_service.dart';
 import 'parse_service.dart';
+import 'portrait_service.dart';
 import 'search_service.dart';
+import 'soul_service.dart';
 import 'translation_service.dart';
 
 final _log = Logger('PaperService');
@@ -24,9 +27,12 @@ class PaperService {
   final CacheService _cache;
   final SearchService _search;
   final ConfigService _config;
+  final LLMProvider _llm;
+  final SoulService _soul;
+  final MemoryService _memory;
+  final PortraitService _portrait;
   late final ParseService _parse;
   late final TranslationService _translation;
-  late final LLMProvider _llm;
 
   final _papers = <Paper>{};
   final _paperController = StreamController<List<Paper>>.broadcast();
@@ -36,19 +42,20 @@ class PaperService {
     required CacheService cache,
     required SearchService search,
     required ConfigService config,
+    required LLMProvider llmProvider,
+    required SoulService soulService,
+    required MemoryService memoryService,
+    required PortraitService portraitService,
   })  : _cache = cache,
         _search = search,
-        _config = config;
+        _config = config,
+        _llm = llmProvider,
+        _soul = soulService,
+        _memory = memoryService,
+        _portrait = portraitService;
 
   Future<void> init() async {
     final cfg = _config.config;
-    final apiKey = await _config.readLlmApiKey();
-    _llm = LLMProvider(config: LLMConfig(
-      type: LLMProviderType.deepseek,
-      apiKey: apiKey ?? '',
-      apiBase: cfg.llmApiBase,
-      model: cfg.llmModel,
-    ));
     final mineruApi = MineruApi(
       baseUrl: cfg.mineruApiEndpoint.isNotEmpty
           ? cfg.mineruApiEndpoint
@@ -58,32 +65,22 @@ class PaperService {
     _parse = ParseService(api: mineruApi, batchSize: cfg.batchSize);
     _translation = TranslationService(_llm);
 
-    // Load persisted papers from disk
     final persisted = await _cache.loadAllPapers();
     _papers.addAll(persisted);
     _emitPapers();
-    _log.info('init: ready, ${_papers.length} papers loaded');
+    _log.info('init: ${_papers.length} papers');
   }
 
-  void _emitPapers() {
-    _paperController.add(_papers.toList());
-  }
-
-  Future<void> _persistPaper(Paper paper) async {
-    await _cache.savePaperMeta(paper);
-  }
+  void _emitPapers() => _paperController.add(_papers.toList());
+  Future<void> _persistPaper(Paper p) => _cache.savePaperMeta(p);
 
   Stream<ParseProgress> get parseProgress => _parse.progressStream;
-
   Future<List<SearchResult>> search(String query) => _search.search(query);
 
   Future<Paper?> importFromSearch(SearchResult result) async {
     final tempDir = await getTemporaryDirectory();
-    final saveDir = '${tempDir.path}/downloads';
-
-    final pdf = await _search.downloadPdf(result, saveDir);
+    final pdf = await _search.downloadPdf(result, '${tempDir.path}/downloads');
     if (pdf == null) return null;
-
     return importPdf(pdf, title: result.title);
   }
 
@@ -92,14 +89,11 @@ class PaperService {
     final paper = Paper(
       id: paperId,
       title: title ?? pdfFile.path.split(Platform.pathSeparator).last.replaceAll('.pdf', ''),
-      authors: [],
       year: DateTime.now().year,
       source: 'local',
       status: PaperStatus.parsing,
       importedAt: DateTime.now(),
-      pageCount: 0,
     );
-
     _papers.add(paper);
     _emitPapers();
     _cache.savePdf(paperId, pdfFile);
@@ -107,7 +101,6 @@ class PaperService {
     try {
       final pageCount = await PageCounter.getPageCount(pdfFile.path);
       final result = await _parse.parsePdf(pdfFile, pageCount);
-
       await _cache.saveMarkdown(paperId, result.markdown);
 
       final updated = paper.copyWith(
@@ -120,10 +113,12 @@ class PaperService {
       _emitPapers();
       await _persistPaper(updated);
 
+      // Active comment after parse
+      _activeComment(paperId);
+
       if (_config.config.autoTranslate) {
         await _autoTranslate(updated);
       }
-
       return updated;
     } catch (e) {
       _log.warning('importPdf failed: $paperId → $e');
@@ -135,12 +130,23 @@ class PaperService {
     }
   }
 
+  Future<void> _activeComment(String paperId) async {
+    final md = await _cache.readMarkdown(paperId);
+    if (md == null) return;
+    final soul = _soul.getActiveOrDefault();
+    try {
+      final comment = await _llm.chat([
+        {'role': 'system', 'content': '你是一位${soul.name}。根据论文开头内容，给一句简短的第一印象。不要问问题，不要用"你好"，直接评论。20字以内。'},
+        {'role': 'user', 'content': md.substring(0, md.length.clamp(0, 500))},
+      ], maxTokens: 50);
+      _log.info('activeComment: $comment');
+    } catch (_) {}
+  }
+
   Future<void> _autoTranslate(Paper paper) async {
     final md = await _cache.readMarkdown(paper.id);
     if (md == null) return;
-
-    final lang = _translation.detectLanguage(md);
-    if (lang == 'zh') return;
+    if (!_translation.needsTranslation(md)) return;
 
     final updated = paper.copyWith(status: PaperStatus.translating);
     _papers.remove(paper);
@@ -150,17 +156,15 @@ class PaperService {
     try {
       final translated = await _translation.translate(md);
       await _cache.saveTranslation(paper.id, translated);
-
       final done = updated.copyWith(status: PaperStatus.translated);
       _papers.remove(updated);
       _papers.add(done);
       _emitPapers();
       await _persistPaper(done);
     } catch (e) {
-      _log.warning('_autoTranslate failed: ${paper.id} → $e');
-      final failed = updated.copyWith(status: PaperStatus.error);
+      _log.warning('autoTranslate failed: ${paper.id} → $e');
       _papers.remove(updated);
-      _papers.add(failed);
+      _papers.add(updated.copyWith(status: PaperStatus.error));
       _emitPapers();
     }
   }
@@ -168,31 +172,94 @@ class PaperService {
   Future<String?> getMarkdown(String paperId) => _cache.readMarkdown(paperId);
   Future<String?> getTranslation(String paperId) => _cache.readTranslation(paperId);
 
+  String _buildPersonaPrompt() {
+    final soul = _soul.getActiveOrDefault();
+    final sb = StringBuffer();
+
+    sb.writeln(soul.systemPrompt);
+    if (soul.speechPattern != null) {
+      sb.writeln('说话习惯：${soul.speechPattern}');
+    }
+    sb.writeln(_soul.metaSoulRules);
+
+    return sb.toString();
+  }
+
+  String _buildContextPrompt(String paperId) {
+    final sb = StringBuffer();
+    final portrait = _portrait.summarize();
+    if (portrait.isNotEmpty) {
+      sb.writeln('关于用户：');
+      sb.writeln(portrait);
+      sb.writeln();
+    }
+    final memories = _memory.summarizeRecent(limit: 10);
+    if (memories.isNotEmpty) {
+      sb.writeln('我们的过往：');
+      sb.writeln(memories);
+      sb.writeln();
+    }
+    return sb.toString();
+  }
+
   Future<String> askQuestion(String paperId, String question) async {
     final md = await getMarkdown(paperId);
     if (md == null) return '论文内容不可用';
+    final translation = await getTranslation(paperId) ?? md;
+    final truncated = translation.length > 12000
+        ? '${translation.substring(0, 12000)}\n\n[论文较长，已截断]'
+        : translation;
 
-    final translation = await getTranslation(paperId);
-    final fullText = translation ?? md;
+    final persona = _buildPersonaPrompt();
+    final context = _buildContextPrompt(paperId);
 
-    final truncated = fullText.length > 12000
-        ? '${fullText.substring(0, 12000)}\n\n[论文较长，已截断]'
-        : fullText;
-
-    return _llm.chat([
-      {'role': 'system', 'content': '你是一个学术论文助手。请基于以下论文内容回答问题。引用论文中的具体内容来支持你的回答。'},
+    final answer = await _llm.chat([
+      {'role': 'system', 'content': '$persona\n\n$context'},
       {'role': 'user', 'content': '论文内容：\n\n$truncated\n\n---\n\n问题：$question'},
     ]);
+
+    // Background portrait update
+    _portrait.updateFromConversation(question, answer, _llm);
+    // Memory
+    _memory.addMemory(question.substring(0, question.length.clamp(0, 80)), paperId: paperId);
+
+    return answer;
+  }
+
+  Stream<String> askQuestionStream(String paperId, String question) async* {
+    final md = await getMarkdown(paperId);
+    if (md == null) {
+      yield '论文内容不可用';
+      return;
+    }
+    final translation = await getTranslation(paperId) ?? md;
+    final truncated = translation.length > 12000
+        ? '${translation.substring(0, 12000)}\n\n[论文较长，已截断]'
+        : translation;
+
+    final persona = _buildPersonaPrompt();
+    final context = _buildContextPrompt(paperId);
+
+    final buffer = StringBuffer();
+    await for (final chunk in _llm.chatStream([
+      {'role': 'system', 'content': '$persona\n\n$context'},
+      {'role': 'user', 'content': '论文内容：\n\n$truncated\n\n---\n\n问题：$question'},
+    ])) {
+      buffer.write(chunk);
+      yield chunk;
+    }
+
+    final fullAnswer = buffer.toString();
+    _portrait.updateFromConversation(question, fullAnswer, _llm);
+    _memory.addMemory(question.substring(0, question.length.clamp(0, 80)), paperId: paperId);
   }
 
   Future<String> summarize(String paperId) async {
     final md = await getMarkdown(paperId);
     if (md == null) return '论文内容不可用';
-
     final truncated = md.length > 12000
         ? '${md.substring(0, 12000)}\n\n[论文较长，已截断]'
         : md;
-
     return _llm.summarize(truncated);
   }
 

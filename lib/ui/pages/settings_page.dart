@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import '../../main.dart';
+import '../widgets/soul_selector.dart';
+import '../widgets/avatar_picker.dart';
 
 final _log = Logger('SettingsPage');
 
@@ -94,6 +96,14 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
         ),
+        const SizedBox(height: 16),
+
+        // Soul
+        const SoulSelector(),
+        const SizedBox(height: 16),
+
+        // Avatar
+        const AvatarPicker(),
         const SizedBox(height: 16),
 
         // MinerU
