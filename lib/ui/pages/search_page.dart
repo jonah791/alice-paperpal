@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:logging/logging.dart';
 import '../../core/models/search_result.dart';
+import '../../core/models/paper.dart';
 import '../../main.dart';
 
 final _log = Logger('SearchPage');
@@ -99,17 +100,22 @@ class _SearchPageState extends State<SearchPage> {
       }
 
       final paper = await deps.paperService.importPdf(file, title: title);
-      if (paper != null) {
+      if (paper == null) {
+        setState(() {
+          _statusMessage = '导入失败：文件读取错误';
+          _loading = false;
+        });
+      } else if (paper.status == PaperStatus.error) {
+        setState(() {
+          _statusMessage = '解析失败，请检查 MinerU API Key 是否已配置';
+          _loading = false;
+        });
+      } else {
         setState(() {
           _statusMessage = '导入成功: ${paper.title}';
           _loading = false;
           _urlController.clear();
           _showUrlInput = false;
-        });
-      } else {
-        setState(() {
-          _statusMessage = '导入失败';
-          _loading = false;
         });
       }
     } catch (e) {
@@ -140,11 +146,13 @@ class _SearchPageState extends State<SearchPage> {
       title: file.name.replaceAll('.pdf', ''),
     );
 
-    if (paper != null) {
+    if (paper == null) {
+      setState(() => _statusMessage = '导入失败：请先在设置页配置 MinerU API Key');
+    } else if (paper.status == PaperStatus.error) {
+      setState(() => _statusMessage = '解析失败，请检查 MinerU API Key 是否已配置');
+    } else {
       _log.info('uploadPdf: imported ${paper.id}');
       setState(() => _statusMessage = '导入成功: ${paper.title}');
-    } else {
-      setState(() => _statusMessage = '导入失败');
     }
   }
 
@@ -272,6 +280,10 @@ class _SearchPageState extends State<SearchPage> {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () async {
+          if (result.pdfUrl.isEmpty) {
+            setState(() => _statusMessage = '该论文无开放获取 PDF 链接');
+            return;
+          }
           setState(() => _statusMessage = '正在下载: ${result.title}');
           final deps = Dependencies.of(context);
           final paper = await deps.paperService.importFromSearch(result,
@@ -281,11 +293,13 @@ class _SearchPageState extends State<SearchPage> {
               }
             },
           );
-          if (paper != null) {
+          if (paper == null) {
+            setState(() => _statusMessage = '下载失败，请检查网络或重试');
+          } else if (paper.status == PaperStatus.error) {
+            setState(() => _statusMessage = '解析失败，请检查 MinerU API Key 是否已配置');
+          } else {
             _log.info('importFromSearch: ${paper.id}');
             setState(() => _statusMessage = '导入成功: ${paper.title}');
-          } else {
-            setState(() => _statusMessage = '下载或解析失败');
           }
         },
         child: Padding(

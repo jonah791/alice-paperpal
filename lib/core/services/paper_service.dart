@@ -78,6 +78,15 @@ class PaperService {
   Future<List<SearchResult>> search(String query) => _search.search(query);
 
   Future<Paper?> importFromSearch(SearchResult result, {void Function(int, int)? onProgress}) async {
+    final apiKey = await _config.readMineruApiKey();
+    if (apiKey == null || apiKey.isEmpty) {
+      _log.warning('importFromSearch: MinerU API key not configured');
+      return null;
+    }
+    if (result.pdfUrl.isEmpty) {
+      _log.warning('importFromSearch: no PDF URL for ${result.title}');
+      return null;
+    }
     final tempDir = await getTemporaryDirectory();
     final pdf = await _search.downloadPdf(result, '${tempDir.path}/downloads', onProgress: onProgress);
     if (pdf == null) return null;
@@ -85,6 +94,12 @@ class PaperService {
   }
 
   Future<Paper?> importPdf(File pdfFile, {String? title}) async {
+    final apiKey = await _config.readMineruApiKey();
+    if (apiKey == null || apiKey.isEmpty) {
+      _log.warning('importPdf: MinerU API key not configured');
+      return null;
+    }
+
     final paperId = _uuid.v4();
     final paper = Paper(
       id: paperId,
