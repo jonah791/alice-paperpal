@@ -7,6 +7,7 @@ import 'package:logging/logging.dart';
 final _log = Logger('WindowsEncryption');
 
 DynamicLibrary _crypt32 = DynamicLibrary.open('crypt32.dll');
+DynamicLibrary _kernel32 = DynamicLibrary.open('kernel32.dll');
 
 final _cryptProtectData = _crypt32.lookupFunction<
     Int32 Function(Pointer<DATA_BLOB>, Pointer<Utf16>, Pointer<DATA_BLOB>,
@@ -20,11 +21,9 @@ final _cryptUnprotectData = _crypt32.lookupFunction<
     int Function(Pointer<DATA_BLOB>, Pointer<Pointer<Utf16>>,
         Pointer<DATA_BLOB>, Pointer<Void>, Pointer<Void>, int, Pointer<DATA_BLOB>)>('CryptUnprotectData');
 
-final _heapFree = _crypt32.lookupFunction<Void Function(Pointer<Void>, Uint32, Pointer<Void>),
-    void Function(Pointer<Void>, int, Pointer<Void>)>('HeapFree');
-
-final _getProcessHeap = _crypt32.lookupFunction<Pointer<Void> Function(), Pointer<Void> Function()>(
-    'GetProcessHeap');
+final _localFree = _kernel32.lookupFunction<
+    Pointer<Void> Function(Pointer<Void>),
+    Pointer<Void> Function(Pointer<Void>)>('LocalFree');
 
 final class DATA_BLOB extends Struct {
   @Int32()
@@ -54,8 +53,7 @@ Uint8List? _readBlob(Pointer<DATA_BLOB> blob) {
 
 void _freeBlob(Pointer<DATA_BLOB> blob) {
   if (blob.ref.pbData != nullptr) {
-    final heap = _getProcessHeap();
-    _heapFree(heap, 0, blob.ref.pbData.cast<Void>());
+    _localFree(blob.ref.pbData.cast<Void>());
   }
   calloc.free(blob);
 }

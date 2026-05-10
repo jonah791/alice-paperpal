@@ -59,9 +59,9 @@ class SearchService {
 
       final safeName = result.title
           .replaceAll(RegExp(r'[^\w\s-]'), '')
-          .replaceAll(RegExp(r'\s+'), '_')
-          .substring(0, result.title.length.clamp(1, 80));
-      final savePath = '$saveDir/$safeName.pdf';
+          .replaceAll(RegExp(r'\s+'), '_');
+      final safeTruncated = safeName.substring(0, safeName.length.clamp(1, 80));
+      final savePath = '$saveDir/$safeTruncated.pdf';
       final dir = Directory(saveDir);
       if (!await dir.exists()) await dir.create(recursive: true);
 
