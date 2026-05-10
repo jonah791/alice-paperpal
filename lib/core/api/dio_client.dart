@@ -19,14 +19,14 @@ Dio createApiClient({
   ));
 
   dio.interceptors.addAll([
-    _HttpsInterceptor(),
+    DioHttpsInterceptor(),
     RetryInterceptor(),
   ]);
 
   return dio;
 }
 
-class _HttpsInterceptor extends Interceptor {
+class DioHttpsInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     final host = options.uri.host;

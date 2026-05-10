@@ -39,19 +39,19 @@ class LLMProvider {
         'Content-Type': 'application/json',
       },
     ));
-    _dio.interceptors.add(_HttpsInterceptor());
+    _dio.interceptors.add(HttpsInterceptor());
   }
 
-  String get _endpoint {
+  String get endpoint {
     return switch (config.type) {
       LLMProviderType.claude => '/v1/messages',
       _ => '/v1/chat/completions',
     };
   }
 
-  Map<String, dynamic> _buildBody(List<Map<String, String>> messages, {int? maxTokens}) {
+  Map<String, dynamic> buildBody(List<Map<String, String>> messages, {int? maxTokens}) {
     return switch (config.type) {
-      LLMProviderType.claude => _buildClaudeBody(messages, maxTokens: maxTokens),
+      LLMProviderType.claude => buildClaudeBody(messages, maxTokens: maxTokens),
       _ => {
         'model': config.model,
         'messages': messages,
@@ -60,7 +60,7 @@ class LLMProvider {
     };
   }
 
-  Map<String, dynamic> _buildClaudeBody(List<Map<String, String>> messages, {int? maxTokens}) {
+  Map<String, dynamic> buildClaudeBody(List<Map<String, String>> messages, {int? maxTokens}) {
     String? system;
     final chatMessages = <Map<String, String>>[];
 
@@ -83,17 +83,36 @@ class LLMProvider {
     };
   }
 
-  String _extractContent(dynamic data) {
+  String extractContent(dynamic data) {
     return switch (config.type) {
-      LLMProviderType.claude => data['content']?.first?['text'] as String? ?? '',
-      _ => data['choices']?.first?['message']?['content'] as String? ?? '',
+      LLMProviderType.claude => _safeExtract(data, ['content', 0, 'text']),
+      _ => _safeExtract(data, ['choices', 0, 'message', 'content']),
     };
+  }
+
+  String _safeExtract(dynamic data, List<dynamic> path) {
+    dynamic current = data;
+    for (final key in path) {
+      if (current is Map) {
+        current = current[key];
+      } else if (current is List) {
+        final idx = key as int;
+        if (idx < current.length) {
+          current = current[idx];
+        } else {
+          return '';
+        }
+      } else {
+        return '';
+      }
+    }
+    return (current as String?) ?? '';
   }
 
   Future<String> chat(List<Map<String, String>> messages, {int? maxTokens}) async {
     try {
-      final response = await _dio.post(_endpoint, data: _buildBody(messages, maxTokens: maxTokens));
-      final content = _extractContent(response.data);
+      final response = await _dio.post(endpoint, data: buildBody(messages, maxTokens: maxTokens));
+      final content = extractContent(response.data);
       _log.info('chat: ${messages.length} msgs, ${content.length} chars');
       return content;
     } on DioException catch (e) {
@@ -105,8 +124,8 @@ class LLMProvider {
   Stream<String> chatStream(List<Map<String, String>> messages, {int? maxTokens}) async* {
     try {
       final response = await _dio.post(
-        _endpoint,
-        data: _buildBody(messages, maxTokens: maxTokens),
+        endpoint,
+        data: buildBody(messages, maxTokens: maxTokens),
         options: Options(
           responseType: ResponseType.stream,
           headers: {'Accept': 'text/event-stream'},
@@ -176,7 +195,7 @@ class LLMProvider {
   }
 }
 
-class _HttpsInterceptor extends Interceptor {
+class HttpsInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     final host = options.uri.host;

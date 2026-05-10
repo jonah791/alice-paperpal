@@ -21,6 +21,7 @@ void main() {
     test('claude config', () {
       final c = LLMConfig(type: LLMProviderType.claude, apiKey: 'k', model: 'claude-3-opus');
       expect(c.type, LLMProviderType.claude);
+      // Default apiBase is deepseek — Claude users must set apiBase explicitly to https://api.anthropic.com
       expect(c.apiBase, 'https://api.deepseek.com');
     });
   });
@@ -161,7 +162,7 @@ void main() {
       expect(r.citationCount, 100000);
     });
 
-    test('missing authors handled', () {
+    test('authors stored verbatim with empty strings unfiltered', () {
       final r = SearchResult(title: 'T', authors: ['', 'Valid', ''], source: 'arXiv');
       expect(r.authors, ['', 'Valid', '']);
     });

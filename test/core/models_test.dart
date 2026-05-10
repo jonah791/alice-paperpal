@@ -58,6 +58,7 @@ void main() {
         id: 'x', title: 'T', authors: ['A'], year: 2024,
         source: 'arXiv', doi: '10.1', status: PaperStatus.translated,
         pageCount: 15, importedAt: t, lastReadAt: t, tags: ['AI'],
+        errorMessage: 'test error',
       );
       final r = Paper.fromJson(p.toJson());
       expect(r.id, p.id);
@@ -68,7 +69,10 @@ void main() {
       expect(r.status, p.status);
       expect(r.pageCount, p.pageCount);
       expect(r.tags, p.tags);
+      expect(r.source, p.source);
       expect(r.importedAt?.toIso8601String(), t.toIso8601String());
+      expect(r.lastReadAt?.toIso8601String(), t.toIso8601String());
+      expect(r.errorMessage, p.errorMessage);
     });
 
     test('fromJson missing fields', () {
@@ -98,12 +102,13 @@ void main() {
       expect(r.id, '');
     });
 
-    test('PaperStatus has 7 values', () {
-      expect(PaperStatus.values, [
+    test('PaperStatus has all expected states', () {
+      expect(PaperStatus.values.length, 7);
+      expect(PaperStatus.values, containsAll([
         PaperStatus.importing, PaperStatus.downloading, PaperStatus.parsing,
         PaperStatus.parsed, PaperStatus.translating, PaperStatus.translated,
         PaperStatus.error,
-      ]);
+      ]));
     });
   });
 
@@ -115,8 +120,9 @@ void main() {
       expect(r.imagePaths, isEmpty);
     });
 
-    test('empty markdown', () {
+    test('defaults when markdown is empty', () {
       final r = ParseResult(markdown: '');
+      expect(r.markdown, '');
       expect(r.contentListJson, '');
     });
 
@@ -279,10 +285,14 @@ void main() {
       final r = Soul.fromJson(s.toJson());
       expect(r.id, s.id);
       expect(r.name, s.name);
+      expect(r.description, s.description);
       expect(r.traits, s.traits);
+      expect(r.style, s.style);
+      expect(r.specialty, s.specialty);
       expect(r.systemPrompt, s.systemPrompt);
       expect(r.speechPattern, s.speechPattern);
       expect(r.isBuiltin, s.isBuiltin);
+      expect(r.isCustom, s.isCustom);
     });
 
     test('fromJson missing optional fields', () {
@@ -296,6 +306,7 @@ void main() {
       final r = Soul.fromJson({'id': '', 'name': '', 'systemPrompt': ''});
       expect(r.id, '');
       expect(r.description, '');
+      expect(r.systemPrompt, '');
     });
   });
 
@@ -326,12 +337,17 @@ void main() {
       expect(r.type, n.type);
       expect(r.selectedText, n.selectedText);
       expect(r.offset, n.offset);
+      expect(r.paperId, n.paperId);
+      expect(r.createdAt.toIso8601String(), t.toIso8601String());
+      expect(r.updatedAt.toIso8601String(), t.toIso8601String());
     });
 
-    test('fromJson missing fields', () {
+    test('fromJson missing fields falls back to defaults', () {
       final r = Note.fromJson({'id': 'n1', 'paperId': 'p1', 'text': 't'});
       expect(r.type, NoteType.note);
       expect(r.selectedText, isNull);
+      expect(r.createdAt, isA<DateTime>());
+      expect(r.updatedAt, isA<DateTime>());
     });
 
     test('copyWith updates text and updatedAt', () {

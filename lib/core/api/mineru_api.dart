@@ -255,14 +255,14 @@ class MineruApi {
       );
       final bytes = response.data as List<int>;
       _log.info('downloadAndExtract: ${bytes.length} bytes');
-      return _extractZip(bytes, outputDir);
+      return extractZip(bytes, outputDir);
     } on DioException catch (e) {
       final cause = e.error != null ? e.error.toString() : e.message;
       throw Exception('MinerU download result failed (HTTP ${e.response?.statusCode}): $cause');
     }
   }
 
-  MineruResult _extractZip(List<int> bytes, String outputDir) {
+  MineruResult extractZip(List<int> bytes, String outputDir) {
     final archive = ZipDecoder().decodeBytes(bytes);
     final outDir = Directory(outputDir);
     if (!outDir.existsSync()) {

@@ -15,10 +15,10 @@ class ParseService {
   final _progressController = StreamController<ParseProgress>.broadcast();
   Stream<ParseProgress> get progressStream => _progressController.stream;
 
-  static const int _maxPagesPerTask = 200;
+  static const int maxPagesPerTask = 200;
 
   Future<ParseResult> parsePdf(File pdfFile, int pageCount) async {
-    final ranges = _buildPageRanges(pageCount);
+    final ranges = buildPageRanges(pageCount);
 
     if (ranges.isEmpty) {
       _log.info('parsePdf: single task, $pageCount pages');
@@ -68,13 +68,13 @@ class ParseService {
     return merged;
   }
 
-  List<_PageRange> _buildPageRanges(int totalPages) {
-    if (totalPages <= _maxPagesPerTask) return [];
-    final ranges = <_PageRange>[];
-    for (var start = 0; start < totalPages; start += _maxPagesPerTask) {
-      var end = start + _maxPagesPerTask - 1;
+  List<PageRange> buildPageRanges(int totalPages) {
+      if (totalPages <= maxPagesPerTask) return [];
+    final ranges = <PageRange>[];
+    for (var start = 0; start < totalPages; start += maxPagesPerTask) {
+      var end = start + maxPagesPerTask - 1;
       if (end >= totalPages) end = totalPages - 1;
-      ranges.add(_PageRange(start, end));
+      ranges.add(PageRange(start, end));
     }
     return ranges;
   }
@@ -84,10 +84,10 @@ class ParseService {
   }
 }
 
-class _PageRange {
+class PageRange {
   final int start;
   final int end;
-  const _PageRange(this.start, this.end);
+  const PageRange(this.start, this.end);
 }
 
 class MergeService {

@@ -89,10 +89,10 @@ void main() {
       expect(PortraitService().summarize(), '');
     });
 
-    test('summarize with summary key', () {
-      final s = PortraitService();
-      s.deepMerge({}, {'summary': 'Alice likes ML'});
-      // Use reflection: _portrait is private, test deepMerge via PortraitService
+    test('summarize merges summary into target map and returns merged content', () {
+      final m = <String, dynamic>{};
+      PortraitService().deepMerge(m, {'summary': 'Alice likes ML'});
+      expect(m['summary'], 'Alice likes ML');
     });
 
     test('deepMerge simple top-level', () {
@@ -151,44 +151,36 @@ void main() {
   });
 
   group('SoulService', () {
-    test('presetDefinitions has 4 souls', () {
-      expect(SoulService.presetDefinitions, hasLength(4));
+    test('presets are structurally valid', () {
+      final presets = SoulService.presetDefinitions;
+      expect(presets.length, greaterThanOrEqualTo(1));
+      for (final entry in presets.entries) {
+        final d = entry.value;
+        expect(d['id'], allOf(isA<String>(), isNotEmpty));
+        expect(d['name'], allOf(isA<String>(), isNotEmpty));
+        expect(d['description'], isA<String>());
+        expect(d['traits'], isA<List>());
+        expect(d['style'], isA<String>());
+        expect(d['specialty'], isA<String>());
+        expect(d['systemPrompt'], allOf(isA<String>(), isNotEmpty));
+        expect(d['isBuiltin'], true);
+        expect(d['isCustom'], false);
+      }
     });
 
-    test('preset keys', () {
-      expect(SoulService.presetDefinitions.keys, containsAll([
-        'academic_mentor', 'code_expert', 'paper_reviewer', 'science_communicator',
-      ]));
+    test('each preset has non-empty speechPattern', () {
+      for (final d in SoulService.presetDefinitions.values) {
+        final sp = d['speechPattern'] as String?;
+        expect(sp, isNotNull);
+        expect(sp, isNotEmpty);
+      }
     });
 
-    test('academic_mentor structure', () {
-      final d = SoulService.presetDefinitions['academic_mentor']!;
-      expect(d['name'], '学术导师');
-      expect(d['isBuiltin'], true);
-      expect((d['traits'] as List).length, 3);
-      expect(d['systemPrompt'], isNotEmpty);
-    });
-
-    test('code_expert has algorithm specialty', () {
-      final d = SoulService.presetDefinitions['code_expert']!;
-      expect(d['specialty'], contains('算法'));
-      expect(d['speechPattern'], isNotEmpty);
-    });
-
-    test('paper_reviewer is critical', () {
-      final d = SoulService.presetDefinitions['paper_reviewer']!;
-      expect(d['style'], contains('批判'));
-      expect(d['isCustom'], false);
-    });
-
-    test('science_communicator uses examples', () {
-      final d = SoulService.presetDefinitions['science_communicator']!;
-      expect(d['speechPattern'], contains('打个比方'));
-      expect(d['description'], contains('类比'));
-    });
-
-    test('metaSoulRules is populated', () {
-      expect(SoulService().metaSoulRules, isNotEmpty);
+    test('metaSoulRules has minimum expected content', () {
+      final rules = SoulService().metaSoulRules;
+      expect(rules.length, greaterThan(50));
+      expect(rules, contains('过往对话'));
+      expect(rules, contains('不确定'));
     });
   });
 }

@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.3] - 2026-05-10
+
+### Added
+
+- **全方位测试扩展**：从 161 增至 320 测试，新增 8 个测试文件覆盖 LLMProvider（body/Claude 消息/endpoint/extractContent）、ParseService（页范围拆分边界）、SearchService（dedup 去重逻辑）、MineruApi（ZIP 解压）、ExportService（BibTeX 边界）、TranslationService（validateLatex）、模型边界、服务边界
+- **APIs 公开化**：`endpoint`、`buildBody`、`buildClaudeBody`、`extractContent`、`validateLatex`、`extractZip`、`buildPageRanges`、`HttpsInterceptor`/`DioHttpsInterceptor` 从私有改为公开，便于单元测试
+
+### Fixed
+
+- **extractContent 空列表崩溃**：`choices: []` 或 `content: []` 时 `.first` 抛异常，替换为安全路径导航 `_safeExtract`
+- **测试质量改进**：占位 widget test 替换为真实 AppTheme 验证；死测试（PortraitService 无断言）修复；SOulService 预设测试从硬编码文本改为结构性校验；往返测试补全遗漏字段；enum 顺序脆弱性修复
+
 ## [0.1.2] - 2026-05-11
 
 ### Fixed

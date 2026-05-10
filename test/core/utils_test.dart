@@ -69,15 +69,16 @@ void main() {
     });
 
     test('sk- key in text', () {
-      expect(logger.sanitize('sk-abcdef1234567890abcdef12'), startsWith('sk-***'));
+      expect(logger.sanitize('sk-abcdef1234567890abcdef12'), equals('sk-***'));
     });
 
     test('ds- key in text', () {
-      expect(logger.sanitize('ds-abcdef1234567890'), startsWith('ds-***'));
+      expect(logger.sanitize('ds-abcdef1234567890'), equals('ds-***'));
     });
 
     test('Authorization header', () {
-      expect(logger.sanitize('Authorization: Bearer sk-secret'), contains('Authorization=***'));
+      final r = logger.sanitize('Authorization: Bearer sk-secret');
+      expect(r, contains('Authorization=***'));
     });
 
     test('multiple sensitive patterns', () {

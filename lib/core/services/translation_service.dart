@@ -52,7 +52,7 @@ class TranslationService {
     _log.info('translate: starting, target=$target, ${markdown.length} chars');
     final result = await _llm.translate(markdown, target: target);
 
-    final repaired = _validateLatex(result);
+    final repaired = validateLatex(result);
     if (repaired != result) {
       _log.info('translate: LaTeX validation fixed issues');
     }
@@ -61,12 +61,12 @@ class TranslationService {
     return repaired;
   }
 
-  String _validateLatex(String text) {
+  String validateLatex(String text) {
     final result = text;
 
     final dollarPairs = RegExp(r'\$\$').allMatches(result).length;
     if (dollarPairs.isOdd) {
-      _log.warning('_validateLatex: odd number of double-dollar signs found');
+      _log.warning('validateLatex: odd number of double-dollar signs found');
     }
 
     return result;
