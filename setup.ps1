@@ -1,10 +1,10 @@
-# PaperWise 环境搭建脚本 (Windows)
+﻿# PaperPal 环境搭建脚本 (Windows)
 # 首次使用前运行此脚本安装所需依赖
 
 $ErrorActionPreference = "Stop"
 
 Write-Host "═" * 50
-Write-Host "PaperWise 环境搭建"
+Write-Host "PaperPal 环境搭建"
 Write-Host "═" * 50
 
 # 1. 检查 Flutter

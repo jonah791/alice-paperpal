@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -73,13 +73,13 @@ void main() async {
   await noteService.init();
 
   await windowManager.waitUntilReadyToShow();
-  await windowManager.setTitle('PaperWise');
+  await windowManager.setTitle('PaperPal');
   await windowManager.setMinimumSize(const Size(1024, 700));
   await windowManager.setSize(const Size(1280, 860));
   await windowManager.center();
   await windowManager.show();
 
-  await trayManager.setToolTip('PaperWise');
+  await trayManager.setToolTip('PaperPal');
   if (await File('resources/icon.ico').exists()) {
     await trayManager.setIcon('resources/icon.ico', iconSize: 32);
   }
@@ -93,13 +93,13 @@ void main() async {
 
   String? pdfFileArg;
   try {
-    final pdfPath = Platform.environment['PAPERWISE_PDF_PATH'];
+    final pdfPath = Platform.environment['PAPERPAL_PDF_PATH'];
     if (pdfPath != null && pdfPath.isNotEmpty && File(pdfPath).existsSync()) {
       pdfFileArg = pdfPath;
     }
   } catch (_) {}
 
-  runApp(PaperWiseApp(
+  runApp(PaperPalApp(
     configService: configService,
     paperService: paperService,
     searchService: searchService,
@@ -155,7 +155,7 @@ class Dependencies extends InheritedWidget {
   bool updateShouldNotify(Dependencies oldWidget) => false;
 }
 
-class PaperWiseApp extends StatefulWidget {
+class PaperPalApp extends StatefulWidget {
   final ConfigService configService;
   final PaperService paperService;
   final SearchService searchService;
@@ -170,7 +170,7 @@ class PaperWiseApp extends StatefulWidget {
   final bool showWelcome;
   final String? initialPdfPath;
 
-  const PaperWiseApp({
+  const PaperPalApp({
     super.key,
     required this.configService,
     required this.paperService,
@@ -188,10 +188,10 @@ class PaperWiseApp extends StatefulWidget {
   });
 
   @override
-  State<PaperWiseApp> createState() => _PaperWiseAppState();
+  State<PaperPalApp> createState() => _PaperPalAppState();
 }
 
-class _PaperWiseAppState extends State<PaperWiseApp> with TrayListener {
+class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
   ThemeMode _themeMode = ThemeMode.system;
   bool _welcomeShown = false;
 
@@ -290,7 +290,7 @@ class _PaperWiseAppState extends State<PaperWiseApp> with TrayListener {
       avatarService: widget.avatarService,
       llmProvider: widget.llmProvider,
       child: MaterialApp(
-        title: 'PaperWise',
+        title: 'PaperPal',
         debugShowCheckedModeBanner: false,
         themeMode: _themeMode,
         theme: AppTheme.light,

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 
 import 'package:logging/logging.dart';
@@ -57,4 +57,4 @@ Future<void> _writeLogEntry(LogRecord record) async {
   });
 }
 
-final log = Logger('paperwise');
+final log = Logger('paperpal');

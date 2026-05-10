@@ -1,5 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:paperwise/core/models/soul.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:paperpal/core/models/soul.dart';
 
 void main() {
   group('Soul model', () {

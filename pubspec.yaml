@@ -1,5 +1,5 @@
-name: paperwise
-description: AI-powered paper reading assistant powered by MinerU and DeepSeek.
+﻿name: paperpal
+description: AI-powered paper reading assistant.
 publish_to: 'none'
 version: 0.1.0+1
 

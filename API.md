@@ -1,6 +1,6 @@
-# API 契约文档
+﻿# API 契约文档
 
-本文档记录 PaperWise 调用的所有外部 API，供 Desktop (Flutter) 和 Mobile (Flutter) 端实现参考。
+本文档记录 PaperPal 调用的所有外部 API，供 Desktop (Flutter) 和 Mobile (Flutter) 端实现参考。
 
 ## 1. MinerU API
 

@@ -1,9 +1,9 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:paperwise/core/services/cache_service.dart';
-import 'package:paperwise/core/services/config_service.dart';
-import 'package:paperwise/core/services/export_service.dart';
-import 'package:paperwise/core/models/paper.dart';
-import 'package:paperwise/core/models/config.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:paperpal/core/services/cache_service.dart';
+import 'package:paperpal/core/services/config_service.dart';
+import 'package:paperpal/core/services/export_service.dart';
+import 'package:paperpal/core/models/paper.dart';
+import 'package:paperpal/core/models/config.dart';
 
 void main() {
   group('ConfigService', () {

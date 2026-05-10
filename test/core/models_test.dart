@@ -1,10 +1,10 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:paperwise/core/models/paper.dart';
-import 'package:paperwise/core/models/parse_result.dart';
-import 'package:paperwise/core/models/search_result.dart';
-import 'package:paperwise/core/models/config.dart';
-import 'package:paperwise/core/services/translation_service.dart';
-import 'package:paperwise/core/api/llm_provider.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:paperpal/core/models/paper.dart';
+import 'package:paperpal/core/models/parse_result.dart';
+import 'package:paperpal/core/models/search_result.dart';
+import 'package:paperpal/core/models/config.dart';
+import 'package:paperpal/core/services/translation_service.dart';
+import 'package:paperpal/core/api/llm_provider.dart';
 
 void main() {
   group('Paper model', () {

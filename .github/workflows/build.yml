@@ -1,4 +1,4 @@
-name: Build
+﻿name: Build
 on:
   push:
     branches: [main]
@@ -41,17 +41,17 @@ jobs:
       - name: Upload EXE
         uses: actions/upload-artifact@v4
         with:
-          name: PaperWise-${{ github.ref_name }}
+          name: PaperPal-${{ github.ref_name }}
           path: build/windows/x64/runner/Release/
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            build/windows/x64/runner/Release/paperwise.exe
+            build/windows/x64/runner/Release/PaperPal.exe
           body: |
-            Download PaperWise ${{ github.ref_name }}
+            Download PaperPal ${{ github.ref_name }}
             
-            PaperWise is an AI-powered paper reading assistant.
+            PaperPal is an AI-powered paper reading assistant.
             
             ### Requirements
             - Windows 10/11

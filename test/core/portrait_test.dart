@@ -1,5 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:paperwise/core/services/portrait_service.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:paperpal/core/services/portrait_service.dart';
 
 void main() {
   group('PortraitService', () {

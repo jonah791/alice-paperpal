@@ -1,6 +1,6 @@
-# Third Party Notices
+﻿# Third Party Notices
 
-PaperWise uses the following third-party libraries:
+PaperPal uses the following third-party libraries:
 
 ## Flutter SDK
 - License: BSD 3-Clause

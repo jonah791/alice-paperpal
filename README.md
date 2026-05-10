@@ -1,4 +1,4 @@
-# PaperWise
+﻿# PaperPal
 
 基于 [MinerU](https://github.com/opendatalab/MinerU) + DeepSeek V4 的论文辅助阅读桌面工具。
 
@@ -15,8 +15,8 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/<user>/paperwise.git
-cd paperwise
+git clone https://github.com/<user>/PaperPal.git
+cd PaperPal
 
 # 安装依赖
 flutter pub get
@@ -25,11 +25,11 @@ flutter pub get
 flutter build windows --release
 ```
 
-构建产物在 `build/windows/x64/runner/Release/paperwise.exe`。
+构建产物在 `build/windows/x64/runner/Release/PaperPal.exe`。
 
 ### 3. 下载安装包
 
-从 [Releases](https://github.com/<user>/paperwise/releases) 下载最新版 `PaperWise.exe`。
+从 [Releases](https://github.com/<user>/PaperPal/releases) 下载最新版 `PaperPal.exe`。
 
 ### 4. 首次使用
 
@@ -45,7 +45,7 @@ flutter build windows --release
 | **论文搜索** | arXiv + Semantic Scholar 一键搜索，下载即解析 |
 | **本地上传** | 选择本地 PDF，自动解析 |
 | **URL 导入** | 粘贴 arXiv 链接，自动下载 |
-| **PDF 文件关联** | 双击 .pdf 自动用 PaperWise 打开（运行 `windows/install_assoc.bat`） |
+| **PDF 文件关联** | 双击 .pdf 自动用 PaperPal 打开（运行 `windows/install_assoc.bat`） |
 | **自动解析** | MinerU 引擎：公式 → LaTeX、表格 → HTML、图片提取 |
 | **大 PDF 分批** | 超过 50 页自动分批，合并后无感 |
 | **自动翻译** | 非中文论文自动检测 + DeepSeek 全文翻译，原文/译文/对照三模式 |
@@ -61,7 +61,7 @@ flutter build windows --release
 ## 架构
 
 ```
-PaperWise (Flutter Desktop)
+PaperPal (Flutter Desktop)
     │
     ├── MinerU API       PDF → Markdown/LaTeX/HTML
     ├── DeepSeek V4 API  问答 / 翻译 / 摘要
@@ -74,7 +74,7 @@ PaperWise (Flutter Desktop)
 ## 项目结构
 
 ```
-paperwise/
+PaperPal/
 ├── lib/
 │   ├── main.dart                    # 入口 + Dependencies DI
 │   ├── core/

@@ -1,4 +1,4 @@
-#include <flutter/dart_project.h>
+﻿#include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
 
@@ -27,7 +27,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   // Set environment variable with first PDF arg for Dart to read
   for (const auto& arg : command_line_arguments) {
     if (arg.size() > 4 && arg.substr(arg.size() - 4) == ".pdf") {
-      ::SetEnvironmentVariableA("PAPERWISE_PDF_PATH", arg.c_str());
+      ::SetEnvironmentVariableA("PAPERPAL_PDF_PATH", arg.c_str());
       break;
     }
   }
@@ -35,7 +35,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 720);
-  if (!window.Create(L"paperwise", origin, size)) {
+  if (!window.Create(L"paperpal", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);
