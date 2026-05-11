@@ -56,7 +56,7 @@ jobs:
           Compress-Archive -Path * -DestinationPath ALICE-PaperPal-${{ github.ref_name }}.zip
 
       - name: Install Inno Setup
-        run: choco install innosetup --no-progress --confirm
+        run: choco install innosetup --no-progress --confirm --force
 
       - name: Build installer
         shell: pwsh
