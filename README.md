@@ -6,11 +6,46 @@
 
 ## 快速开始
 
-### 下载安装
+### 桌面应用
 
 从 [Releases](https://github.com/jonah791/alice-paperpal/releases) 下载最新版 `paperpal.exe`。
 
-### 从源码构建
+### CLI 工具（无需 Flutter GUI）
+
+```bash
+git clone https://github.com/jonah791/alice-paperpal.git
+cd alice-paperpal
+dart run tool/paperpal.dart help
+```
+
+12 个命令覆盖全部产品功能：
+
+| 命令 | 功能 |
+|---|---|
+| `config set/get/list` | 配置 API Key、模型等 |
+| `search <query>` | arXiv + Semantic Scholar 搜索 |
+| `import search <index>` | 从搜索结果导入 |
+| `import pdf <path>` | 解析本地 PDF（MinerU API） |
+| `import url <url>` | 解析 URL 论文 |
+| `papers list/show/delete` | 论文管理 |
+| `ask <id> <question>` | AI 问答（含灵魂/画像/记忆上下文） |
+| `summarize <id>` | AI 摘要 |
+| `translate <id>` | AI 翻译 |
+| `export bibtex/markdown <id>` | 导出 |
+| `soul list/set` | 灵魂管理 |
+| `note list/add/delete` | 笔记 |
+| `memory list/prune` | 记忆管理 |
+| `portrait show` | 用户画像 |
+
+```bash
+# 示例：配置密钥 → 搜索 → 解析 → 问答
+dart run tool/paperpal.dart config set llm-api-key <key>
+dart run tool/paperpal.dart search "transformer attention"
+dart run tool/paperpal.dart import url https://arxiv.org/pdf/1706.03762.pdf
+dart run tool/paperpal.dart ask <id> "核心贡献是什么？"
+```
+
+### 从源码构建桌面版
 
 ```bash
 git clone https://github.com/jonah791/alice-paperpal.git
@@ -24,7 +59,7 @@ flutter build windows --release
 ### 首次使用
 
 1. 双击运行
-2. 在设置页填入 DeepSeek API Key（[注册获取](https://platform.deepseek.com)）
+2. 在设置页填入 LLM API Key
 3. 选择或创建一个 AI 伙伴（灵魂）
 4. 搜索论文或上传 PDF
 5. 自动解析 + 自动翻译 → 开始阅读
@@ -82,7 +117,8 @@ paperpal/
 │       ├── pages/                   # 页面
 │       ├── widgets/                 # 组件
 │       └── theme/                   # 主题
-├── test/                            # 131 个单元测试
+├── test/                            # 320 个单元测试
+├── tool/                            # CLI 命令行工具
 ├── pubspec.yaml
 ├── API.md                           # 外部 API 契约
 └── THIRD_PARTY_NOTICES.md           # 第三方许可
@@ -108,7 +144,8 @@ paperpal/
 - **LLM:** DeepSeek V4 / OpenAI / Claude
 - **搜索:** arXiv + Semantic Scholar
 - **安全:** HTTPS 强制 / DPAPI 加密 Key 存储 / 日志脱敏
-- **测试:** 131 个单元测试覆盖 models/services/utils/API
+- **测试:** 320 个单元测试覆盖 models/services/utils/API
+- **CLI 工具:** 纯 Dart 命令行，`dart run tool/paperpal.dart`
 - **CI:** GitHub Actions (analyze → test → build → release)
 
 ## 许可

@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.1.4] - 2026-05-11
+
+### Added
+
+- **CLI 测试工具**：`tool/paperpal.dart` — 纯 Dart 命令行入口，12 个命令覆盖全部产品功能
+- **lib/core/ 纯 Dart 化**：`avatar_service.dart` 剥离 flutter/material 和 image_picker，`config.dart` 剥离 flutter extension，`lib/core/` 成为纯 Dart 模块
+- **`papers show <id>` 命令**：查看论文 markdown 或翻译内容（`--translated`）
+- **元数据获取**：`import url` 自动调用 arXiv API 补全论文的作者/年份/DOI
+- **`import search <index>` 命令**：从搜索结果直接导入论文
+- **YAML frontmatter**：`export markdown` 输出添加 title/authors/year/doi/source 头
+
+### Changed
+
+- **数据目录统一**：CLI 与应用共享 `~/.paperwise/`（原 test_harness 使用 `~/.paperpal/`）
+- **Soul 预设独立**：`soulPresetDefinitions` 从 `soul_service.dart` 提取为独立纯 Dart 文件 `soul_presets.dart`
+- **BibTeX 导出增强**：不再使用 `{Anonymous}`，优先使用 arXiv API 获取的作者元数据
+- **README 更新**：新增 CLI 工具文档、测试数更新至 320
+
 ## [0.1.3] - 2026-05-10
 
 ### Added
