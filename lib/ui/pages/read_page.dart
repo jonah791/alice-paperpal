@@ -8,7 +8,6 @@ import '../../core/models/note.dart';
 import '../../core/services/export_service.dart';
 import '../../main.dart';
 import '../widgets/explain_dialog.dart';
-import '../widgets/avatar_helpers.dart';
 import '../widgets/progress_bar.dart';
 
 final _log = Logger('ReadPage');
@@ -259,9 +258,6 @@ class _ReadPageState extends State<ReadPage> {
   }
 
   Widget _buildQAPanel(ThemeData theme) {
-    final deps = Dependencies.of(context);
-    final soul = deps.soulService.getActiveOrDefault();
-
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
@@ -286,23 +282,55 @@ class _ReadPageState extends State<ReadPage> {
                       if (!isUser)
                         Padding(
                           padding: const EdgeInsets.only(right: 6, top: 2),
-                          child: buildDefaultAvatar(soul.name, 20, deps.avatarService.colorForName(soul.name)),
+                          child: CircleAvatar(
+                            backgroundColor: theme.colorScheme.secondary,
+                            child: Text('A', style: TextStyle(
+                              color: theme.colorScheme.onSecondary,
+                              fontWeight: FontWeight.bold,
+                            )),
+                          ),
                         ),
                       Flexible(
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 2),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: isUser
-                                ? theme.colorScheme.primaryContainer
-                                : theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            msg['content'] ?? '',
-                            style: const TextStyle(fontSize: 13),
-                          ),
-                        ),
+                        child: isUser
+                          ? Container(
+                              margin: const EdgeInsets.symmetric(vertical: 2),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primaryContainer,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(14),
+                                  topRight: Radius.circular(14),
+                                  bottomLeft: Radius.circular(14),
+                                  bottomRight: Radius.circular(4),
+                                ),
+                              ),
+                              child: Text(
+                                msg['content'] ?? '',
+                                style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface),
+                              ),
+                            )
+                          : Container(
+                              margin: const EdgeInsets.symmetric(vertical: 2),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerHighest,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(14),
+                                  topRight: Radius.circular(14),
+                                  bottomLeft: Radius.circular(4),
+                                  bottomRight: Radius.circular(14),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    msg['content'] ?? '',
+                                    style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface),
+                                  ),
+                                ],
+                              ),
+                            ),
                       ),
                     ],
                   );
@@ -334,10 +362,10 @@ class _ReadPageState extends State<ReadPage> {
           ),
           IconButton(
                   icon: _qaLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: theme.colorScheme.secondary),
                         )
                       : const Icon(Icons.send),
                   onPressed: _qaLoading ? null : () => _askQuestion(_qaController.text),

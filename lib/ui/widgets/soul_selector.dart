@@ -79,11 +79,16 @@ class _SoulSelectorState extends State<SoulSelector> {
         final isActive = s.id == active.id;
         return ChoiceChip(
           selected: isActive,
-          label: Text(s.name, style: const TextStyle(fontSize: 13)),
+          label: Text(s.name, style: TextStyle(fontSize: 13, color: isActive ? theme.colorScheme.secondary : null)),
           onSelected: (_) async {
             await soulService.setActiveSoul(s);
             setState(() {});
           },
+          selectedColor: theme.colorScheme.secondaryContainer,
+          backgroundColor: Colors.transparent,
+          side: BorderSide(
+            color: isActive ? theme.colorScheme.secondary : theme.colorScheme.outline,
+          ),
         );
       }).toList(),
     );
