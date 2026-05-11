@@ -4,6 +4,8 @@
 
 搜索论文、导入 PDF、自动解析、自动翻译、AI 问答与摘要。AI 伙伴会记住你的偏好和过往对话，像真人一样陪伴你阅读论文。
 
+> **v0.2.0 全新 UI** — Alice in Wonderland 主题设计，深紫+暖金暗色与暖白+金日间双主题，动感渐变背景，扑克牌花色装饰元素，自定义字体，页面过渡动画。详见更新日志。
+
 ## 快速开始
 
 ### 桌面应用
@@ -67,7 +69,7 @@ flutter build windows --release
 ## 功能
 
 | 功能 | 说明 |
-|---|---|
+|---|---|---|
 | **AI 灵魂** | 预置 4 个角色（学术导师/代码专家/审稿人/科普达人），也可用自然语言创建自定义灵魂 |
 | **元灵魂** | 底层生命规则，让 AI 伙伴自然地引用过往、表达情绪、说"我不确定" |
 | **对话记忆** | 每次对话自动生成摘要，跨 session 注入，AI 伙伴记得你之前讨论过什么 |
@@ -86,7 +88,11 @@ flutter build windows --release
 | **多论文对比** | 长按选择多篇论文 → AI 对比分析 |
 | **笔记系统** | 阅读时添加笔记，持久化保存 |
 | **导出** | Markdown / BibTeX 导出 |
-| **暗黑模式** | 跟随系统 / 手动切换 |
+| **双主题** | Alice in Wonderland 主题 — 深紫+暖金暗色 / 暖白+金日间，可一键切换 |
+| **动效系统** | 动感渐变背景、页面过渡动画、扑克牌花色加载、错列入场、骨架屏 |
+| **自定义字体** | Playfair Display（标题）、Inter（UI）、Noto Serif SC（中文阅读） |
+| **全新图标** | 256×256 爱丽丝主题应用图标 |
+| **安装包** | 支持 Inno Setup 安装包（含 PDF 文件关联） |
 | **论文库** | 本地缓存 + 持久化，重启不丢失 |
 
 ## 架构
@@ -114,14 +120,14 @@ paperpal/
 │   │   ├── services/                # 业务服务
 │   │   └── utils/                   # 工具
 │   └── ui/
-│       ├── pages/                   # 页面
-│       ├── widgets/                 # 组件
-│       └── theme/                   # 主题
+│       ├── pages/                   # 页面（7 个）
+│       ├── widgets/                 # 组件（10 个）
+│       └── theme/                   # 主题（Alice in Wonderland 双主题）
 ├── test/                            # 320 个单元测试
 ├── tool/                            # CLI 命令行工具
-├── pubspec.yaml
-├── API.md                           # 外部 API 契约
-└── THIRD_PARTY_NOTICES.md           # 第三方许可
+└── windows/
+    ├── installer.iss                # Inno Setup 安装包脚本
+    └── runner/resources/            # 应用图标
 ```
 
 ## 配置
@@ -138,14 +144,18 @@ paperpal/
 
 ## 技术栈
 
-- **框架:** Flutter (Dart)
+- **框架:** Flutter (Dart) + Material 3
 - **桌面:** 原生 Flutter Windows（无需 Python）
 - **解析:** MinerU v4 API（异步任务模型，支持预签名上传）
 - **LLM:** DeepSeek V4 / OpenAI / Claude
 - **搜索:** arXiv + Semantic Scholar
 - **安全:** HTTPS 强制 / DPAPI 加密 Key 存储 / 日志脱敏
-- **测试:** 320 个单元测试覆盖 models/services/utils/API
+- **UI 主题:** 自定义双主题 ColorScheme（深紫+暖金 / 暖白+金）
+- **UI 字体:** Google Fonts — Playfair Display, Inter, Noto Serif SC
+- **UI 动效:** AnimationController + CustomPainter 动感渐变背景
+- **测试:** 320+ 个单元测试覆盖 models/services/utils/API
 - **CLI 工具:** 纯 Dart 命令行，`dart run tool/paperpal.dart`
+- **打包:** Inno Setup 安装程序
 - **CI:** GitHub Actions (analyze → test → build → release)
 
 ## 许可

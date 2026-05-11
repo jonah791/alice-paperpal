@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.2.0] - 2026-05-11
+
+### Added — Alice in Wonderland UI Redesign
+
+- **Complete theme rewrite** — Dark (deep purple + gold #E8B84B) and light (warm cream + gold #C28A2C) dual theme with explicit ColorScheme
+- **Custom typography** — Playfair Display (headings), Inter (UI), Noto Serif SC (Chinese reading) via Google Fonts
+- **Animated gradient background** — 3-point radial gradients slowly drifting across screen, with card suit pattern overlay
+- **Card suit decorations** — ♠♥♦♣ markers on paper library cards, floating suit decorations on welcome page
+- **Custom page transitions** — Slide-in curtain effect with cubic bezier curve on all page navigation
+- **Scroll progress bar** — 3px gold gradient bar tracking reading progress on read page
+- **Card spinner loading** — Animated ♠♥♦♣ staggered loading indicator replacing CircularProgressIndicator
+- **Skeleton loader** — Breathing opacity placeholder while content loads
+- **Staggered list animations** — Cards fade+slide up on search results and library pages
+- **Gold gradient text** — Welcome page title "PaperPal" with three-tone gold linear gradient
+- **Highlight markup style** — Gold underline highlight (18% opacity background) for key terms in reading content
+- **Styled equation blocks** — Gold-tinted container with border for LaTeX equations
+- **Styled note cards** — Gold left border accent, elevated surface, italic content text
+- **Chat bubble redesign** — Purple tint user bubble, gold-accented AI bubble with gold circle avatar
+- **Soul selector redesign** — Gold active state chip with tint background
+- **Settings page polish** — Section headers with gold muted uppercase labels
+- **App icon** — New 256×256 Alice-themed app icon with playing card motifs
+- **Inno Setup installer** — Professional Windows installer (.exe) with PDF file association
+
+### Changed
+
+- All `CircularProgressIndicator` usages replaced with themed `CardSpinner` or `SkeletonLoader`
+- All card styling unified via `CardTheme` (12px radius, gold border)
+- All input fields unified via `InputDecorationTheme` (dark surface, gold focus)
+- All buttons unified via `ElevatedButtonTheme` (gold pill shape)
+
 ## [0.1.5] - 2026-05-11
 
 ### Fixed

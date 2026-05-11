@@ -1,7 +1,7 @@
 # ALICE PaperPal — 项目交接文档
 
 **项目名：** ALICE PaperPal  
-**版本：** v0.1.5  
+**版本：** v0.2.0  
 **仓库：** https://github.com/jonah791/alice-paperpal  
 **技术栈：** Flutter (Dart) 桌面端 Windows EXE + CLI 命令行工具  
 **构建状态：** CI 自动构建 → Release 发布
@@ -378,7 +378,7 @@ git push origin v0.1.x
 
 ## 六、测试覆盖
 
-**当前 320 个测试，覆盖全部纯逻辑层：**
+**当前 320+ 个测试，覆盖全部纯逻辑层 + AppTheme widget smoke test：**
 
 ### 原始测试（161 个）
 
@@ -444,13 +444,19 @@ git push origin v0.1.x
 | — | 引用网络可视化 | 待定 |
 | — | MinerU Agent 轻量 API 兜底 | 1 天 |
 
-### v0.1.5 已完成功能
+### v0.2.0 已完成功能 — Alice in Wonderland UI Redesign
 
-- **CI 构建修复**：`read_page.dart` 和 `soul_selector.dart` 中 3 处 `buildDefaultAvatar` 引用修复
-- **MergeService 多批处理数据保留**：`imagePaths`、`contentListJson`、`startPage/endPage` 不再丢失
-- **LLMProvider 重试机制**：添加 `RetryInterceptor`，网络错误时自动重试
-- **未使用 import 清理**：消除 9 处未使用 import（settings_page 及 CLI 工具各命令文件）
-- **死代码清理**：`services_edge_test.dart` 中 `deepMerge({}, m)` 无效果调用移除
+- **Alice 主题双系统**：深紫+暖金暗色 / 暖白+金日间主题，一键切换
+- **动感渐变背景**：3 点径向渐变 + 花色暗纹叠加
+- **全新图标**：256×256 爱丽丝主题应用图标（♠♥♦♣）
+- **Inno Setup 安装包**：`windows/installer.iss`，CI 自动构建 .exe 安装程序
+- **字体系统**：Playfair Display（标题）、Inter（UI）、Noto Serif SC（中文阅读）
+- **动画系统**：页面过渡、错列入场、扑克牌花色加载、骨架屏
+- **页面美化**：6 个页面全部重新设计（欢迎页/搜索页/文库/阅读/对话/设置）
+- **自定义组件**：animated_background, card_spinner, skeleton_loader, progress_bar, page_transition
+- **App 图标重新设计**
+
+### v0.1.5 已完成功能
 
 ### v0.1.4 已完成功能
 
