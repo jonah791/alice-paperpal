@@ -82,15 +82,14 @@ class _SettingsPageState extends State<SettingsPage> {
         Text('设置', style: theme.textTheme.titleLarge),
         const SizedBox(height: 24),
 
-        // LLM Provider
+        _sectionLabel(context, 'LLM 配置'),
+        const SizedBox(height: 8),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('LLM 配置', style: theme.textTheme.titleMedium),
-                const SizedBox(height: 4),
                 Text('默认使用 DeepSeek V4 Flash。支持 OpenAI 兼容 API。',
                     style: theme.textTheme.bodySmall),
                 const SizedBox(height: 16),
@@ -116,24 +115,23 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
         const SizedBox(height: 16),
-
-        // Soul
+        _sectionLabel(context, '灵魂'),
+        const SizedBox(height: 8),
         const SoulSelector(),
         const SizedBox(height: 16),
-
-        // Avatar
+        _sectionLabel(context, '头像'),
+        const SizedBox(height: 8),
         const AvatarPicker(),
         const SizedBox(height: 16),
 
-        // MinerU
+        _sectionLabel(context, '解析引擎'),
+        const SizedBox(height: 8),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('MinerU 解析引擎', style: theme.textTheme.titleMedium),
-                const SizedBox(height: 4),
                 Text('论文 PDF 将上传至 MinerU 云端进行解析（v4 API）。',
                     style: theme.textTheme.bodySmall),
                 const SizedBox(height: 16),
@@ -216,5 +214,17 @@ class _SettingsPageState extends State<SettingsPage> {
         const SnackBar(content: Text('设置已保存（部分更改下次启动生效）')),
       );
     }
+  }
+
+  Widget _sectionLabel(BuildContext context, String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 9,
+        color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.4),
+        letterSpacing: 2,
+        fontWeight: FontWeight.w500,
+      ),
+    );
   }
 }

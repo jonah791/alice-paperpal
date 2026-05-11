@@ -4,6 +4,7 @@ import '../../core/models/paper.dart';
 import '../../main.dart';
 import 'read_page.dart';
 import 'comparison_page.dart';
+import '../widgets/skeleton_loader.dart';
 
 final _log = Logger('LibraryPage');
 
@@ -38,6 +39,17 @@ class _LibraryPageState extends State<LibraryPage> {
                   : allPapers;
 
               if (allPapers.isEmpty) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: ListView(
+                      children: List.generate(5, (i) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: SkeletonLoader(height: 80, borderRadius: 12),
+                      )),
+                    ),
+                  );
+                }
                 return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
