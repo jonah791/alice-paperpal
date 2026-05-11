@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:logging/logging.dart';
+import '../utils/retry_interceptor.dart';
 
 final _log = Logger('LLMProvider');
 
@@ -39,7 +40,10 @@ class LLMProvider {
         'Content-Type': 'application/json',
       },
     ));
-    _dio.interceptors.add(HttpsInterceptor());
+    _dio.interceptors.addAll([
+      RetryInterceptor(),
+      HttpsInterceptor(),
+    ]);
   }
 
   String get endpoint {

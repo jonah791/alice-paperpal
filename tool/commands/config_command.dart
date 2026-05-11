@@ -1,11 +1,11 @@
 import '../cli_state.dart' show loadConfig, saveConfig;
-import '../cli_helpers.dart' show printSuccess, printError, printJson;
+import '../cli_helpers.dart' show println, printSuccess, printError, printJson;
 
 const _help = 'config get <key> | config set <key> <value>';
 
 void configCommand(List<String> args) {
   if (args.isEmpty) {
-    print(_help);
+    println(_help);
     return;
   }
 

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import '../../main.dart';
-import '../../core/models/config.dart';
 import '../widgets/soul_selector.dart';
 import '../widgets/avatar_picker.dart';
 

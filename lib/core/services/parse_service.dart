@@ -39,7 +39,11 @@ class ParseService {
     }
 
     _log.info('parsePdf: splitting into ${ranges.length} tasks, $pageCount pages');
-    final batchResults = <String>[];
+    final batchMarkdowns = <String>[];
+    final allImagePaths = <String>[];
+    var mergedContentJson = '';
+    var mergedStartPage = 0;
+    var mergedEndPage = 0;
 
     for (var i = 0; i < ranges.length; i++) {
       final range = ranges[i];
@@ -55,7 +59,13 @@ class ParseService {
           pdfFile,
           pageRanges: '${range.start + 1}-${range.end + 1}',
         );
-        batchResults.add(result.markdown);
+        batchMarkdowns.add(result.markdown);
+        allImagePaths.addAll(result.imagePaths);
+        if (result.contentListJson.isNotEmpty) {
+          mergedContentJson = result.contentListJson;
+        }
+        if (i == 0) mergedStartPage = range.start;
+        mergedEndPage = range.end;
         _log.info('parsePdf: batch ${i + 1}/${ranges.length} OK, ${result.markdown.length} chars');
       } catch (e) {
         _log.warning('parsePdf: batch ${i + 1}/${ranges.length} failed: $e');
@@ -63,13 +73,20 @@ class ParseService {
       }
     }
 
-    final merged = MergeService.merge(batchResults);
+    final merged = MergeService.merge(batchMarkdowns);
     _log.info('parsePdf: ${ranges.length} tasks merged successfully');
-    return merged;
+    return ParseResult(
+      markdown: merged.markdown,
+      title: merged.title,
+      imagePaths: allImagePaths,
+      contentListJson: mergedContentJson,
+      startPage: mergedStartPage,
+      endPage: mergedEndPage,
+    );
   }
 
   List<PageRange> buildPageRanges(int totalPages) {
-      if (totalPages <= maxPagesPerTask) return [];
+    if (totalPages <= maxPagesPerTask) return [];
     final ranges = <PageRange>[];
     for (var start = 0; start < totalPages; start += maxPagesPerTask) {
       var end = start + maxPagesPerTask - 1;

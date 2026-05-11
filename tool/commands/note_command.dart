@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import '../cli_helpers.dart' show println, bold, cyan, printError, printSuccess, printJson;
 import '../cli_state.dart' show loadNotes, saveNotes;
 

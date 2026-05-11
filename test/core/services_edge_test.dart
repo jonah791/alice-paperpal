@@ -145,14 +145,9 @@ void main() {
   });
 
   group('PortraitService.summarize', () {
-    test('summarize with only interests no summary', () {
+    test('summarize returns empty when portrait is empty', () {
       final s = PortraitService();
-      final m = <String, dynamic>{
-        'interests': {'ML': 'machine learning', 'NLP': 'natural language processing'},
-      };
-      s.deepMerge({}, m);
-      // Test that summarization produces non-empty output for interests
-      expect(s.summarize().isNotEmpty, false); // No _portrait set via service
+      expect(s.summarize(), '');
     });
   });
 }

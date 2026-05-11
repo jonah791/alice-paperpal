@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import '../../lib/core/models/paper.dart' show Paper;
-import '../cli_helpers.dart' show println, bold, cyan, printError, printSuccess;
+import '../cli_helpers.dart' show println, bold, printError, printSuccess;
 import '../cli_state.dart' show loadPapersIndex, readPaperMarkdown;
 
 const _help = 'export bibtex <id> [--output <path>] | export markdown <id> [--output <path>]';

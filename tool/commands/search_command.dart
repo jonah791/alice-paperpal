@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import '../../lib/core/api/arxiv_api.dart' show ArxivApi;
 import '../../lib/core/api/s2_api.dart' show S2Api;
 import '../../lib/core/models/search_result.dart';

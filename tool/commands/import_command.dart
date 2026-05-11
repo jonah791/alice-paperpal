@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import '../../lib/core/api/arxiv_api.dart' show ArxivApi;
@@ -7,7 +6,7 @@ import '../../lib/core/models/paper.dart' show Paper, PaperStatus;
 import '../../lib/core/services/parse_service.dart' show ParseService;
 import '../../lib/core/services/search_service.dart' show SearchService;
 import '../cli_helpers.dart' show println, bold, cyan, printError, printSuccess;
-import '../cli_state.dart' show loadConfig, loadPapersIndex, savePapersIndex, savePaperMarkdown, saveSearchResults, getSearchResults;
+import '../cli_state.dart' show loadConfig, loadPapersIndex, savePapersIndex, savePaperMarkdown, getSearchResults;
 
 const _help = 'import search <index> | import pdf <path> [--title T] | import url <url> [--title T]';
 

@@ -1,8 +1,6 @@
-import 'dart:convert';
-
 import '../../lib/core/models/soul.dart';
 import '../cli_state.dart' show soulPresetDefinitions, loadActiveSoulId, saveActiveSoulId, saveSoulFile, deleteSoulFile, ensureDirs;
-import '../cli_helpers.dart' show printSuccess, printError, println, cyan, bold, printJson;
+import '../cli_helpers.dart' show printSuccess, printError, println, cyan, bold;
 
 const _help = 'soul list | soul set <id> | soul create <name> <description> | soul delete <id>';
 

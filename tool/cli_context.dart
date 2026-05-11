@@ -1,5 +1,5 @@
 import '../lib/core/models/soul.dart';
-import 'cli_state.dart' show soulPresetDefinitions, loadConfig, loadMemories, loadPortrait, loadActiveSoulId;
+import 'cli_state.dart' show soulPresetDefinitions, loadMemories, loadPortrait, loadActiveSoulId;
 
 const _metaSoulRules = '''
 当你在回答中引用过往对话时，自然地融入，不要说"根据我们的对话历史"这种机械的话。
