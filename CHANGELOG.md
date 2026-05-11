@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.5] - 2026-05-11
+
+### Fixed
+
+- **CI 构建失败修复**：`read_page.dart` 和 `soul_selector.dart` 仍引用已移除的 `AvatarService.buildDefaultAvatar()`，改为调用 `avatar_helpers.dart` 中的 `buildDefaultAvatar()` 独立函数
+
 ## [0.1.4] - 2026-05-11
 
 ### Added
