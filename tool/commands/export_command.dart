@@ -42,16 +42,27 @@ void exportCommand(List<String> args) {
       printError('Paper markdown not found (not parsed yet?): $paperId');
       return;
     }
+    final frontmatter = '''---
+title: "${_escapeYaml(paper.title)}"
+authors: [${paper.authors.map((a) => '"${_escapeYaml(a)}"').join(', ')}]
+year: ${paper.year}
+doi: "${_escapeYaml(paper.doi)}"
+source: "${_escapeYaml(paper.source)}"
+---
+''';
+    final content = frontmatter + md;
     if (outputPath != null) {
-      File(outputPath).writeAsStringSync(md);
+      File(outputPath).writeAsStringSync(content);
       printSuccess('Markdown saved to $outputPath');
     } else {
-      println(md);
+      println(content);
     }
   } else {
     printError('Unsupported format: $format\n$_help');
   }
 }
+
+String _escapeYaml(String s) => s.replaceAll('"', r'\"');
 
 String _generateBibtex(Paper paper) {
   final key = paper.doi.isNotEmpty

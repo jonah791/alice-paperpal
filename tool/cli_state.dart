@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import '../lib/core/models/search_result.dart';
 import '../lib/core/models/soul_presets.dart' show soulPresetDefinitions;
 export '../lib/core/models/soul_presets.dart' show soulPresetDefinitions;
 
@@ -21,6 +22,16 @@ String get _soulsDir => '$_dataDir/souls';
 String get _soulsPresetDir => '$_soulsDir/preset';
 String get _soulsCustomDir => '$_soulsDir/custom';
 String get _activeSoulPath => '$_dataDir/soul.json';
+
+// ── Search Results ──
+
+List<SearchResult>? _lastSearchResults;
+
+void saveSearchResults(List<SearchResult> results) {
+  _lastSearchResults = List.from(results);
+}
+
+List<SearchResult> getSearchResults() => _lastSearchResults ?? [];
 
 // ── Config ──
 

@@ -1,8 +1,8 @@
 import '../../lib/core/models/paper.dart' show Paper, PaperStatus;
 import '../cli_helpers.dart' show println, bold, cyan, printError, printSuccess, printJson, green, yellow, red;
-import '../cli_state.dart' show loadPapersIndex, savePapersIndex, deletePaperCache;
+import '../cli_state.dart' show loadPapersIndex, savePapersIndex, deletePaperCache, readPaperMarkdown, readPaperTranslation;
 
-const _help = 'papers list [--status S] [--json] | papers delete <id>';
+const _help = 'papers list [--status S] [--json] | papers delete <id> | papers show <id> [--translated]';
 
 void paperCommand(List<String> args) {
   if (args.isEmpty || args[0] == 'list') {
@@ -13,6 +13,12 @@ void paperCommand(List<String> args) {
       return;
     }
     _deletePaper(args[1]);
+  } else if (args[0] == 'show') {
+    if (args.length < 2) {
+      printError('Usage: papers show <id> [--translated]');
+      return;
+    }
+    _showPaper(args[1], args.contains('--translated'));
   } else {
     printError('Unknown: ${args[0]}\n$_help');
   }
@@ -70,4 +76,37 @@ void _deletePaper(String id) {
   savePapersIndex(papers);
   deletePaperCache(id);
   printSuccess('Deleted paper: $id');
+}
+
+void _showPaper(String id, bool showTranslated) {
+  final papers = loadPapersIndex();
+  final json = papers.where((p) => p['id'] == id).firstOrNull;
+  if (json == null) {
+    printError('Paper not found: $id');
+    return;
+  }
+
+  final paper = Paper.fromJson(json);
+  println('${bold(paper.title)}');
+  if (paper.authors.isNotEmpty) println('${cyan("Authors")}: ${paper.authors.join(', ')}');
+  if (paper.year > 0) println('${cyan("Year")}: ${paper.year}');
+  if (paper.doi.isNotEmpty) println('${cyan("DOI")}: ${paper.doi}');
+  println('${cyan("Status")}: ${paper.status.name} | ${cyan("Source")}: ${paper.source} | ${cyan("Pages")}: ${paper.pageCount}');
+  println('');
+
+  if (showTranslated) {
+    final translation = readPaperTranslation(id);
+    if (translation == null) {
+      printError('Translation not found. Run translate first.');
+      return;
+    }
+    println(translation);
+  } else {
+    final md = readPaperMarkdown(id);
+    if (md == null) {
+      printError('Markdown not found (not parsed yet?).');
+      return;
+    }
+    println(md);
+  }
 }

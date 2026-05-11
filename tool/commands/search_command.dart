@@ -4,6 +4,7 @@ import '../../lib/core/api/arxiv_api.dart' show ArxivApi;
 import '../../lib/core/api/s2_api.dart' show S2Api;
 import '../../lib/core/models/search_result.dart';
 import '../cli_helpers.dart' show println, bold, cyan, printError;
+import '../cli_state.dart' show saveSearchResults;
 
 const _help = 'search <query> [--limit N]';
 
@@ -49,6 +50,7 @@ Future<void> searchCommand(List<String> args) async {
       return;
     }
 
+    saveSearchResults(sorted);
     println('${bold("Results")} (${sorted.length}):\n');
     for (var i = 0; i < sorted.length; i++) {
       final r = sorted[i];

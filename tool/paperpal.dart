@@ -78,10 +78,12 @@ void _printHelp() {
   println('  config list                       List all config\n');
   println('${bold("Search & Import")}:');
   println('  search <query> [--limit N]        Search papers via arXiv + Semantic Scholar');
+  println('  import search <index>             Import paper from search result index');
   println('  import pdf <path> [--title T]     Import and parse a local PDF');
   println('  import url <url> [--title T]      Import and parse PDF from URL\n');
   println('${bold("Papers")}:');
   println('  papers list [--status S] [--json]  List imported papers');
+  println('  papers show <id> [--translated]    Show paper content');
   println('  papers delete <id>                Delete a paper\n');
   println('${bold("AI")}:');
   println('  ask <paper-id> <question>          Ask AI about a paper');
