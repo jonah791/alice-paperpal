@@ -1,7 +1,7 @@
 # ALICE PaperPal — 项目交接文档
 
 **项目名：** ALICE PaperPal  
-**版本：** v0.1.4  
+**版本：** v0.1.5  
 **仓库：** https://github.com/jonah791/alice-paperpal  
 **技术栈：** Flutter (Dart) 桌面端 Windows EXE + CLI 命令行工具  
 **构建状态：** CI 自动构建 → Release 发布
@@ -444,6 +444,14 @@ git push origin v0.1.x
 | — | 引用网络可视化 | 待定 |
 | — | MinerU Agent 轻量 API 兜底 | 1 天 |
 
+### v0.1.5 已完成功能
+
+- **CI 构建修复**：`read_page.dart` 和 `soul_selector.dart` 中 3 处 `buildDefaultAvatar` 引用修复
+- **MergeService 多批处理数据保留**：`imagePaths`、`contentListJson`、`startPage/endPage` 不再丢失
+- **LLMProvider 重试机制**：添加 `RetryInterceptor`，网络错误时自动重试
+- **未使用 import 清理**：消除 9 处未使用 import（settings_page 及 CLI 工具各命令文件）
+- **死代码清理**：`services_edge_test.dart` 中 `deepMerge({}, m)` 无效果调用移除
+
 ### v0.1.4 已完成功能
 
 - **CLI 测试工具** — `tool/paperpal.dart`，12 个命令覆盖搜索/导入/解析/AI 问答/摘要/翻译/导出/灵魂/笔记/记忆/画像
@@ -453,6 +461,7 @@ git push origin v0.1.x
 - **`import search` 已实现** — 从搜索结果直接下载并解析
 - **YAML frontmatter** — `export markdown` 输出添加标题/作者/年份/DOI 头
 - **全方位测试** — 161 → 320 测试，新增 8 个测试文件
+- **全链路 CLI 测试** — 对真实 arXiv PDF 完成 12 个命令测试，搜索/解析/AI 问答/摘要/翻译/导出/笔记 均正常
 
 ### v0.1.3 已完成功能
 
