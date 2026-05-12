@@ -27,7 +27,7 @@ class _LibraryPageState extends State<LibraryPage> {
     return Column(
       children: [
         _buildSelectionBar(theme),
-        _buildFilterBar(theme),
+        _buildFilterBar(context, theme),
         Expanded(
           child: StreamBuilder<List<Paper>>(
             stream: deps.paperService.paperStream,
@@ -130,7 +130,7 @@ class _LibraryPageState extends State<LibraryPage> {
     );
   }
 
-  Widget _buildFilterBar(ThemeData theme) {
+  Widget _buildFilterBar(BuildContext context, ThemeData theme) {
     final filters = [
       '全部',
       PaperStatus.importing.label,
@@ -158,8 +158,8 @@ class _LibraryPageState extends State<LibraryPage> {
               child: FilterChip(
                 label: Text(filters[i], style: const TextStyle(fontSize: 12)),
                 selected: selected,
-                selectedColor: status?.color?.withValues(alpha: 0.2),
-                checkmarkColor: status?.color,
+                selectedColor: status?.color(context)?.withValues(alpha: 0.2),
+                checkmarkColor: status?.color(context),
                 onSelected: (_) => setState(() => _filterStatus = i),
             ));
           }),
@@ -252,8 +252,8 @@ class _LibraryPageState extends State<LibraryPage> {
                   const SizedBox(width: 16),
                   Chip(
                     label: Text(_statusText(paper.status), style: const TextStyle(fontSize: 11)),
-                    backgroundColor: paper.status.color?.withValues(alpha: 0.1),
-                    side: BorderSide(color: paper.status.color?.withValues(alpha: 0.3) ?? Colors.transparent),
+                    backgroundColor: paper.status.color(context).withValues(alpha: 0.1),
+                    side: BorderSide(color: paper.status.color(context).withValues(alpha: 0.3)),
                   ),
                   if (_selected.isEmpty)
                     PopupMenuButton<String>(
@@ -361,15 +361,18 @@ class _LibraryPageState extends State<LibraryPage> {
 }
 
 extension on PaperStatus {
-  Color? get color => switch (this) {
-    PaperStatus.importing => Colors.grey,
-    PaperStatus.downloading => Colors.blue,
-    PaperStatus.parsing => Colors.orange,
-    PaperStatus.parsed => Colors.green,
-    PaperStatus.translating => Colors.purple,
-    PaperStatus.translated => Colors.teal,
-    PaperStatus.error => Colors.red,
-  };
+  Color color(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return switch (this) {
+      PaperStatus.importing => cs.tertiary,
+      PaperStatus.downloading => cs.tertiary,
+      PaperStatus.parsing => cs.primary,
+      PaperStatus.parsed => cs.secondary,
+      PaperStatus.translating => cs.primary,
+      PaperStatus.translated => cs.primary,
+      PaperStatus.error => cs.error,
+    };
+  }
 
   String get label => switch (this) {
     PaperStatus.importing => '导入中',

@@ -82,7 +82,7 @@ class _SoulSelectorState extends State<SoulSelector> {
           label: Text(s.name, style: TextStyle(fontSize: 13, color: isActive ? theme.colorScheme.secondary : null)),
           onSelected: (_) async {
             await soulService.setActiveSoul(s);
-            setState(() {});
+            if (mounted) setState(() {});
           },
           selectedColor: theme.colorScheme.secondaryContainer,
           backgroundColor: Colors.transparent,
@@ -113,7 +113,7 @@ class _SoulSelectorState extends State<SoulSelector> {
       ),
       onTap: () async {
         await soulService.setActiveSoul(s);
-        setState(() {});
+        if (mounted) setState(() {});
       },
     );
   }
@@ -211,7 +211,7 @@ class _SoulSelectorState extends State<SoulSelector> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
           FilledButton(onPressed: () async {
             await soulService.deleteCustomSoul(s.id);
-            setState(() {});
+            if (mounted) setState(() {});
             if (ctx.mounted) Navigator.pop(ctx);
           }, child: const Text('删除')),
         ],

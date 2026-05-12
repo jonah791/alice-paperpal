@@ -45,19 +45,23 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _loadSettings() async {
-    final deps = Dependencies.of(context);
-    final cfg = deps.configService.config;
-    final llmKey = await deps.configService.readLlmApiKey();
-    final mineruKey = await deps.configService.readMineruApiKey();
+    try {
+      final deps = Dependencies.of(context);
+      final cfg = deps.configService.config;
+      final llmKey = await deps.configService.readLlmApiKey();
+      final mineruKey = await deps.configService.readMineruApiKey();
 
-    _llmKeyController.text = llmKey ?? '';
-    _llmBaseController.text = cfg.llmApiBase;
-    _mineruKeyController.text = mineruKey ?? '';
-    _mineruModelVersion = cfg.mineruModelVersion;
-    _enableFormula = cfg.enableFormula;
-    _enableTable = cfg.enableTable;
+      _llmKeyController.text = llmKey ?? '';
+      _llmBaseController.text = cfg.llmApiBase;
+      _mineruKeyController.text = mineruKey ?? '';
+      _mineruModelVersion = cfg.mineruModelVersion;
+      _enableFormula = cfg.enableFormula;
+      _enableTable = cfg.enableTable;
 
-    setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
+    } catch (e) {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -190,29 +194,37 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _saveSettings() async {
-    final deps = Dependencies.of(context);
-    if (_llmKeyController.text.isNotEmpty) {
-      await deps.configService.saveLlmApiKey(_llmKeyController.text);
-    }
-    if (_mineruKeyController.text.isNotEmpty) {
-      await deps.configService.saveMineruApiKey(_mineruKeyController.text);
-    }
+    try {
+      final deps = Dependencies.of(context);
+      if (_llmKeyController.text.isNotEmpty) {
+        await deps.configService.saveLlmApiKey(_llmKeyController.text);
+      }
+      if (_mineruKeyController.text.isNotEmpty) {
+        await deps.configService.saveMineruApiKey(_mineruKeyController.text);
+      }
 
-    final updatedConfig = deps.configService.config.copyWith(
-      llmApiBase: _llmBaseController.text.isNotEmpty
-          ? _llmBaseController.text
-          : deps.configService.config.llmApiBase,
-      mineruModelVersion: _mineruModelVersion,
-      enableFormula: _enableFormula,
-      enableTable: _enableTable,
-    );
-    await deps.configService.updateConfig(updatedConfig);
-
-    if (mounted) {
-      _log.info('settings saved: modelVersion=$_mineruModelVersion');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('设置已保存（部分更改下次启动生效）')),
+      final updatedConfig = deps.configService.config.copyWith(
+        llmApiBase: _llmBaseController.text.isNotEmpty
+            ? _llmBaseController.text
+            : deps.configService.config.llmApiBase,
+        mineruModelVersion: _mineruModelVersion,
+        enableFormula: _enableFormula,
+        enableTable: _enableTable,
       );
+      await deps.configService.updateConfig(updatedConfig);
+
+      if (mounted) {
+        _log.info('settings saved: modelVersion=$_mineruModelVersion');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('设置已保存（部分更改下次启动生效）')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('保存失败: $e')),
+        );
+      }
     }
   }
 

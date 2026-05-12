@@ -50,11 +50,16 @@ class AvatarPicker extends StatelessWidget {
                 ),
                 OutlinedButton.icon(
                   onPressed: () async {
-                    final picker = ImagePicker();
-                    final image = await picker.pickImage(source: ImageSource.gallery, maxWidth: 256, maxHeight: 256);
-                    if (image == null) return;
-                    await deps.avatarService.setAvatarFromPath(image.path);
-                    (context as Element).markNeedsBuild();
+                    try {
+                      final deps = Dependencies.of(context);
+                      final result = await ImagePicker().pickImage(source: ImageSource.gallery);
+                      if (result != null) {
+                        await deps.avatarService.setAvatarFromPath(result.path);
+                        if (mounted) (context as Element).markNeedsBuild();
+                      }
+                    } catch (e) {
+                      // Silently fail — avatar is non-critical
+                    }
                   },
                   icon: const Icon(Icons.photo_library, size: 16),
                   label: const Text('从相册选择'),
@@ -63,8 +68,13 @@ class AvatarPicker extends StatelessWidget {
                   const SizedBox(width: 8),
                   TextButton(
                     onPressed: () async {
-                      await deps.avatarService.deleteBuiltin();
-                      (context as Element).markNeedsBuild();
+                      try {
+                        final deps = Dependencies.of(context);
+                        await deps.avatarService.deleteBuiltin();
+                        if (mounted) (context as Element).markNeedsBuild();
+                      } catch (e) {
+                        // Silently fail
+                      }
                     },
                     child: const Text('恢复默认'),
                   ),

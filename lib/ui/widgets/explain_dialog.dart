@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:logging/logging.dart';
-import '../../core/services/paper_service.dart';
 import '../../core/di/dependencies.dart';
 
 final _log = Logger('ExplainDialog');
