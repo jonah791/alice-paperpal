@@ -55,7 +55,7 @@ class AvatarPicker extends StatelessWidget {
                       final result = await ImagePicker().pickImage(source: ImageSource.gallery);
                       if (result != null) {
                         await deps.avatarService.setAvatarFromPath(result.path);
-                        if (mounted) (context as Element).markNeedsBuild();
+                        if (context.mounted) (context as Element).markNeedsBuild();
                       }
                     } catch (e) {
                       // Silently fail — avatar is non-critical
@@ -71,7 +71,7 @@ class AvatarPicker extends StatelessWidget {
                       try {
                         final deps = Dependencies.of(context);
                         await deps.avatarService.deleteBuiltin();
-                        if (mounted) (context as Element).markNeedsBuild();
+                        if (context.mounted) (context as Element).markNeedsBuild();
                       } catch (e) {
                         // Silently fail
                       }
