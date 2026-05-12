@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.2] - 2026-05-12
+
+### Fixed
+
+- **灰屏崩溃**：`read_page.dart` 中 `build()` 内 `addPostFrameCallback` → `setState` 无限循环导致 Flutter 框架灰屏。将 BottomSheet 展示逻辑移至专用方法 `_toggleNotesPanel()`
+- **异步安全**：7 个文件共 12 处 async 方法添加 try/catch + mounted 检查，防止未处理异常导致的崩溃（`_search()`、`_uploadPdf()`、`_deleteSelected()`、`_confirmDelete()`、`_loadSettings()`、`_saveSettings()`、avatar picker、soul selector）
+
+### Changed
+
+- **暗色模式适配**：`PaperStatus.color` 改为接收 `BuildContext` 参数，使用 `ColorScheme` 语义色替代硬编码 `Colors.*`
+
+### Cleanup
+
+- **无用 import**：移除 `explain_dialog.dart` 中未使用的 `paper_service.dart` 导入
+
 ## [0.3.1] - 2026-05-12
 
 ### Refactor
