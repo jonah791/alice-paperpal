@@ -210,43 +210,61 @@ class _SearchPageState extends State<SearchPage> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: Wrap(
-            runSpacing: 8,
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _queryController,
-                  decoration: InputDecoration(
-                    hintText: '搜索论文标题或关键词...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    filled: true,
-                    fillColor: theme.colorScheme.surfaceContainerHighest,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth > 600) {
+                return Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _queryController,
+                        decoration: InputDecoration(
+                          hintText: '搜索论文标题或关键词...',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          filled: true,
+                          fillColor: theme.colorScheme.surfaceContainerHighest,
+                        ),
+                        onSubmitted: (_) => _search(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _searchButton(),
+                    const SizedBox(width: 8),
+                    _uploadButton(),
+                    const SizedBox(width: 8),
+                    _linkButton(),
+                  ],
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: _queryController,
+                    decoration: InputDecoration(
+                      hintText: '搜索论文标题或关键词...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: theme.colorScheme.surfaceContainerHighest,
+                    ),
+                    onSubmitted: (_) => _search(),
                   ),
-                  onSubmitted: (_) => _search(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              FilledButton.icon(
-                onPressed: _loading ? null : _search,
-                icon: _loading
-                    ? const SizedBox(width: 24, height: 24, child: CardSpinner(size: 24))
-                    : const Icon(Icons.search),
-                label: const Text('搜索'),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton.icon(
-                onPressed: _uploadPdf,
-                icon: const Icon(Icons.upload_file),
-                label: const Text('上传 PDF'),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton.icon(
-                onPressed: () => setState(() => _showUrlInput = !_showUrlInput),
-                icon: Icon(_showUrlInput ? Icons.expand_less : Icons.link),
-                label: const Text('贴链接'),
-              ),
-            ],
+                  const SizedBox(height: 8),
+                  Wrap(
+                    runSpacing: 8,
+                    children: [
+                      _searchButton(),
+                      const SizedBox(width: 8),
+                      _uploadButton(),
+                      const SizedBox(width: 8),
+                      _linkButton(),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
         ),
         if (_showUrlInput)
@@ -281,6 +299,8 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
+  static const _fadeTween = Tween<double>(begin: 0.0, end: 1.0);
+
   Widget _buildBody(ThemeData theme) {
     if (_loading) {
       return const Center(child: CardSpinner());
@@ -289,7 +309,7 @@ class _SearchPageState extends State<SearchPage> {
     if (_results.isEmpty) {
       return Center(
         child: TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: 1.0),
+          tween: _fadeTween,
           duration: const Duration(milliseconds: 500),
           builder: (context, value, child) {
             return Opacity(
@@ -318,7 +338,7 @@ class _SearchPageState extends State<SearchPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: _results.length,
       itemBuilder: (context, index) => TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0.0, end: 1.0),
+        tween: _fadeTween,
         duration: const Duration(milliseconds: 500),
         builder: (context, value, child) {
           return Opacity(
@@ -407,6 +427,32 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _searchButton() {
+    return FilledButton.icon(
+      onPressed: _loading ? null : _search,
+      icon: _loading
+          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+          : const Icon(Icons.search),
+      label: const Text('搜索'),
+    );
+  }
+
+  Widget _uploadButton() {
+    return OutlinedButton.icon(
+      onPressed: _uploadPdf,
+      icon: const Icon(Icons.upload_file),
+      label: const Text('上传 PDF'),
+    );
+  }
+
+  Widget _linkButton() {
+    return OutlinedButton.icon(
+      onPressed: () => setState(() => _showUrlInput = !_showUrlInput),
+      icon: Icon(_showUrlInput ? Icons.expand_less : Icons.link),
+      label: const Text('贴链接'),
     );
   }
 }
