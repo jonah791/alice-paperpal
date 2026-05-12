@@ -5,7 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:logging/logging.dart';
 import '../../core/models/search_result.dart';
 import '../../core/models/paper.dart';
-import '../../main.dart';
+import '../../core/di/dependencies.dart';
 import '../widgets/card_spinner.dart';
 
 final _log = Logger('SearchPage');

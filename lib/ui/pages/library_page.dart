@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import '../../core/models/paper.dart';
-import '../../main.dart';
+import '../../core/di/dependencies.dart';
 import 'read_page.dart';
 import 'comparison_page.dart';
 import '../widgets/skeleton_loader.dart';

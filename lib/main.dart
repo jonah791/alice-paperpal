@@ -15,6 +15,7 @@ import 'core/services/soul_service.dart';
 import 'core/services/memory_service.dart';
 import 'core/services/portrait_service.dart';
 import 'core/services/avatar_service.dart';
+import 'core/di/dependencies.dart';
 import 'core/api/llm_provider.dart';
 import 'core/utils/logger.dart';
 import 'ui/pages/search_page.dart';
@@ -78,8 +79,6 @@ void main() async {
 
   final noteService = NoteService();
   await noteService.init();
-
-  if (!platform.isAndroid) {
     await windowManager.waitUntilReadyToShow();
     await windowManager.setTitle('PaperPal');
     await windowManager.setMinimumSize(const Size(1024, 700));
@@ -125,45 +124,6 @@ void main() async {
     showWelcome: showWelcome,
     initialPdfPath: pdfFileArg,
   ));
-}
-
-class Dependencies extends InheritedWidget {
-  final ConfigService configService;
-  final PaperService paperService;
-  final SearchService searchService;
-  final CacheService cacheService;
-  final NetworkService networkService;
-  final NoteService noteService;
-  final SoulService soulService;
-  final MemoryService memoryService;
-  final PortraitService portraitService;
-  final AvatarService avatarService;
-  final LLMProvider llmProvider;
-
-  const Dependencies({
-    super.key,
-    required this.configService,
-    required this.paperService,
-    required this.searchService,
-    required this.cacheService,
-    required this.networkService,
-    required this.noteService,
-    required this.soulService,
-    required this.memoryService,
-    required this.portraitService,
-    required this.avatarService,
-    required this.llmProvider,
-    required super.child,
-  });
-
-  static Dependencies of(BuildContext context) {
-    final result = context.dependOnInheritedWidgetOfExactType<Dependencies>();
-    assert(result != null, 'No Dependencies found');
-    return result!;
-  }
-
-  @override
-  bool updateShouldNotify(Dependencies oldWidget) => false;
 }
 
 class PaperPalApp extends StatefulWidget {

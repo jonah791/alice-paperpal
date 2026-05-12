@@ -6,7 +6,7 @@ import 'package:logging/logging.dart';
 import '../../core/models/paper.dart';
 import '../../core/models/note.dart';
 import '../../core/services/export_service.dart';
-import '../../main.dart';
+import '../../core/di/dependencies.dart';
 import '../widgets/explain_dialog.dart';
 import '../widgets/progress_bar.dart';
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import '../../core/models/soul.dart';
 import '../../core/services/soul_service.dart';
-import '../../main.dart';
+import '../../core/di/dependencies.dart';
 import 'avatar_helpers.dart';
 
 final _log = Logger('SoulSelector');

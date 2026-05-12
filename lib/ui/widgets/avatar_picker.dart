@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/services/avatar_service.dart';
-import '../../main.dart';
+import '../../core/di/dependencies.dart';
 import 'avatar_helpers.dart';
 
 class AvatarPicker extends StatelessWidget {
