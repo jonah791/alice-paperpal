@@ -1,7 +1,7 @@
 # ALICE PaperPal — 项目交接文档
 
 **项目名：** ALICE PaperPal  
-**版本：** v0.3.1  
+**版本：** v0.3.2  
 **仓库：** https://github.com/jonah791/alice-paperpal  
 **技术栈：** Flutter (Dart) 桌面端 Windows EXE + Android APK + CLI 命令行工具  
 **构建状态：** CI 自动构建 → Release 发布（ZIP 便携版 + Setup.exe 安装包 + split APK）
@@ -806,6 +806,18 @@ flutter build apk --release       # → app-release.apk
 ---
 
 ## 十二、版本历史
+
+### v0.3.2（2026-05-12）— 异步安全与崩溃修复
+
+**Bug 修复：**
+- 灰屏崩溃：`read_page.dart` 中 `build()` 内 `addPostFrameCallback` → `setState` 无限循环。将 BottomSheet 展示移至 `_toggleNotesPanel()` 方法
+- 12 处 async 方法添加 try/catch + mounted 检查：`_search()`、`_uploadPdf()`、card onTap、`_deleteSelected()`、`_confirmDelete()`、`_loadSettings()`、`_saveSettings()`、avatar picker、soul selector
+
+**暗色模式修复：**
+- `PaperStatus.color` 改为接收 `BuildContext` 参数，使用 `ColorScheme` 语义色（`primary`、`secondary`、`error`、`tertiary`）替代硬编码 `Colors.*`
+
+**清理：**
+- 移除 `explain_dialog.dart` 中未使用的 `paper_service.dart` 导入
 
 ### v0.3.1（2026-05-12）— 架构清理与 Bug 修复
 
