@@ -67,34 +67,9 @@ class _ReadPageState extends State<ReadPage> {
     final theme = Theme.of(context);
     final platform = Dependencies.of(context).configService.platform;
 
-    if (platform.isAndroid && _showNotes) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            builder: (ctx) => DraggableScrollableSheet(
-              initialChildSize: 0.5,
-              minChildSize: 0.3,
-              maxChildSize: 0.85,
-              expand: false,
-              builder: (ctx, scrollController) => Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Text('笔记', style: theme.textTheme.titleMedium),
-                  ),
-                  const Divider(),
-                  Expanded(child: _buildNotesPanel(theme)),
-                ],
-              ),
-            ),
-          ).then((_) {
-            if (mounted) setState(() => _showNotes = false);
-          });
-        }
-      });
-    }
+    // Note: BottomSheet is triggered from the notes button's onPressed,
+    // NOT from build() — see _toggleNotesPanel(). This avoids the
+    // infinite-loop crash from addPostFrameCallback inside build().
 
     if (_loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -134,7 +109,7 @@ class _ReadPageState extends State<ReadPage> {
                   case 'summary': _summarize();
                   case 'export': _showExportMenu();
                   case 'pdf': _openOriginalPdf();
-                  case 'notes': setState(() => _showNotes = !_showNotes);
+                  case 'notes': _toggleNotesPanel();
                 }
               },
               itemBuilder: (context) => [
@@ -163,7 +138,7 @@ class _ReadPageState extends State<ReadPage> {
             IconButton(
               icon: Icon(_showNotes ? Icons.notes : Icons.note_add_outlined),
               tooltip: '笔记',
-              onPressed: () => setState(() => _showNotes = !_showNotes),
+              onPressed: _toggleNotesPanel,
             ),
           ],
           const SizedBox(width: 4),
@@ -693,6 +668,34 @@ class _ReadPageState extends State<ReadPage> {
         actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('确定'))],
       ),
     );
+  }
+
+  void _toggleNotesPanel() {
+    final platform = Dependencies.of(context).configService.platform;
+    if (platform.isAndroid) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        builder: (ctx) => DraggableScrollableSheet(
+          initialChildSize: 0.5,
+          minChildSize: 0.3,
+          maxChildSize: 0.85,
+          expand: false,
+          builder: (ctx, scrollController) => Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text('笔记', style: Theme.of(context).textTheme.titleMedium),
+              ),
+              const Divider(),
+              Expanded(child: _buildNotesPanel(Theme.of(context))),
+            ],
+          ),
+        ),
+      );
+    } else {
+      setState(() => _showNotes = !_showNotes);
+    }
   }
 }
 

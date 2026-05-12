@@ -258,7 +258,7 @@ class _LibraryPageState extends State<LibraryPage> {
                   if (_selected.isEmpty)
                     PopupMenuButton<String>(
                       onSelected: (v) {
-                        if (v == 'delete') _confirmDelete(context, paper);
+                        if (v == 'delete') _confirmDelete(paper);
                       },
                       itemBuilder: (ctx) => [
                         const PopupMenuItem(value: 'delete', child: Text('删除')),
@@ -295,41 +295,55 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   Future<void> _deleteSelected() async {
-    final deps = Dependencies.of(context);
     final ids = _selected.toList();
-    _selected.clear();
-    for (final id in ids) {
-      await deps.paperService.deletePaper(id);
-    }
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已删除 ${ids.length} 篇论文')),
-      );
+    setState(() => _selected.clear());
+    var deleted = 0;
+    try {
+      final deps = Dependencies.of(context);
+      for (final id in ids) {
+        await deps.paperService.deletePaper(id);
+        deleted++;
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已删除 $deleted 篇论文')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('删除失败: $e')),
+        );
+      }
     }
   }
 
-  Future<void> _confirmDelete(BuildContext context, Paper paper) async {
+  Future<void> _confirmDelete(Paper paper) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('删除论文'),
-        content: Text('确定删除"${paper.title}"吗？\n解析结果和笔记将一并删除。'),
+        title: const Text('确认删除'),
+        content: Text('确定要删除"${paper.title}"吗？\n解析结果和笔记将一并删除。'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(ctx).colorScheme.error),
-            child: const Text('删除'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('删除')),
         ],
       ),
     );
-    if (confirmed == true) {
+    if (confirmed != true) return;
+
+    try {
       final deps = Dependencies.of(context);
       await deps.paperService.deletePaper(paper.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('已删除: ${paper.title}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('删除失败: $e')),
         );
       }
     }

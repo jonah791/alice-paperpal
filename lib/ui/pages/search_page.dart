@@ -42,30 +42,41 @@ class _SearchPageState extends State<SearchPage> {
       _results = [];
     });
 
-    final deps = Dependencies.of(context);
-    if (!deps.networkService.isOnline) {
-      setState(() {
-        _statusMessage = '网络不可用，请检查网络连接后重试';
-        _loading = false;
-      });
-      return;
-    }
-    final (results, error) = await deps.searchService.search(query);
-    if (error != null) {
-      setState(() {
-        _loading = false;
-        _statusMessage = error;
-      });
-      return;
-    }
-
-    setState(() {
-      _loading = false;
-      _results = results;
-      if (results.isEmpty) {
-        _statusMessage = '未找到相关论文，试试其他关键词';
+    try {
+      final deps = Dependencies.of(context);
+      if (!deps.networkService.isOnline) {
+        if (mounted) setState(() {
+          _loading = false;
+          _statusMessage = '网络不可用，请检查网络连接后重试';
+        });
+        return;
       }
-    });
+
+      final (results, error) = await deps.searchService.search(query);
+      if (!mounted) return;
+
+      if (error != null) {
+        setState(() {
+          _loading = false;
+          _statusMessage = error;
+        });
+        return;
+      }
+
+      setState(() {
+        _loading = false;
+        _results = results;
+        if (results.isEmpty) {
+          _statusMessage = '未找到相关论文，试试其他关键词';
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _statusMessage = '搜索出错: $e';
+      });
+    }
   }
 
   Future<void> _importUrl() async {
@@ -143,31 +154,38 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Future<void> _uploadPdf() async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
-    if (result == null || result.files.isEmpty) return;
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+      if (!mounted || result == null || result.files.isEmpty) return;
 
-    final file = result.files.first;
-    if (file.path == null) return;
+      final file = result.files.first;
+      if (file.path == null) return;
 
-    setState(() => _statusMessage = '正在导入...');
-    _log.info('uploadPdf: ${file.name}');
+      setState(() => _statusMessage = '正在导入...');
+      _log.info('uploadPdf: ${file.name}');
 
-    final deps = Dependencies.of(context);
-    final paper = await deps.paperService.importPdf(
-      File(file.path!),
-      title: file.name.replaceAll('.pdf', ''),
-    );
+      final deps = Dependencies.of(context);
+      final paper = await deps.paperService.importPdf(
+        File(file.path!),
+        title: file.name.replaceAll('.pdf', ''),
+      );
 
-    if (paper == null) {
-      setState(() => _statusMessage = '导入失败：请先在设置页配置 MinerU API Key');
-    } else if (paper.status == PaperStatus.error) {
-      setState(() => _statusMessage = '解析失败，请检查 MinerU API Key 是否已配置');
-    } else {
-      _log.info('uploadPdf: imported ${paper.id}');
-      setState(() => _statusMessage = '导入成功: ${paper.title}');
+      if (!mounted) return;
+
+      if (paper == null) {
+        setState(() => _statusMessage = '导入失败：请先在设置页配置 MinerU API Key');
+      } else if (paper.status == PaperStatus.error) {
+        setState(() => _statusMessage = '解析失败，请检查 MinerU API Key 是否已配置');
+      } else {
+        _log.info('uploadPdf: imported ${paper.id}');
+        setState(() => _statusMessage = '导入成功: ${paper.title}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _statusMessage = '导入失败: $e');
     }
   }
 
@@ -322,26 +340,34 @@ class _SearchPageState extends State<SearchPage> {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () async {
-          if (result.pdfUrl.isEmpty) {
-            setState(() => _statusMessage = '该论文无开放获取 PDF 链接');
-            return;
-          }
-          setState(() => _statusMessage = '正在下载: ${result.title}');
-          final deps = Dependencies.of(context);
-          final paper = await deps.paperService.importFromSearch(result,
-            onProgress: (received, total) {
-              if (total > 0 && mounted) {
-                setState(() => _statusMessage = '下载中... ${(received / total * 100).toInt()}%');
-              }
-            },
-          );
-          if (paper == null) {
-            setState(() => _statusMessage = '下载失败，请检查网络或重试');
-          } else if (paper.status == PaperStatus.error) {
-            setState(() => _statusMessage = '解析失败，请检查 MinerU API Key 是否已配置');
-          } else {
-            _log.info('importFromSearch: ${paper.id}');
-            setState(() => _statusMessage = '导入成功: ${paper.title}');
+          try {
+            if (result.pdfUrl.isEmpty) {
+              setState(() => _statusMessage = '该论文无开放获取 PDF 链接');
+              return;
+            }
+            setState(() => _statusMessage = '正在下载: ${result.title}');
+            final deps = Dependencies.of(context);
+            final paper = await deps.paperService.importFromSearch(result,
+              onProgress: (received, total) {
+                if (total > 0 && mounted) {
+                  setState(() => _statusMessage = '下载中... ${(received / total * 100).toInt()}%');
+                }
+              },
+            );
+            if (paper == null) {
+              setState(() => _statusMessage = '下载失败，请检查网络或重试');
+            } else if (paper.status == PaperStatus.error) {
+              setState(() => _statusMessage = '解析失败，请检查 MinerU API Key 是否已配置');
+            } else {
+              _log.info('importFromSearch: ${paper.id}');
+              setState(() => _statusMessage = '导入成功: ${paper.title}');
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('操作失败: $e')),
+              );
+            }
           }
         },
         child: Padding(
