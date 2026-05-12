@@ -68,6 +68,7 @@ void main() async {
     search: searchService,
     config: configService,
     llmProvider: llmProvider,
+    noteService: noteService,
     soulService: soulService,
     memoryService: memoryService,
     portraitService: portraitService,

@@ -15,6 +15,7 @@ import 'cache_service.dart';
 import 'config_service.dart';
 import 'memory_service.dart';
 import 'parse_service.dart';
+import 'note_service.dart';
 import 'portrait_service.dart';
 import 'search_service.dart';
 import 'soul_service.dart';
@@ -34,6 +35,7 @@ class PaperService {
   late final ParseService _parse;
   late final TranslationService _translation;
 
+  final NoteService _noteService;
   final _papers = <Paper>{};
   final _paperController = StreamController<List<Paper>>.broadcast();
   Stream<List<Paper>> get paperStream => _paperController.stream;
@@ -43,10 +45,12 @@ class PaperService {
     required SearchService search,
     required ConfigService config,
     required LLMProvider llmProvider,
+    required NoteService noteService,
     required SoulService soulService,
     required MemoryService memoryService,
     required PortraitService portraitService,
-  })  : _cache = cache,
+  })  : _noteService = noteService,
+        _cache = cache,
         _search = search,
         _config = config,
         _llm = llmProvider,
@@ -284,6 +288,7 @@ class PaperService {
     _papers.removeWhere((p) => p.id == paperId);
     _emitPapers();
     await _cache.deletePaper(paperId);
+    await _noteService.deleteNotesForPaper(paperId);
     _log.info('deletePaper: $paperId');
   }
 

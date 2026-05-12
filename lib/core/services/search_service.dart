@@ -17,8 +17,8 @@ class SearchService {
       : _arxiv = arxiv ?? ArxivApi(),
         _s2 = s2 ?? S2Api();
 
-  Future<List<SearchResult>> search(String query) async {
-    if (query.trim().isEmpty) return [];
+  Future<(List<SearchResult>, String?)> search(String query) async {
+    if (query.trim().isEmpty) return ([], null);
 
     try {
       final results = await Future.wait([
@@ -38,10 +38,16 @@ class SearchService {
         ..sort((a, b) => b.year.compareTo(a.year));
 
       _log.info('search: "$query" → ${sorted.length} results (merged)');
-      return sorted;
+      return (sorted, null);
     } catch (e) {
       _log.warning('search failed: "$query" → $e');
-      return [];
+      if (e is DioException) {
+        if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+          return ([], '请求超时，请检查网络后重试');
+        }
+        return ([], '网络请求失败，请检查网络连接');
+      }
+      return ([], '搜索出错，请稍后重试');
     }
   }
 

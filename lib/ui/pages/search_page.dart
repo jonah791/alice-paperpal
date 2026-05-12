@@ -43,7 +43,21 @@ class _SearchPageState extends State<SearchPage> {
     });
 
     final deps = Dependencies.of(context);
-    final results = await deps.searchService.search(query);
+    if (!deps.networkService.isOnline) {
+      setState(() {
+        _statusMessage = '网络不可用，请检查网络连接后重试';
+        _loading = false;
+      });
+      return;
+    }
+    final (results, error) = await deps.searchService.search(query);
+    if (error != null) {
+      setState(() {
+        _loading = false;
+        _statusMessage = error;
+      });
+      return;
+    }
 
     setState(() {
       _loading = false;

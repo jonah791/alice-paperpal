@@ -77,4 +77,10 @@ class NoteService {
     await _save();
     _log.info('deleteNote: $noteId');
   }
+
+  Future<void> deleteNotesForPaper(String paperId) async {
+    _notes.removeWhere((n) => n.paperId == paperId);
+    _log.info('deleteNotesForPaper: $paperId -> notes cleaned');
+    await _save();
+  }
 }
