@@ -1,7 +1,7 @@
 # ALICE PaperPal — 项目交接文档
 
 **项目名：** ALICE PaperPal  
-**版本：** v0.3.0  
+**版本：** v0.3.1  
 **仓库：** https://github.com/jonah791/alice-paperpal  
 **技术栈：** Flutter (Dart) 桌面端 Windows EXE + Android APK + CLI 命令行工具  
 **构建状态：** CI 自动构建 → Release 发布（ZIP 便携版 + Setup.exe 安装包 + split APK）
@@ -806,6 +806,17 @@ flutter build apk --release       # → app-release.apk
 ---
 
 ## 十二、版本历史
+
+### v0.3.1（2026-05-12）— 架构清理与 Bug 修复
+
+**架构改进：**
+- `Dependencies` 从 `main.dart` 提取到 `lib/core/di/dependencies.dart`，消除页面直接引用入口文件的耦合
+- CLI `search` 命令复用 `SearchService`，消除重复的去重逻辑
+
+**Bug 修复：**
+- 笔记残留：`NoteService` 注入 `PaperService`，删论文时自动删除关联笔记
+- 搜索错误可见：`SearchService.search()` 返回 `(List<SearchResult>, String?)` tuple，UI 层可区分网络错误与空结果
+- 搜索前检查网络状态：离线时直接提示而非静默失败
 
 ### v0.3.0（2026-05-11）— Android Mobile Support
 

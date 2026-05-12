@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.1] - 2026-05-12
+
+### Refactor
+
+- **Dependencies 解耦**：`Dependencies` InheritedWidget 从 `main.dart` 提取到 `lib/core/di/dependencies.dart`，消除 8 个页面直接引用入口文件的架构耦合
+- **CLI search 命令重写**：复用 `SearchService` 代替直接调用 `ArxivApi`/`S2Api`，消除 30 行重复去重逻辑
+
+### Fixed
+
+- **笔记残留 Bug**：删除论文时从未调用 NoteService，笔记变成孤立数据。修复：`NoteService` 注入 `PaperService`，`deletePaper()` 末尾自动调用 `deleteNotesForPaper()`
+- **搜索错误不可见**：`SearchService.search()` 静默吞掉所有异常，用户无法区分"无结果"和"网络断开"。修复：返回 `(List, String?)` tuple，`SearchPage` 显示具体错误信息
+
+### Added
+
+- **网络状态检查**：`SearchPage._search()` 在发起 API 请求前检查 `NetworkService.isOnline`，离线时直接提示"网络不可用"
+- **笔记批量删除**：`NoteService.deleteNotesForPaper(String paperId)` 新方法
+
 ## [0.3.0] - 2026-05-11
 
 ### Added — Android Mobile Support
