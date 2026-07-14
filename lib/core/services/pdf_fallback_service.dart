@@ -134,7 +134,7 @@ class PdfFallbackService {
       'acknowledgment', 'reference',
       '方法', '实验', '结论', '相关工作', '引言',
     ];
-    final lower = line.toLowerCase().replaceAll(RegExp(r'[^a-z\u4e00-\u9fff]'), '');
+    final lower = line.toLowerCase().replaceAll(RegExp(r'[^a-z\u4e00-\u9fff\s]'), '').trim();
     for (final kw in keywords) {
       if (lower.contains(kw)) return true;
     }
