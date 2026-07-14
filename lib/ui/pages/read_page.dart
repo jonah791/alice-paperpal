@@ -7,6 +7,7 @@ import '../../core/models/paper.dart';
 import '../../core/models/note.dart';
 import '../../core/services/export_service.dart';
 import '../../core/di/dependencies.dart';
+import '../../core/tokens/design_tokens.dart';
 import '../widgets/explain_dialog.dart';
 import '../widgets/progress_bar.dart';
 
@@ -28,7 +29,7 @@ class _ReadPageState extends State<ReadPage> {
   final _qaController = TextEditingController();
   final _qaMessages = <Map<String, String>>[];
   bool _qaLoading = false;
-  double _fontSize = 14.0;
+  double _fontSize = DesignTokens.fsLg;
   bool _showNotes = false;
   final _noteController = TextEditingController();
   List<Note> _notes = [];
@@ -37,14 +38,14 @@ class _ReadPageState extends State<ReadPage> {
   @override
   void initState() {
     super.initState();
-    _loadContent();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadContent());
   }
 
   Future<void> _loadContent() async {
-    final deps = Dependencies.of(context);
-    final md = await deps.paperService.getMarkdown(widget.paper.id);
-    final translation = await deps.paperService.getTranslation(widget.paper.id);
-    _notes = deps.noteService.getNotesForPaper(widget.paper.id);
+
+    final md = await context.paperService.getMarkdown(widget.paper.id);
+    final translation = await context.paperService.getTranslation(widget.paper.id);
+    _notes = context.noteService.getNotesForPaper(widget.paper.id);
 
     setState(() {
       _markdown = md;
@@ -65,7 +66,7 @@ class _ReadPageState extends State<ReadPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final platform = Dependencies.of(context).configService.platform;
+    final platform = context.configService.platform;
 
     // Note: BottomSheet is triggered from the notes button's onPressed,
     // NOT from build() — see _toggleNotesPanel(). This avoids the
@@ -79,7 +80,7 @@ class _ReadPageState extends State<ReadPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.paper.title, style: const TextStyle(fontSize: 14)),
+        title: Text(widget.paper.title, style: const TextStyle(fontSize: DesignTokens.fsLg)),
         actions: [
           if (_translation != null)
             SegmentedButton<_ViewMode>(
@@ -93,10 +94,10 @@ class _ReadPageState extends State<ReadPage> {
               onSelectionChanged: (v) => setState(() => _viewMode = v.first),
               style: ButtonStyle(
                 visualDensity: VisualDensity.compact,
-                textStyle: WidgetStateProperty.all(const TextStyle(fontSize: 12)),
+                textStyle: WidgetStateProperty.all(const TextStyle(fontSize: DesignTokens.fsSm)),
               ),
             ),
-          const SizedBox(width: 16),
+          const SizedBox(width: Spacing.lg),
           if (platform.isAndroid) ...[
             IconButton(
               icon: const Icon(Icons.font_download),
@@ -141,7 +142,7 @@ class _ReadPageState extends State<ReadPage> {
               onPressed: _toggleNotesPanel,
             ),
           ],
-          const SizedBox(width: 4),
+          const SizedBox(width: DesignTokens.sp1),
         ],
       ),
       body: Stack(
@@ -190,7 +191,7 @@ class _ReadPageState extends State<ReadPage> {
   Widget _buildContent(ThemeData theme, String text, {ScrollController? controller}) {
     return SingleChildScrollView(
       controller: controller,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(Spacing.xl),
       child: _buildArticle(text, theme),
     );
   }
@@ -203,11 +204,11 @@ class _ReadPageState extends State<ReadPage> {
       children: segments.map((seg) {
         if (seg is _LatexSegment) {
           return Container(
-            padding: const EdgeInsets.all(12),
-            margin: const EdgeInsets.symmetric(vertical: 12),
+            padding: const EdgeInsets.all(Spacing.md),
+            margin: const EdgeInsets.symmetric(vertical: Spacing.md),
             decoration: BoxDecoration(
               color: theme.colorScheme.secondary.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(RadiusTokens.md),
               border: Border.all(
                 color: theme.colorScheme.secondary.withValues(alpha: 0.1),
               ),
@@ -218,7 +219,7 @@ class _ReadPageState extends State<ReadPage> {
               child: Math.tex(
                 seg.latex,
                 textStyle: TextStyle(
-                  fontSize: theme.textTheme.bodyMedium?.fontSize ?? 14,
+                  fontSize: theme.textTheme.bodyMedium?.fontSize ?? DesignTokens.fsLg,
                 ),
               ),
             ),
@@ -227,7 +228,7 @@ class _ReadPageState extends State<ReadPage> {
         final textSeg = seg as _TextSegment;
         return SelectableText(
           textSeg.text,
-          style: theme.textTheme.bodyMedium?.copyWith(height: 1.7, fontSize: _fontSize),
+          style: theme.textTheme.bodyMedium?.copyWith(height: DesignTokens.lhRelaxed, fontSize: _fontSize),
         );
       }).toList(),
     );
@@ -286,7 +287,7 @@ class _ReadPageState extends State<ReadPage> {
             SizedBox(
               height: 120,
               child: ListView.builder(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(Spacing.gap),
                 itemCount: _qaMessages.length,
                 itemBuilder: (context, index) {
                   final msg = _qaMessages[index];
@@ -310,7 +311,7 @@ class _ReadPageState extends State<ReadPage> {
                         child: isUser
                           ? Container(
                               margin: const EdgeInsets.symmetric(vertical: 2),
-                              padding: const EdgeInsets.all(12),
+                              padding: const EdgeInsets.all(Spacing.md),
                               decoration: BoxDecoration(
                                 color: theme.colorScheme.primaryContainer,
                                 borderRadius: const BorderRadius.only(
@@ -322,12 +323,12 @@ class _ReadPageState extends State<ReadPage> {
                               ),
                               child: Text(
                                 msg['content'] ?? '',
-                                style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface),
+                                style: TextStyle(fontSize: DesignTokens.fsMd, color: theme.colorScheme.onSurface),
                               ),
                             )
                           : Container(
                               margin: const EdgeInsets.symmetric(vertical: 2),
-                              padding: const EdgeInsets.all(12),
+                              padding: const EdgeInsets.all(Spacing.md),
                               decoration: BoxDecoration(
                                 color: theme.colorScheme.surfaceContainerHighest,
                                 borderRadius: const BorderRadius.only(
@@ -342,7 +343,7 @@ class _ReadPageState extends State<ReadPage> {
                                 children: [
                                   Text(
                                     msg['content'] ?? '',
-                                    style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurface),
+                                    style: TextStyle(fontSize: DesignTokens.fsMd, color: theme.colorScheme.onSurface),
                                   ),
                                 ],
                               ),
@@ -354,7 +355,7 @@ class _ReadPageState extends State<ReadPage> {
               ),
             ),
           Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(Spacing.gap),
             child: Row(
               children: [
                 Expanded(
@@ -363,14 +364,14 @@ class _ReadPageState extends State<ReadPage> {
                     decoration: InputDecoration(
                       hintText: '对论文提问...',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.gap),
                       filled: true,
                       fillColor: theme.colorScheme.surface,
                     ),
                     onSubmitted: _askQuestion,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: Spacing.gap),
           IconButton(
             icon: const Icon(Icons.file_download),
             tooltip: '导出',
@@ -379,9 +380,9 @@ class _ReadPageState extends State<ReadPage> {
           IconButton(
                   icon: _qaLoading
                       ? SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: theme.colorScheme.secondary),
+                          width: DesignTokens.sp4,
+                          height: DesignTokens.sp4,
+                          child: CircularProgressIndicator(strokeWidth: DesignTokens.borderXl, color: theme.colorScheme.secondary),
                         )
                       : const Icon(Icons.send),
                   onPressed: _qaLoading ? null : () => _askQuestion(_qaController.text),
@@ -405,9 +406,9 @@ class _ReadPageState extends State<ReadPage> {
     _qaController.clear();
 
     try {
-      final deps = Dependencies.of(context);
+  
       final buffer = StringBuffer();
-      await for (final chunk in deps.paperService.askQuestionStream(widget.paper.id, question)) {
+      await for (final chunk in context.paperService.askQuestionStream(widget.paper.id, question)) {
         buffer.write(chunk);
         setState(() {
           _qaMessages.last['content'] = buffer.toString();
@@ -428,8 +429,8 @@ class _ReadPageState extends State<ReadPage> {
       const SnackBar(content: Text('正在生成摘要...')),
     );
     try {
-      final deps = Dependencies.of(context);
-      final summary = await deps.paperService.summarize(widget.paper.id);
+  
+      final summary = await context.paperService.summarize(widget.paper.id);
       if (mounted) {
         showDialog(
           context: context,
@@ -503,8 +504,8 @@ class _ReadPageState extends State<ReadPage> {
   }
 
   Future<void> _openOriginalPdf() async {
-    final deps = Dependencies.of(context);
-    final pdfPath = deps.cacheService.pdfPath(widget.paper.id);
+
+    final pdfPath = context.cacheService.pdfPath(widget.paper.id);
     if (!await File(pdfPath).exists()) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -514,7 +515,7 @@ class _ReadPageState extends State<ReadPage> {
       return;
     }
     try {
-      await Dependencies.of(context).configService.platform.openFile(pdfPath);
+      await context.configService.platform.openFile(pdfPath);
     } catch (e) {
       _log.warning('open PDF failed: $e');
     }
@@ -532,7 +533,7 @@ class _ReadPageState extends State<ReadPage> {
             child: _notes.isEmpty
                 ? Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(Spacing.lg),
                       child: Text('暂无笔记\n选中文本后点击"添加笔记"',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -541,13 +542,13 @@ class _ReadPageState extends State<ReadPage> {
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(Spacing.gap),
                     itemCount: _notes.length,
                     itemBuilder: (ctx, i) => _buildNoteCard(_notes[i], theme),
                   ),
           ),
           Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(Spacing.gap),
             child: Row(
               children: [
                 Expanded(
@@ -555,8 +556,8 @@ class _ReadPageState extends State<ReadPage> {
                     controller: _noteController,
                     decoration: InputDecoration(
                       hintText: '添加笔记...',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(RadiusTokens.lg)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.gap),
                       filled: true,
                       fillColor: theme.colorScheme.surface,
                     ),
@@ -564,9 +565,9 @@ class _ReadPageState extends State<ReadPage> {
                     minLines: 1,
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: DesignTokens.sp1),
                 IconButton(
-                  icon: const Icon(Icons.send, size: 18),
+                  icon: const Icon(Icons.send, size: DesignTokens.iconMd),
                   onPressed: _addNote,
                 ),
               ],
@@ -579,7 +580,7 @@ class _ReadPageState extends State<ReadPage> {
 
   Widget _buildNoteCard(Note note, ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(Spacing.md),
       margin: const EdgeInsets.only(top: 10),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
@@ -596,11 +597,11 @@ class _ReadPageState extends State<ReadPage> {
         children: [
           if (note.selectedText != null && note.selectedText!.isNotEmpty)
             Container(
-              padding: const EdgeInsets.all(4),
-              margin: const EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.all(DesignTokens.sp1),
+              margin: const EdgeInsets.only(bottom: DesignTokens.sp1),
               decoration: BoxDecoration(
                 color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(RadiusTokens.sm),
               ),
               child: Text(note.selectedText!,
                   style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
@@ -610,14 +611,14 @@ class _ReadPageState extends State<ReadPage> {
             style: TextStyle(
               fontStyle: FontStyle.italic,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              fontSize: 12,
+              fontSize: DesignTokens.fsSm,
             ),
           ),
           const SizedBox(height: 5),
           Text(
             _formatDate(note.createdAt),
             style: TextStyle(
-              fontSize: 10,
+              fontSize: DesignTokens.fsXxs,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.25),
             ),
           ),
@@ -628,13 +629,13 @@ class _ReadPageState extends State<ReadPage> {
 
   Future<void> _addNote() async {
     if (_noteController.text.trim().isEmpty) return;
-    final deps = Dependencies.of(context);
-    await deps.noteService.addNote(
+
+    await context.noteService.addNote(
       paperId: widget.paper.id,
       text: _noteController.text.trim(),
     );
     _noteController.clear();
-    _notes = deps.noteService.getNotesForPaper(widget.paper.id);
+    _notes = context.noteService.getNotesForPaper(widget.paper.id);
     setState(() {});
   }
 
@@ -652,7 +653,7 @@ class _ReadPageState extends State<ReadPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text('预览：学术论文阅读示例', style: TextStyle(fontSize: _fontSize)),
-              const SizedBox(height: 16),
+              const SizedBox(height: Spacing.lg),
               Slider(
                 value: _fontSize,
                 min: 10,
@@ -671,7 +672,7 @@ class _ReadPageState extends State<ReadPage> {
   }
 
   void _toggleNotesPanel() {
-    final platform = Dependencies.of(context).configService.platform;
+    final platform = context.configService.platform;
     if (platform.isAndroid) {
       showModalBottomSheet(
         context: context,
@@ -684,7 +685,7 @@ class _ReadPageState extends State<ReadPage> {
           builder: (ctx, scrollController) => Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(Spacing.md),
                 child: Text('笔记', style: Theme.of(context).textTheme.titleMedium),
               ),
               const Divider(),

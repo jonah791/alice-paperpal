@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import '../../core/models/paper.dart';
 import '../../core/di/dependencies.dart';
+import '../../core/tokens/design_tokens.dart';
 import 'read_page.dart';
 import 'comparison_page.dart';
 import '../widgets/skeleton_loader.dart';
@@ -22,7 +23,7 @@ class _LibraryPageState extends State<LibraryPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final deps = Dependencies.of(context);
+
 
     return Column(
       children: [
@@ -30,8 +31,8 @@ class _LibraryPageState extends State<LibraryPage> {
         _buildFilterBar(context, theme),
         Expanded(
           child: StreamBuilder<List<Paper>>(
-            stream: deps.paperService.paperStream,
-            initialData: deps.paperService.papers,
+            stream: context.paperService.paperStream,
+            initialData: context.paperService.papers,
             builder: (context, snapshot) {
               final allPapers = snapshot.data ?? [];
               final papers = _filterStatus < PaperStatus.values.length
@@ -40,12 +41,12 @@ class _LibraryPageState extends State<LibraryPage> {
 
               if (allPapers.isEmpty) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: ListView(
-                      children: List.generate(5, (i) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: SkeletonLoader(height: 80, borderRadius: 12),
+                    return Padding(
+                      padding: const EdgeInsets.all(Spacing.lg),
+                      child: ListView(
+                        children: List.generate(5, (i) => Padding(
+                          padding: const EdgeInsets.only(bottom: Spacing.gap),
+                          child: SkeletonLoader(height: 80, borderRadius: RadiusTokens.lg),
                       )),
                     ),
                   );
@@ -56,9 +57,9 @@ class _LibraryPageState extends State<LibraryPage> {
                     children: [
                       Icon(Icons.library_books_outlined, size: 64,
                           color: theme.colorScheme.onSurfaceVariant),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: Spacing.lg),
                       Text('还没有论文', style: theme.textTheme.titleMedium),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: Spacing.gap),
                       Text('去搜索页找一篇吧', style: theme.textTheme.bodySmall),
                     ],
                   ),
@@ -72,7 +73,7 @@ class _LibraryPageState extends State<LibraryPage> {
                     children: [
                       Icon(Icons.filter_alt_off, size: 48,
                           color: theme.colorScheme.onSurfaceVariant),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: Spacing.lg),
                       Text('当前筛选条件下没有论文', style: theme.textTheme.bodyMedium),
                     ],
                   ),
@@ -80,7 +81,7 @@ class _LibraryPageState extends State<LibraryPage> {
               }
 
               return ListView.builder(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(Spacing.lg),
                 itemCount: papers.length,
                 itemBuilder: (context, index) =>
                     _buildPaperCard(context, papers[index], theme),
@@ -95,7 +96,7 @@ class _LibraryPageState extends State<LibraryPage> {
   Widget _buildSelectionBar(ThemeData theme) {
     if (_selected.length < 2) return const SizedBox.shrink();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.gap),
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer,
         border: Border(bottom: BorderSide(color: theme.dividerColor)),
@@ -107,20 +108,20 @@ class _LibraryPageState extends State<LibraryPage> {
           if (_selected.length >= 2)
             FilledButton.tonalIcon(
               onPressed: _compareSelected,
-              icon: const Icon(Icons.compare_arrows, size: 16),
+              icon: const Icon(Icons.compare_arrows, size: DesignTokens.sp4),
               label: const Text('对比'),
             ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Spacing.gap),
           FilledButton.tonalIcon(
             onPressed: _deleteSelected,
-            icon: const Icon(Icons.delete_outline, size: 16),
+            icon: const Icon(Icons.delete_outline, size: DesignTokens.sp4),
             label: const Text('删除'),
             style: FilledButton.styleFrom(
               backgroundColor: theme.colorScheme.errorContainer,
               foregroundColor: theme.colorScheme.onErrorContainer,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Spacing.gap),
           TextButton(
             onPressed: () => setState(() => _selected.clear()),
             child: const Text('取消'),
@@ -142,7 +143,7 @@ class _LibraryPageState extends State<LibraryPage> {
     ];
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: 6),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: theme.dividerColor)),
       ),
@@ -156,7 +157,7 @@ class _LibraryPageState extends State<LibraryPage> {
             return Padding(
               padding: const EdgeInsets.only(right: 6),
               child: FilterChip(
-                label: Text(filters[i], style: const TextStyle(fontSize: 12)),
+                label: Text(filters[i], style: const TextStyle(fontSize: DesignTokens.fsSm)),
                 selected: selected,
                 selectedColor: status?.color(context)?.withValues(alpha: 0.2),
                 checkmarkColor: status?.color(context),
@@ -187,10 +188,10 @@ class _LibraryPageState extends State<LibraryPage> {
         );
       },
       child: Card(
-        margin: const EdgeInsets.only(bottom: 8),
+        margin: const EdgeInsets.only(bottom: Spacing.gap),
         color: isSelected ? theme.colorScheme.primaryContainer : null,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(RadiusTokens.lg),
           onTap: () {
             if (_selected.isNotEmpty) {
               _toggleSelection(paper.id);
@@ -204,7 +205,7 @@ class _LibraryPageState extends State<LibraryPage> {
           },
           onLongPress: () => _toggleSelection(paper.id),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(Spacing.lg),
             child: Container(
               decoration: BoxDecoration(
                 border: Border(
@@ -218,7 +219,7 @@ class _LibraryPageState extends State<LibraryPage> {
                 children: [
                   if (_selected.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.only(right: Spacing.md),
                       child: Icon(
                         isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
                         size: 20,
@@ -232,7 +233,7 @@ class _LibraryPageState extends State<LibraryPage> {
                         Row(
                           children: [
                             Text(suit, style: theme.textTheme.titleSmall),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: Spacing.gap),
                             Expanded(
                               child: Text(paper.title,
                                   style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
@@ -240,7 +241,7 @@ class _LibraryPageState extends State<LibraryPage> {
                           ],
                         ),
                         if (paper.authors.isNotEmpty) ...[
-                          const SizedBox(height: 4),
+                          const SizedBox(height: DesignTokens.sp1),
                           Text(paper.authors.join(', '),
                               style: theme.textTheme.bodySmall,
                               maxLines: 1,
@@ -249,9 +250,9 @@ class _LibraryPageState extends State<LibraryPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: Spacing.lg),
                   Chip(
-                    label: Text(_statusText(paper.status), style: const TextStyle(fontSize: 11)),
+                    label: Text(_statusText(paper.status), style: const TextStyle(fontSize: DesignTokens.fsXs)),
                     backgroundColor: paper.status.color(context).withValues(alpha: 0.1),
                     side: BorderSide(color: paper.status.color(context).withValues(alpha: 0.3)),
                   ),
@@ -285,8 +286,8 @@ class _LibraryPageState extends State<LibraryPage> {
 
   void _compareSelected() {
     if (_selected.length < 2) return;
-    final deps = Dependencies.of(context);
-    final papers = deps.paperService.papers.where((p) => _selected.contains(p.id)).toList();
+
+    final papers = context.paperService.papers.where((p) => _selected.contains(p.id)).toList();
     _selected.clear();
     Navigator.push(
       context,
@@ -299,9 +300,9 @@ class _LibraryPageState extends State<LibraryPage> {
     setState(() => _selected.clear());
     var deleted = 0;
     try {
-      final deps = Dependencies.of(context);
+  
       for (final id in ids) {
-        await deps.paperService.deletePaper(id);
+        await context.paperService.deletePaper(id);
         deleted++;
       }
       if (mounted) {
@@ -333,8 +334,8 @@ class _LibraryPageState extends State<LibraryPage> {
     if (confirmed != true) return;
 
     try {
-      final deps = Dependencies.of(context);
-      await deps.paperService.deletePaper(paper.id);
+  
+      await context.paperService.deletePaper(paper.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('已删除: ${paper.title}')),

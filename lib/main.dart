@@ -1,23 +1,14 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
-import 'core/services/platform_service.dart';
-import 'core/services/config_service.dart';
-import 'core/services/cache_service.dart';
-import 'core/services/search_service.dart';
-import 'core/services/paper_service.dart';
-import 'core/services/network_service.dart';
-import 'core/services/note_service.dart';
-import 'core/services/soul_service.dart';
-import 'core/services/memory_service.dart';
-import 'core/services/portrait_service.dart';
-import 'core/services/avatar_service.dart';
+import 'core/init.dart';
+import 'core/di/service_locator.dart';
 import 'core/di/dependencies.dart';
-import 'core/api/llm_provider.dart';
-import 'core/utils/logger.dart';
+import 'core/interfaces/services.dart';
+import 'core/services/platform_service.dart';
 import 'ui/pages/search_page.dart';
 import 'ui/pages/library_page.dart';
 import 'ui/pages/settings_page.dart';
@@ -28,61 +19,11 @@ import 'ui/widgets/animated_background.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  final platform = createPlatformService();
+  final locator = await createLocator();
+  final platform = locator.get<IConfigService>().platform;
 
   if (!platform.isAndroid) {
     await windowManager.ensureInitialized();
-  }
-
-  await initLogger();
-  final configService = ConfigService(platform);
-  await configService.load();
-
-  final cacheService = CacheService();
-  await cacheService.init();
-
-  final apiKey = await configService.readLlmApiKey();
-  final llmProvider = LLMProvider(config: LLMConfig(
-    type: LLMProviderType.deepseek,
-    apiKey: apiKey ?? '',
-    apiBase: configService.config.llmApiBase,
-    model: configService.config.llmModel,
-  ));
-
-  final soulService = SoulService();
-  await soulService.init();
-
-  final memoryService = MemoryService();
-  await memoryService.init();
-
-  final portraitService = PortraitService();
-  await portraitService.init();
-
-  final avatarService = AvatarService();
-  await avatarService.init();
-
-  final searchService = SearchService();
-
-  final networkService = NetworkService();
-  networkService.init();
-
-  final noteService = NoteService();
-  await noteService.init();
-
-  final paperService = PaperService(
-    cache: cacheService,
-    search: searchService,
-    config: configService,
-    llmProvider: llmProvider,
-    noteService: noteService,
-    soulService: soulService,
-    memoryService: memoryService,
-    portraitService: portraitService,
-  );
-  await paperService.init();
-
-  if (!platform.isAndroid) {
     await windowManager.waitUntilReadyToShow();
     await windowManager.setTitle('PaperPal');
     await windowManager.setMinimumSize(const Size(1024, 700));
@@ -101,6 +42,7 @@ void main() async {
     ]));
   }
 
+  final configService = locator.get<IConfigService>();
   final showWelcome = !configService.hasLlmApiKey;
 
   String? pdfFileArg;
@@ -114,50 +56,20 @@ void main() async {
   }
 
   runApp(PaperPalApp(
-    configService: configService,
-    paperService: paperService,
-    searchService: searchService,
-    cacheService: cacheService,
-    networkService: networkService,
-    noteService: noteService,
-    soulService: soulService,
-    memoryService: memoryService,
-    portraitService: portraitService,
-    avatarService: avatarService,
-    llmProvider: llmProvider,
+    locator: locator,
     showWelcome: showWelcome,
     initialPdfPath: pdfFileArg,
   ));
 }
 
 class PaperPalApp extends StatefulWidget {
-  final ConfigService configService;
-  final PaperService paperService;
-  final SearchService searchService;
-  final CacheService cacheService;
-  final NetworkService networkService;
-  final NoteService noteService;
-  final SoulService soulService;
-  final MemoryService memoryService;
-  final PortraitService portraitService;
-  final AvatarService avatarService;
-  final LLMProvider llmProvider;
+  final ServiceLocator locator;
   final bool showWelcome;
   final String? initialPdfPath;
 
   const PaperPalApp({
     super.key,
-    required this.configService,
-    required this.paperService,
-    required this.searchService,
-    required this.cacheService,
-    required this.networkService,
-    required this.noteService,
-    required this.soulService,
-    required this.memoryService,
-    required this.portraitService,
-    required this.avatarService,
-    required this.llmProvider,
+    required this.locator,
     this.showWelcome = false,
     this.initialPdfPath,
   });
@@ -173,9 +85,10 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
   @override
   void initState() {
     super.initState();
-    _themeMode = widget.configService.config.themeMode.toFlutterThemeMode();
+    final configService = widget.locator.get<IConfigService>();
+    _themeMode = configService.config.themeMode.toFlutterThemeMode();
     _welcomeShown = !widget.showWelcome;
-    if (!widget.configService.platform.isAndroid) {
+    if (!configService.platform.isAndroid) {
       trayManager.addListener(this);
     }
 
@@ -191,17 +104,22 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
   Future<void> _importFromArg(String path) async {
     final file = File(path);
     if (!await file.exists()) return;
-    await widget.paperService.importPdf(file);
+    await widget.locator.get<IPaperService>().importPdf(file);
     _welcomeShown = true;
     if (mounted) setState(() {});
   }
 
   Future<void> _startupGreeting() async {
     await Future.delayed(const Duration(milliseconds: 800));
-    final memories = widget.memoryService.getRecent(limit: 1);
+    final memoryService = widget.locator.get<IMemoryService>();
+    final llmProvider = widget.locator.get<ILLMProvider>();
+    final soulService = widget.locator.get<ISoulService>();
+    final avatarService = widget.locator.get<IAvatarService>();
+
+    final memories = memoryService.getRecent(limit: 1);
     if (memories.isEmpty) return;
-    final soul = widget.soulService.getActiveOrDefault();
-    final greeting = await widget.llmProvider.chat([
+    final soul = soulService.getActiveOrDefault();
+    final greeting = await llmProvider.chat([
       {'role': 'system', 'content': '根据最近记忆和时间生成一句自然的问候。简短亲切，不要说"早上好/下午好"。'},
       {'role': 'user', 'content': '最近记忆：${memories.first.summary}'},
     ], maxTokens: 80);
@@ -210,7 +128,7 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
         SnackBar(
           content: Row(
             children: [
-              buildDefaultAvatar(soul.name, 20, widget.avatarService.colorForName(soul.name)),
+              buildDefaultAvatar(soul.name, 20, avatarService.colorForName(soul.name)),
               const SizedBox(width: 8),
               Expanded(child: Text(greeting, style: const TextStyle(fontSize: 13))),
             ],
@@ -224,7 +142,8 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
 
   @override
   void dispose() {
-    if (!widget.configService.platform.isAndroid) {
+    final configService = widget.locator.get<IConfigService>();
+    if (!configService.platform.isAndroid) {
       trayManager.removeListener(this);
     }
     super.dispose();
@@ -255,17 +174,7 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
   @override
   Widget build(BuildContext context) {
     return Dependencies(
-      configService: widget.configService,
-      paperService: widget.paperService,
-      searchService: widget.searchService,
-      cacheService: widget.cacheService,
-      networkService: widget.networkService,
-      noteService: widget.noteService,
-      soulService: widget.soulService,
-      memoryService: widget.memoryService,
-      portraitService: widget.portraitService,
-      avatarService: widget.avatarService,
-      llmProvider: widget.llmProvider,
+      locator: widget.locator,
       child: MaterialApp(
         title: 'PaperPal',
         debugShowCheckedModeBanner: false,
@@ -274,6 +183,7 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
         darkTheme: AppTheme.dark,
         home: _welcomeShown
             ? _AppShell(
+                locator: widget.locator,
                 onThemeChanged: (mode) => setState(() => _themeMode = mode),
               )
             : WelcomePage(onComplete: _dismissWelcome),
@@ -283,8 +193,9 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
 }
 
 class _AppShell extends StatefulWidget {
+  final ServiceLocator locator;
   final void Function(ThemeMode) onThemeChanged;
-  const _AppShell({required this.onThemeChanged});
+  const _AppShell({required this.locator, required this.onThemeChanged});
 
   @override
   State<_AppShell> createState() => _AppShellState();
@@ -317,7 +228,7 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      final platform = Dependencies.of(context).configService.platform;
+      final platform = widget.locator.get<IConfigService>().platform;
       if (!platform.isAndroid) {
         windowManager.show();
       }
@@ -331,8 +242,8 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final network = Dependencies.of(context).networkService;
-    final platform = Dependencies.of(context).configService.platform;
+    final network = widget.locator.get<INetworkService>();
+    final platform = widget.locator.get<IConfigService>().platform;
     final isMobile = _isMobile;
 
     if (isMobile) {

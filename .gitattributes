@@ -1,0 +1,25 @@
+# 强制文本文件使用 UTF-8 无 BOM
+* text=auto eol=lf
+
+# 检测 BOM 并标记差异
+*.dart text working-tree-encoding=UTF-8
+*.md text working-tree-encoding=UTF-8
+*.bat text working-tree-encoding=UTF-8
+*.ps1 text working-tree-encoding=UTF-8
+*.yml text working-tree-encoding=UTF-8
+*.yaml text working-tree-encoding=UTF-8
+*.cpp text working-tree-encoding=UTF-8
+*.h text working-tree-encoding=UTF-8
+*.cmake text working-tree-encoding=UTF-8
+*.iss text working-tree-encoding=UTF-8
+
+# build/ 目录为 MSVC 生成，允许 BOM 存在
+/build/** text=auto working-tree-encoding=UTF-8-BOM
+
+# 二进制文件不要自动转换
+*.png binary
+*.jpg binary
+*.ico binary
+*.icns binary
+*.ttf binary
+*.otf binary

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:logging/logging.dart';
 import '../../core/di/dependencies.dart';
+import '../../core/tokens/design_tokens.dart';
 
 final _log = Logger('ExplainDialog');
 
@@ -73,11 +74,11 @@ class _ExplainDialogContentState extends State<_ExplainDialogContent> {
   Future<void> _fetchExplanation() async {
     setState(() => _loading = true);
     try {
-      final deps = Dependencies.of(context);
+
       final prompt = widget.isTable
           ? '请解读以下学术论文中的表格并总结关键数据趋势和发现：\n\n${widget.tableContent}\n\n上下文：${widget.contextText}'
           : '请用通俗的语言解释以下学术论文中的数学公式的含义：\n\n```\n${widget.latex}\n```\n\n上下文：${widget.contextText}';
-      final answer = await deps.paperService.askQuestion(
+      final answer = await context.paperService.askQuestion(
         widget.paperId,
         prompt,
       );
@@ -108,24 +109,24 @@ class _ExplainDialogContentState extends State<_ExplainDialogContent> {
             children: [
               if (!widget.isTable && widget.latex.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(Spacing.md),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(RadiusTokens.md),
                   ),
                   child: Center(
                     child: Math.tex(
                       widget.latex,
-                      textStyle: const TextStyle(fontSize: 18),
+                      textStyle: const TextStyle(fontSize: DesignTokens.fs2xl),
                     ),
                   ),
                 ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Spacing.lg),
               Text(widget.contextText,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   )),
-              const SizedBox(height: 16),
+              const SizedBox(height: Spacing.lg),
               if (_loading)
                 const Center(child: CircularProgressIndicator())
               else

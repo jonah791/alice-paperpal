@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import '../interfaces/services.dart';
 
 final _log = Logger('MemoryService');
 final _uuid = Uuid();
@@ -36,7 +37,7 @@ class MemoryItem {
   );
 }
 
-class MemoryService {
+class MemoryService implements IMemoryService {
   late final String _filePath;
   List<MemoryItem> _memories = [];
   static const int _maxMemories = 100;

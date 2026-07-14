@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/models/config.dart';
+import '../../core/tokens/design_tokens.dart';
 import '../widgets/page_transition.dart';
 
 extension AppThemeModeX on AppThemeMode {
@@ -38,148 +39,86 @@ class AppTheme {
     );
   }
 
+  static Color _textColor(Brightness b) =>
+      b == Brightness.dark ? const Color(0xFFEDE4D8) : const Color(0xFF1A1025);
+
   static TextTheme _textTheme(Brightness brightness) {
-    final bool isDark = brightness == Brightness.dark;
-    final Color textColor =
-        isDark ? const Color(0xFFEDE4D8) : const Color(0xFF1A1025);
+    final Color tc = _textColor(brightness);
+    final sans = GoogleFonts.inter;
+    final serif = GoogleFonts.playfairDisplay;
 
     return TextTheme(
-      displayLarge: GoogleFonts.playfairDisplay(
-        fontSize: 57,
-        fontWeight: FontWeight.w700,
-        color: textColor,
-      ),
-      displayMedium: GoogleFonts.playfairDisplay(
-        fontSize: 45,
-        fontWeight: FontWeight.w700,
-        color: textColor,
-      ),
-      displaySmall: GoogleFonts.playfairDisplay(
-        fontSize: 36,
-        fontWeight: FontWeight.w600,
-        color: textColor,
-      ),
-      headlineLarge: GoogleFonts.playfairDisplay(
-        fontSize: 32,
-        fontWeight: FontWeight.w600,
-        color: textColor,
-      ),
-      headlineMedium: GoogleFonts.playfairDisplay(
-        fontSize: 28,
-        fontWeight: FontWeight.w600,
-        color: textColor,
-      ),
-      headlineSmall: GoogleFonts.playfairDisplay(
-        fontSize: 24,
-        fontWeight: FontWeight.w500,
-        color: textColor,
-      ),
-      titleLarge: GoogleFonts.playfairDisplay(
-        fontSize: 22,
-        fontWeight: FontWeight.w500,
-        color: textColor,
-      ),
-      titleMedium: GoogleFonts.playfairDisplay(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        color: textColor,
-      ),
-      titleSmall: GoogleFonts.playfairDisplay(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        color: textColor,
-      ),
-      bodyLarge: GoogleFonts.inter(
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        color: textColor,
-      ),
-      bodyMedium: GoogleFonts.inter(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        color: textColor,
-      ),
-      bodySmall: GoogleFonts.inter(
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-        color: textColor,
-      ),
-      labelLarge: GoogleFonts.inter(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        color: textColor,
-      ),
-      labelMedium: GoogleFonts.inter(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: textColor,
-      ),
-      labelSmall: GoogleFonts.inter(
-        fontSize: 11,
-        fontWeight: FontWeight.w500,
-        color: textColor,
-      ),
+      displayLarge: serif(fontSize: DesignTokens.fs9xl, fontWeight: FontWeight.w700, color: tc),
+      displayMedium: serif(fontSize: DesignTokens.fs8xl, fontWeight: FontWeight.w700, color: tc),
+      displaySmall: serif(fontSize: DesignTokens.fs7xl, fontWeight: FontWeight.w600, color: tc),
+      headlineLarge: serif(fontSize: DesignTokens.fs6xl, fontWeight: FontWeight.w600, color: tc),
+      headlineMedium: serif(fontSize: DesignTokens.fs5xl, fontWeight: FontWeight.w600, color: tc),
+      headlineSmall: serif(fontSize: DesignTokens.fs4xl, fontWeight: FontWeight.w500, color: tc),
+      titleLarge: serif(fontSize: DesignTokens.fs3xl, fontWeight: FontWeight.w500, color: tc),
+      titleMedium: serif(fontSize: DesignTokens.fsXl, fontWeight: FontWeight.w500, color: tc),
+      titleSmall: serif(fontSize: DesignTokens.fsLg, fontWeight: FontWeight.w500, color: tc),
+      bodyLarge: sans(fontSize: DesignTokens.fsXl, fontWeight: FontWeight.w400, color: tc),
+      bodyMedium: sans(fontSize: DesignTokens.fsLg, fontWeight: FontWeight.w400, color: tc),
+      bodySmall: sans(fontSize: DesignTokens.fsSm, fontWeight: FontWeight.w400, color: tc),
+      labelLarge: sans(fontSize: DesignTokens.fsLg, fontWeight: FontWeight.w500, color: tc),
+      labelMedium: sans(fontSize: DesignTokens.fsSm, fontWeight: FontWeight.w500, color: tc),
+      labelSmall: sans(fontSize: DesignTokens.fsXs, fontWeight: FontWeight.w500, color: tc),
     );
   }
 
   static CardThemeData _cardTheme(Brightness brightness) {
-    final Color borderColor = brightness == Brightness.dark
-        ? const Color(0xFFE8B84B).withValues(alpha: 0.1)
-        : const Color(0xFFC28A2C).withValues(alpha: 0.1);
+    final Color gold = brightness == Brightness.dark
+        ? const Color(0xFFE8B84B)
+        : const Color(0xFFC28A2C);
 
     return CardThemeData(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: borderColor),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
+        side: BorderSide(color: gold.withValues(alpha: DesignTokens.opacityFaint)),
       ),
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 8),
+      elevation: DesignTokens.borderNone,
+      margin: EdgeInsets.only(bottom: DesignTokens.spGap),
     );
   }
 
   static InputDecorationTheme _inputTheme(Brightness brightness) {
     final bool isDark = brightness == Brightness.dark;
-    final Color fillColor = isDark ? const Color(0xFF120C1F) : const Color(0xFFF5F0EB);
-    final Color borderColor = isDark
-        ? const Color(0xFFE8B84B).withValues(alpha: 0.3)
-        : const Color(0xFFC28A2C).withValues(alpha: 0.3);
-    final Color focusedColor =
-        isDark ? const Color(0xFFE8B84B) : const Color(0xFFC28A2C);
+    final Color fill = isDark ? const Color(0xFF120C1F) : const Color(0xFFF5F0EB);
+    final Color gold = isDark ? const Color(0xFFE8B84B) : const Color(0xFFC28A2C);
 
     return InputDecorationTheme(
       filled: true,
-      fillColor: fillColor,
+      fillColor: fill,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: borderColor),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+        borderSide: BorderSide(color: gold.withValues(alpha: DesignTokens.opacityMedium)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: borderColor),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+        borderSide: BorderSide(color: gold.withValues(alpha: DesignTokens.opacityMedium)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: focusedColor, width: 2),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+        borderSide: BorderSide(color: gold, width: DesignTokens.borderLg),
       ),
+      contentPadding: padSym(h: DesignTokens.sp4, v: DesignTokens.sp2),
     );
   }
 
   static ElevatedButtonThemeData _buttonTheme(Brightness brightness) {
     final bool isDark = brightness == Brightness.dark;
-    final Color gold =
-        isDark ? const Color(0xFFE8B84B) : const Color(0xFFC28A2C);
-    final Color onGold =
-        isDark ? const Color(0xFF1A1025) : const Color(0xFFFFFFFF);
+    final Color gold = isDark ? const Color(0xFFE8B84B) : const Color(0xFFC28A2C);
+    final Color onGold = isDark ? const Color(0xFF1A1025) : const Color(0xFFFFFFFF);
 
     return ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: gold,
         foregroundColor: onGold,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(50),
+          borderRadius: BorderRadius.circular(DesignTokens.radiusFull),
         ),
         textStyle: GoogleFonts.inter(
-          fontSize: 14,
+          fontSize: DesignTokens.fsLg,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -189,8 +128,7 @@ class AppTheme {
   static ThemeData _base(Brightness brightness) {
     final bool isDark = brightness == Brightness.dark;
     final ColorScheme colors = isDark ? _darkColors() : _lightColors();
-    final Color scaffoldBg =
-        isDark ? const Color(0xFF07050D) : const Color(0xFFFFFBF3);
+    final Color scaffoldBg = isDark ? const Color(0xFF07050D) : const Color(0xFFFFFBF3);
 
     return ThemeData(
       useMaterial3: true,
@@ -202,11 +140,11 @@ class AppTheme {
       inputDecorationTheme: _inputTheme(brightness),
       elevatedButtonTheme: _buttonTheme(brightness),
       dividerTheme: DividerThemeData(
-        color: colors.onSurface.withValues(alpha: 0.12),
+        color: colors.onSurface.withValues(alpha: DesignTokens.opacityFaint),
       ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
-        elevation: 0,
+        elevation: DesignTokens.borderNone,
         backgroundColor: scaffoldBg,
         foregroundColor: colors.onSurface,
       ),

@@ -4,12 +4,13 @@ import 'package:logging/logging.dart';
 import 'package:dio/dio.dart';
 
 import '../models/search_result.dart';
+import '../interfaces/services.dart';
 import '../api/arxiv_api.dart';
 import '../api/s2_api.dart';
 
 final _log = Logger('SearchService');
 
-class SearchService {
+class SearchService implements ISearchService {
   final ArxivApi _arxiv;
   final S2Api _s2;
 
@@ -29,8 +30,17 @@ class SearchService {
       final all = <String, SearchResult>{};
       for (final r in results.expand((x) => x)) {
         final key = r.doi.isNotEmpty ? r.doi : r.title.toLowerCase();
-        if (!all.containsKey(key) || all[key]!.source == 'arXiv') {
+        if (!all.containsKey(key)) {
           all[key] = r;
+        } else {
+          final existing = all[key]!;
+          final existingHasPdf = existing.pdfUrl.isNotEmpty;
+          final newHasPdf = r.pdfUrl.isNotEmpty;
+          if (!existingHasPdf && newHasPdf) {
+            all[key] = r;
+          } else if (existingHasPdf == newHasPdf && existing.source == 'arXiv') {
+            all[key] = r;
+          }
         }
       }
 

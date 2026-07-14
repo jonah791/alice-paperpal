@@ -5,11 +5,12 @@ import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/note.dart';
+import '../interfaces/services.dart';
 
 final _log = Logger('NoteService');
 final _uuid = Uuid();
 
-class NoteService {
+class NoteService implements INoteService {
   late final String _filePath;
   List<Note> _notes = [];
 

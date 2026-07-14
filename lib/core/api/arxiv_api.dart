@@ -12,7 +12,7 @@ class ArxivApi {
     receiveTimeout: const Duration(seconds: 15),
   ));
 
-  static const _baseUrl = 'http://export.arxiv.org/api/query';
+  static const _baseUrl = 'https://export.arxiv.org/api/query';
 
   Future<List<SearchResult>> search(String query, {int maxResults = 10}) async {
     try {

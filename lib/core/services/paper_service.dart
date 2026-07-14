@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../api/llm_provider.dart';
 import '../api/mineru_api.dart';
+import '../interfaces/services.dart';
 import '../models/paper.dart';
 import '../models/parse_result.dart';
 import '../models/search_result.dart';
@@ -24,31 +25,31 @@ import 'translation_service.dart';
 final _log = Logger('PaperService');
 final _uuid = Uuid();
 
-class PaperService {
-  final CacheService _cache;
-  final SearchService _search;
-  final ConfigService _config;
-  final LLMProvider _llm;
-  final SoulService _soul;
-  final MemoryService _memory;
-  final PortraitService _portrait;
+class PaperService implements IPaperService {
+  final ICacheService _cache;
+  final ISearchService _search;
+  final IConfigService _config;
+  final ILLMProvider _llm;
+  final ISoulService _soul;
+  final IMemoryService _memory;
+  final IPortraitService _portrait;
   late final ParseService _parse;
   late final TranslationService _translation;
 
-  final NoteService _noteService;
+  final INoteService _noteService;
   final _papers = <Paper>{};
   final _paperController = StreamController<List<Paper>>.broadcast();
   Stream<List<Paper>> get paperStream => _paperController.stream;
 
   PaperService({
-    required CacheService cache,
-    required SearchService search,
-    required ConfigService config,
-    required LLMProvider llmProvider,
-    required NoteService noteService,
-    required SoulService soulService,
-    required MemoryService memoryService,
-    required PortraitService portraitService,
+    required ICacheService cache,
+    required ISearchService search,
+    required IConfigService config,
+    required ILLMProvider llmProvider,
+    required INoteService noteService,
+    required ISoulService soulService,
+    required IMemoryService memoryService,
+    required IPortraitService portraitService,
   })  : _noteService = noteService,
         _cache = cache,
         _search = search,
@@ -59,20 +60,44 @@ class PaperService {
         _portrait = portraitService;
 
   Future<void> init() async {
-    final cfg = _config.config;
-    final mineruApi = MineruApi(
-      apiKey: await _config.readMineruApiKey() ?? '',
-      modelVersion: cfg.mineruModelVersion,
-      enableFormula: cfg.enableFormula,
-      enableTable: cfg.enableTable,
-    );
-    _parse = ParseService(api: mineruApi);
+    await _rebuildParseService();
     _translation = TranslationService(_llm);
 
     final persisted = await _cache.loadAllPapers();
     _papers.addAll(persisted);
     _emitPapers();
     _log.info('init: ${_papers.length} papers');
+  }
+
+  Future<void> _rebuildParseService() async {
+    final cfg = _config.config;
+    final apiKey = await _config.readMineruApiKey() ?? '';
+    if (apiKey.isEmpty) {
+      _log.warning('MinerU API key not configured, parse service will not work');
+    }
+    final mineruApi = MineruApi(
+      apiKey: apiKey,
+      modelVersion: cfg.mineruModelVersion,
+      enableFormula: cfg.enableFormula,
+      enableTable: cfg.enableTable,
+    );
+    _parse = ParseService(api: mineruApi);
+  }
+
+  Future<void> reconfigureMineru() async {
+    await _rebuildParseService();
+    _log.info('MinerU API reconfigured');
+  }
+
+  Future<void> reconfigureLlm() async {
+    final cfg = _config.config;
+    final apiKey = await _config.readLlmApiKey() ?? '';
+    _llm.reconfigure(
+      apiKey: apiKey,
+      apiBase: cfg.llmApiBase,
+      model: cfg.llmModel,
+    );
+    _log.info('LLM provider reconfigured');
   }
 
   void _emitPapers() => _paperController.add(_papers.toList());
@@ -283,6 +308,14 @@ class PaperService {
   }
 
   List<Paper> get papers => _papers.toList();
+
+  Paper? getPaper(String id) {
+    try {
+      return _papers.firstWhere((p) => p.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<void> deletePaper(String paperId) async {
     _papers.removeWhere((p) => p.id == paperId);

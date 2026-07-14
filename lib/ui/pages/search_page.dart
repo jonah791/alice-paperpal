@@ -6,6 +6,7 @@ import 'package:logging/logging.dart';
 import '../../core/models/search_result.dart';
 import '../../core/models/paper.dart';
 import '../../core/di/dependencies.dart';
+import '../../core/tokens/design_tokens.dart';
 import '../widgets/card_spinner.dart';
 
 final _log = Logger('SearchPage');
@@ -43,8 +44,8 @@ class _SearchPageState extends State<SearchPage> {
     });
 
     try {
-      final deps = Dependencies.of(context);
-      if (!deps.networkService.isOnline) {
+
+      if (!context.networkService.isOnline) {
         if (mounted) setState(() {
           _loading = false;
           _statusMessage = '网络不可用，请检查网络连接后重试';
@@ -52,7 +53,7 @@ class _SearchPageState extends State<SearchPage> {
         return;
       }
 
-      final (results, error) = await deps.searchService.search(query);
+      final (results, error) = await context.searchService.search(query);
       if (!mounted) return;
 
       if (error != null) {
@@ -91,7 +92,6 @@ class _SearchPageState extends State<SearchPage> {
     String? pdfUrl = url;
     String? title;
 
-    // Handle arXiv abs page
     final arxivMatch = RegExp(r'arxiv\.org/abs/(\d+\.\d+)').firstMatch(url);
     if (arxivMatch != null) {
       pdfUrl = 'https://arxiv.org/pdf/${arxivMatch.group(1)}.pdf';
@@ -100,7 +100,7 @@ class _SearchPageState extends State<SearchPage> {
     }
 
     try {
-      final deps = Dependencies.of(context);
+
       final tempDir = await Directory.systemTemp.createTemp('paperwise_');
       final result = SearchResult(
         title: title ?? url,
@@ -108,7 +108,7 @@ class _SearchPageState extends State<SearchPage> {
         pdfUrl: pdfUrl,
         source: 'url',
       );
-      final file = await deps.searchService.downloadPdf(result, tempDir.path,
+      final file = await context.searchService.downloadPdf(result, tempDir.path,
         onProgress: (received, total) {
           if (total > 0) {
             final pct = (received / total * 100).toInt();
@@ -125,7 +125,7 @@ class _SearchPageState extends State<SearchPage> {
         return;
       }
 
-      final paper = await deps.paperService.importPdf(file, title: title);
+      final paper = await context.paperService.importPdf(file, title: title);
       if (paper == null) {
         setState(() {
           _statusMessage = '导入失败：文件读取错误';
@@ -167,8 +167,8 @@ class _SearchPageState extends State<SearchPage> {
       setState(() => _statusMessage = '正在导入...');
       _log.info('uploadPdf: ${file.name}');
 
-      final deps = Dependencies.of(context);
-      final paper = await deps.paperService.importPdf(
+
+      final paper = await context.paperService.importPdf(
         File(file.path!),
         title: file.name.replaceAll('.pdf', ''),
       );
@@ -198,7 +198,7 @@ class _SearchPageState extends State<SearchPage> {
         Expanded(child: _buildBody(theme)),
         if (_statusMessage.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.all(8),
+            padding: padAll(DesignTokens.spGap),
             child: Text(_statusMessage, style: theme.textTheme.bodySmall),
           ),
       ],
@@ -209,10 +209,10 @@ class _SearchPageState extends State<SearchPage> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          padding: padOnly(l: Spacing.lg, t: Spacing.lg, r: Spacing.lg),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              if (constraints.maxWidth > 600) {
+              if (constraints.maxWidth > DesignTokens.bpMobile) {
                 return Row(
                   children: [
                     Expanded(
@@ -221,18 +221,18 @@ class _SearchPageState extends State<SearchPage> {
                         decoration: InputDecoration(
                           hintText: '搜索论文标题或关键词...',
                           prefixIcon: const Icon(Icons.search),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(DesignTokens.radiusLg)),
                           filled: true,
                           fillColor: theme.colorScheme.surfaceContainerHighest,
                         ),
                         onSubmitted: (_) => _search(),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: Spacing.gap),
                     _searchButton(),
-                    const SizedBox(width: 8),
+                    SizedBox(width: Spacing.gap),
                     _uploadButton(),
-                    const SizedBox(width: 8),
+                    SizedBox(width: Spacing.gap),
                     _linkButton(),
                   ],
                 );
@@ -245,20 +245,20 @@ class _SearchPageState extends State<SearchPage> {
                     decoration: InputDecoration(
                       hintText: '搜索论文标题或关键词...',
                       prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(DesignTokens.radiusLg)),
                       filled: true,
                       fillColor: theme.colorScheme.surfaceContainerHighest,
                     ),
                     onSubmitted: (_) => _search(),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: Spacing.gap),
                   Wrap(
-                    runSpacing: 8,
+                    runSpacing: DesignTokens.spGap,
                     children: [
                       _searchButton(),
-                      const SizedBox(width: 8),
+                      SizedBox(width: Spacing.gap),
                       _uploadButton(),
-                      const SizedBox(width: 8),
+                      SizedBox(width: Spacing.gap),
                       _linkButton(),
                     ],
                   ),
@@ -269,7 +269,7 @@ class _SearchPageState extends State<SearchPage> {
         ),
         if (_showUrlInput)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            padding: padOnly(l: Spacing.lg, t: Spacing.gap, r: Spacing.lg),
             child: Row(
               children: [
                 Expanded(
@@ -278,23 +278,23 @@ class _SearchPageState extends State<SearchPage> {
                     decoration: InputDecoration(
                       hintText: '粘贴 arXiv 链接或 PDF 直链...',
                       prefixIcon: const Icon(Icons.link),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(DesignTokens.radiusLg)),
                       filled: true,
                       fillColor: theme.colorScheme.surfaceContainerHighest,
                     ),
                     onSubmitted: (_) => _importUrl(),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: Spacing.gap),
                 FilledButton.tonalIcon(
                   onPressed: _importUrl,
-                  icon: const Icon(Icons.download, size: 18),
+                  icon: const Icon(Icons.download, size: DesignTokens.iconMd),
                   label: const Text('导入'),
                 ),
               ],
             ),
           ),
-        const SizedBox(height: 8),
+        SizedBox(height: Spacing.gap),
       ],
     );
   }
@@ -315,7 +315,7 @@ class _SearchPageState extends State<SearchPage> {
             return Opacity(
               opacity: value,
               child: Transform.translate(
-                offset: Offset(0, 10 * (1 - value)),
+                offset: Offset(0, DesignTokens.sp10 * (1 - value)),
                 child: child,
               ),
             );
@@ -323,10 +323,10 @@ class _SearchPageState extends State<SearchPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.search_off, size: 64, color: theme.colorScheme.onSurfaceVariant),
-              const SizedBox(height: 16),
+              Icon(Icons.search_off, size: DesignTokens.sp12, color: theme.colorScheme.onSurfaceVariant),
+              SizedBox(height: Spacing.lg),
               Text('输入关键词开始搜索论文', style: theme.textTheme.bodyLarge),
-              const SizedBox(height: 8),
+              SizedBox(height: Spacing.gap),
               Text('或点击"上传 PDF"导入本地论文', style: theme.textTheme.bodySmall),
             ],
           ),
@@ -335,7 +335,7 @@ class _SearchPageState extends State<SearchPage> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: padSym(h: Spacing.lg),
       itemCount: _results.length,
       itemBuilder: (context, index) => TweenAnimationBuilder<double>(
         tween: _fadeTween,
@@ -344,7 +344,7 @@ class _SearchPageState extends State<SearchPage> {
           return Opacity(
             opacity: value,
             child: Transform.translate(
-              offset: Offset(0, 10 * (1 - value)),
+              offset: Offset(0, DesignTokens.sp10 * (1 - value)),
               child: child,
             ),
           );
@@ -356,9 +356,9 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _buildResultCard(SearchResult result, ThemeData theme) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: padOnly(b: DesignTokens.spGap),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
         onTap: () async {
           try {
             if (result.pdfUrl.isEmpty) {
@@ -366,8 +366,8 @@ class _SearchPageState extends State<SearchPage> {
               return;
             }
             setState(() => _statusMessage = '正在下载: ${result.title}');
-            final deps = Dependencies.of(context);
-            final paper = await deps.paperService.importFromSearch(result,
+      
+            final paper = await context.paperService.importFromSearch(result,
               onProgress: (received, total) {
                 if (total > 0 && mounted) {
                   setState(() => _statusMessage = '下载中... ${(received / total * 100).toInt()}%');
@@ -391,33 +391,33 @@ class _SearchPageState extends State<SearchPage> {
           }
         },
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: padAll(Spacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(result.title,
                   style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 4),
+              SizedBox(height: DesignTokens.sp1),
               Text(
                 result.authors.join(', '),
                 style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: DesignTokens.sp1),
               Row(
                 children: [
-                  Chip(label: Text(result.year.toString(), style: const TextStyle(fontSize: 11))),
-                  const SizedBox(width: 8),
-                  Chip(label: Text(result.source, style: const TextStyle(fontSize: 11))),
+                  Chip(label: Text(result.year.toString(), style: const TextStyle(fontSize: DesignTokens.fsXs))),
+                  SizedBox(width: Spacing.gap),
+                  Chip(label: Text(result.source, style: const TextStyle(fontSize: DesignTokens.fsXs))),
                   if (result.citationCount > 0) ...[
-                    const SizedBox(width: 8),
+                    SizedBox(width: Spacing.gap),
                     Text('☆ ${result.citationCount}', style: theme.textTheme.bodySmall),
                   ],
                 ],
               ),
               if (result.abstract.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: Spacing.gap),
                 Text(result.abstract,
                     style: theme.textTheme.bodySmall,
                     maxLines: 3,
@@ -434,7 +434,8 @@ class _SearchPageState extends State<SearchPage> {
     return FilledButton.icon(
       onPressed: _loading ? null : _search,
       icon: _loading
-          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+          ? SizedBox(width: DesignTokens.iconMd, height: DesignTokens.iconMd,
+              child: const CircularProgressIndicator(strokeWidth: DesignTokens.borderXl))
           : const Icon(Icons.search),
       label: const Text('搜索'),
     );

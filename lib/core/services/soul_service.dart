@@ -4,14 +4,14 @@ import 'dart:io';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
-import '../api/llm_provider.dart';
 import '../models/soul.dart';
 import '../models/soul_presets.dart';
+import '../interfaces/services.dart';
 
 final _log = Logger('SoulService');
 final _uuid = Uuid();
 
-class SoulService {
+class SoulService implements ISoulService {
   late final String _soulsDir;
   late final String _activePath;
   Soul? _activeSoul;
@@ -107,7 +107,7 @@ class SoulService {
     _log.info('setActive: ${soul.name}');
   }
 
-  Future<Soul> createCustomSoul(String name, String description, LLMProvider llm) async {
+  Future<Soul> createCustomSoul(String name, String description, ILLMProvider llm) async {
     final prompt = '''
 根据以下用户描述，生成一个 AI 角色的灵魂定义。
 只输出 JSON，不要其他内容。

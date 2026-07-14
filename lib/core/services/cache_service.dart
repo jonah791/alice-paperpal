@@ -4,10 +4,11 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:logging/logging.dart';
 import '../models/paper.dart';
+import '../interfaces/services.dart';
 
 final _log = Logger('CacheService');
 
-class CacheService {
+class CacheService implements ICacheService {
   late final String _rootDir;
 
   Future<void> init() async {

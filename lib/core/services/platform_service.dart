@@ -22,7 +22,7 @@ class DesktopPlatformService implements PlatformService {
 
   @override
   Future<void> openFile(String path) async {
-    await Process.run('cmd', ['/c', 'start', '', path]);
+    await Process.run('cmd', ['/c', 'start', '', path], runInShell: true);
   }
 
   @override

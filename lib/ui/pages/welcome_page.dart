@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/tokens/design_tokens.dart';
 
 class WelcomePage extends StatelessWidget {
   final VoidCallback onComplete;
@@ -37,7 +38,7 @@ class WelcomePage extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Spacing.lg),
             Text(
               'PaperPal',
               style: GoogleFonts.playfairDisplay(
@@ -53,7 +54,7 @@ class WelcomePage extends StatelessWidget {
                   ).createShader(const Rect.fromLTWH(0, 0, 200, 50)),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Spacing.gap),
             Text(
               '— 掉进兔子洞，开启论文阅读之旅 —',
               style: GoogleFonts.playfairDisplay(
@@ -62,7 +63,7 @@ class WelcomePage extends StatelessWidget {
                 color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: DesignTokens.sp10),
             FilledButton(
               onPressed: onComplete,
               child: const Text('进入奇妙世界'),

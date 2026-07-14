@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
 
 # ALICE PaperPal
 
@@ -9,7 +9,8 @@
 [![Platform](https://img.shields.io/badge/Android-34D058?logo=android&logoColor=white)]()
 [![Tests](https://img.shields.io/badge/tests-320+-brightgreen)]()
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
-[![GitHub release](https://img.shields.io/github/v/release/jonah791/alice-paperpal)](https://github.com/jonah791/alice-paperpal/releases)
+[![GitHub release](https://img.shields.io/github/v/release/jonah791/alice-paperpal?label=v0.4.0)](https://github.com/jonah791/alice-paperpal/releases)
+[![Tests](https://img.shields.io/badge/tests-340+-brightgreen)]()
 
 **基于 MinerU + DeepSeek V4 的 AI 论文阅读伴侣。**
 **搜索论文 → 导入 PDF → 自动解析 → 自动翻译 → AI 问答与摘要。**

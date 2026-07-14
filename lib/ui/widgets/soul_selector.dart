@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import '../../core/models/soul.dart';
-import '../../core/services/soul_service.dart';
+import '../../core/interfaces/services.dart';
 import '../../core/di/dependencies.dart';
+import '../../core/tokens/design_tokens.dart';
 import 'avatar_helpers.dart';
 
 final _log = Logger('SoulSelector');
@@ -20,20 +21,20 @@ class _SoulSelectorState extends State<SoulSelector> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final deps = Dependencies.of(context);
-    final soulService = deps.soulService;
+
+    final soulService = context.soulService;
     final active = soulService.getActiveOrDefault();
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(Spacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                buildDefaultAvatar(active.name, 40, deps.avatarService.colorForName(active.name)),
-                const SizedBox(width: 12),
+                buildDefaultAvatar(active.name, 40, context.avatarService.colorForName(active.name)),
+                const SizedBox(width: Spacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,17 +47,17 @@ class _SoulSelectorState extends State<SoulSelector> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Spacing.lg),
             Text('切换灵魂', style: theme.textTheme.titleSmall),
-            const SizedBox(height: 8),
+            const SizedBox(height: Spacing.gap),
             _buildPresetGrid(theme, soulService, active),
-            const SizedBox(height: 12),
+            const SizedBox(height: Spacing.md),
             if (soulService.custom.isNotEmpty) ...[
               Text('自定义灵魂', style: theme.textTheme.titleSmall),
-              const SizedBox(height: 8),
+              const SizedBox(height: Spacing.gap),
               ...soulService.custom.map((s) => _buildCustomTile(context, theme, soulService, s, active)),
             ],
-            const SizedBox(height: 8),
+            const SizedBox(height: Spacing.gap),
             if (_creating)
               _buildCreator(context, theme, soulService)
             else
@@ -71,15 +72,15 @@ class _SoulSelectorState extends State<SoulSelector> {
     );
   }
 
-  Widget _buildPresetGrid(ThemeData theme, SoulService soulService, Soul active) {
+  Widget _buildPresetGrid(ThemeData theme, ISoulService soulService, Soul active) {
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: Spacing.gap,
+      runSpacing: Spacing.gap,
       children: soulService.presets.map((s) {
         final isActive = s.id == active.id;
         return ChoiceChip(
           selected: isActive,
-          label: Text(s.name, style: TextStyle(fontSize: 13, color: isActive ? theme.colorScheme.secondary : null)),
+          label: Text(s.name, style: TextStyle(fontSize: DesignTokens.fsMd, color: isActive ? theme.colorScheme.secondary : null)),
           onSelected: (_) async {
             await soulService.setActiveSoul(s);
             if (mounted) setState(() {});
@@ -94,12 +95,12 @@ class _SoulSelectorState extends State<SoulSelector> {
     );
   }
 
-  Widget _buildCustomTile(BuildContext context, ThemeData theme, SoulService soulService, Soul s, Soul active) {
+  Widget _buildCustomTile(BuildContext context, ThemeData theme, ISoulService soulService, Soul s, Soul active) {
     final isActive = s.id == active.id;
-    final deps = Dependencies.of(context);
+
     return ListTile(
       dense: true,
-      leading: buildDefaultAvatar(s.name, 28, deps.avatarService.colorForName(s.name)),
+      leading: buildDefaultAvatar(s.name, 28, context.avatarService.colorForName(s.name)),
       title: Text(s.name, style: TextStyle(fontWeight: isActive ? FontWeight.bold : FontWeight.normal)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -118,23 +119,23 @@ class _SoulSelectorState extends State<SoulSelector> {
     );
   }
 
-  Widget _buildCreator(BuildContext context, ThemeData theme, SoulService soulService) {
+  Widget _buildCreator(BuildContext context, ThemeData theme, ISoulService soulService) {
     final nameController = TextEditingController();
     final descController = TextEditingController();
     bool loading = false;
 
     return StatefulBuilder(
       builder: (ctx, setLocalState) => Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(Spacing.md),
         decoration: BoxDecoration(
           border: Border.all(color: theme.dividerColor),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(RadiusTokens.lg),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('描述你想要的 AI 伙伴', style: theme.textTheme.bodySmall),
-            const SizedBox(height: 8),
+            const SizedBox(height: Spacing.gap),
             TextField(
               controller: nameController,
               decoration: const InputDecoration(
@@ -143,7 +144,7 @@ class _SoulSelectorState extends State<SoulSelector> {
                 isDense: true,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Spacing.gap),
             TextField(
               controller: descController,
               maxLines: 3,
@@ -154,7 +155,7 @@ class _SoulSelectorState extends State<SoulSelector> {
                 isDense: true,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: Spacing.gap),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -162,19 +163,19 @@ class _SoulSelectorState extends State<SoulSelector> {
                   onPressed: () => setState(() => _creating = false),
                   child: const Text('取消'),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: Spacing.gap),
                 FilledButton.icon(
                   onPressed: loading ? null : () async {
                     if (nameController.text.trim().isEmpty) return;
                     setLocalState(() => loading = true);
                     try {
-                      final deps = Dependencies.of(context);
-                      final soul = await deps.soulService.createCustomSoul(
+                  
+                      final soul = await context.soulService.createCustomSoul(
                         nameController.text.trim(),
                         descController.text.trim(),
-                        deps.llmProvider,
+                        context.llmProvider,
                       );
-                      await deps.soulService.setActiveSoul(soul);
+                      await context.soulService.setActiveSoul(soul);
                       setState(() {
                         _creating = false;
                       });
@@ -189,7 +190,7 @@ class _SoulSelectorState extends State<SoulSelector> {
                     setLocalState(() => loading = false);
                   },
                   icon: loading
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const SizedBox(width: DesignTokens.iconLg, height: DesignTokens.iconLg, child: CircularProgressIndicator(strokeWidth: DesignTokens.borderXl))
                       : const Icon(Icons.auto_awesome),
                   label: const Text('生成并保存'),
                 ),
@@ -201,7 +202,7 @@ class _SoulSelectorState extends State<SoulSelector> {
     );
   }
 
-  void _deleteSoul(BuildContext context, SoulService soulService, Soul s) {
+  void _deleteSoul(BuildContext context, ISoulService soulService, Soul s) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(

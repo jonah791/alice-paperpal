@@ -1,4 +1,4 @@
-﻿#define MyAppName "ALICE PaperPal"
+#define MyAppName "ALICE PaperPal"
 #define MyAppPublisher "ALICE"
 #define MyAppURL "https://github.com/jonah791/alice-paperpal"
 #define MyAppExeName "paperpal.exe"

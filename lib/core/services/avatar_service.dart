@@ -2,10 +2,11 @@ import 'dart:io';
 
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
+import '../interfaces/services.dart';
 
 final _log = Logger('AvatarService');
 
-class AvatarService {
+class AvatarService implements IAvatarService {
   late final String _avatarsDir;
   String? _currentPath;
 

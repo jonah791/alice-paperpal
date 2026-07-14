@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart' as m;
 import 'package:paperpal/core/models/paper.dart';
 import 'package:paperpal/core/models/parse_result.dart';

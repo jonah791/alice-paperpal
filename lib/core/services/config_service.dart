@@ -4,11 +4,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logging/logging.dart';
 import '../models/config.dart';
 import '../utils/windows_encryption.dart' as dpapi;
+import '../interfaces/services.dart';
 import 'platform_service.dart';
 
 final _log = Logger('ConfigService');
 
-class ConfigService {
+class ConfigService implements IConfigService {
   static const _keyLlmApiKey = 'llm_api_key';
   static const _keyMineruApiKey = 'mineru_api_key';
   static const _keyLlmApiBase = 'llm_api_base';

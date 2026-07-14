@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import '../../core/di/dependencies.dart';
+import '../../core/tokens/design_tokens.dart';
 import '../widgets/soul_selector.dart';
 import '../widgets/avatar_picker.dart';
 
@@ -46,10 +47,10 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _loadSettings() async {
     try {
-      final deps = Dependencies.of(context);
-      final cfg = deps.configService.config;
-      final llmKey = await deps.configService.readLlmApiKey();
-      final mineruKey = await deps.configService.readMineruApiKey();
+
+      final cfg = context.configService.config;
+      final llmKey = await context.configService.readLlmApiKey();
+      final mineruKey = await context.configService.readMineruApiKey();
 
       _llmKeyController.text = llmKey ?? '';
       _llmBaseController.text = cfg.llmApiBase;
@@ -81,22 +82,22 @@ class _SettingsPageState extends State<SettingsPage> {
     }
 
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(Spacing.xl),
       children: [
         Text('设置', style: theme.textTheme.titleLarge),
-        const SizedBox(height: 24),
+        const SizedBox(height: Spacing.xl),
 
         _sectionLabel(context, 'LLM 配置'),
-        const SizedBox(height: 8),
+        const SizedBox(height: Spacing.gap),
         Card(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(Spacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('默认使用 DeepSeek V4 Flash。支持 OpenAI 兼容 API。',
                     style: theme.textTheme.bodySmall),
-                const SizedBox(height: 16),
+                const SizedBox(height: Spacing.lg),
                 TextField(
                   controller: _llmKeyController,
                   obscureText: true,
@@ -105,7 +106,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: Spacing.md),
                 TextField(
                   controller: _llmBaseController,
                   decoration: const InputDecoration(
@@ -118,27 +119,27 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: Spacing.lg),
         _sectionLabel(context, '灵魂'),
-        const SizedBox(height: 8),
+        const SizedBox(height: Spacing.gap),
         const SoulSelector(),
-        const SizedBox(height: 16),
+        const SizedBox(height: Spacing.lg),
         _sectionLabel(context, '头像'),
-        const SizedBox(height: 8),
+        const SizedBox(height: Spacing.gap),
         const AvatarPicker(),
-        const SizedBox(height: 16),
+        const SizedBox(height: Spacing.lg),
 
         _sectionLabel(context, '解析引擎'),
-        const SizedBox(height: 8),
+        const SizedBox(height: Spacing.gap),
         Card(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(Spacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('论文 PDF 将上传至 MinerU 云端进行解析（v4 API）。',
                     style: theme.textTheme.bodySmall),
-                const SizedBox(height: 16),
+                const SizedBox(height: Spacing.lg),
                 TextField(
                   controller: _mineruKeyController,
                   obscureText: true,
@@ -147,9 +148,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: Spacing.md),
                 DropdownButtonFormField<String>(
-                  value: _mineruModelVersion,
+                  initialValue: _mineruModelVersion,
                   decoration: const InputDecoration(
                     labelText: '模型版本',
                     border: OutlineInputBorder(),
@@ -162,7 +163,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     if (v != null) setState(() => _mineruModelVersion = v);
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: Spacing.md),
                 CheckboxListTile(
                   title: const Text('公式识别'),
                   subtitle: const Text('识别并提取数学公式'),
@@ -181,7 +182,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: Spacing.lg),
 
         // Save
         FilledButton.icon(
@@ -195,28 +196,31 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _saveSettings() async {
     try {
-      final deps = Dependencies.of(context);
+
       if (_llmKeyController.text.isNotEmpty) {
-        await deps.configService.saveLlmApiKey(_llmKeyController.text);
+        await context.configService.saveLlmApiKey(_llmKeyController.text);
       }
       if (_mineruKeyController.text.isNotEmpty) {
-        await deps.configService.saveMineruApiKey(_mineruKeyController.text);
+        await context.configService.saveMineruApiKey(_mineruKeyController.text);
       }
 
-      final updatedConfig = deps.configService.config.copyWith(
+      final updatedConfig = context.configService.config.copyWith(
         llmApiBase: _llmBaseController.text.isNotEmpty
             ? _llmBaseController.text
-            : deps.configService.config.llmApiBase,
+            : context.configService.config.llmApiBase,
         mineruModelVersion: _mineruModelVersion,
         enableFormula: _enableFormula,
         enableTable: _enableTable,
       );
-      await deps.configService.updateConfig(updatedConfig);
+      await context.configService.updateConfig(updatedConfig);
+
+      await context.paperService.reconfigureMineru();
+      await context.paperService.reconfigureLlm();
 
       if (mounted) {
         _log.info('settings saved: modelVersion=$_mineruModelVersion');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('设置已保存（部分更改下次启动生效）')),
+          const SnackBar(content: Text('设置已保存')),
         );
       }
     } catch (e) {

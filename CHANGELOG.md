@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.4.0] - 2026-07-14
+
+### Refactor
+
+- **ServiceLocator** (`lib/core/di/service_locator.dart`) — 轻量 DI 容器，消除 131 行 main() 工厂。新服务只需注册 1 处
+- **Dependencies 简化** — 11 个具名字段 → 1 个 `locator` 字段；新增 `ServiceX` 扩展（`context.paperService` 替代 `Dependencies.of(context).paperService`）
+- **共享 AppInitializer** (`lib/core/init.dart`) — CLI 和 Flutter 共用 `createLocator()` 初始化逻辑
+- **PaperService 接口化** — 所有内部依赖改为接口类型（`ICacheService`, `ISearchService` 等）
+- **DesignTokens 系统** (`lib/core/tokens/design_tokens.dart`) — 4px 网格间距、圆角、字号、不透明度、断点的单一数据源。200+ 硬编码值替换为 token 引用
+- **app_theme.dart 重构** — 全量驱动于 DesignTokens，移除所有硬编码色值/间距/圆角
+- **8 个页面/组件**更新：search_page、read_page、library_page、settings_page、soul_selector、explain_dialog、avatar_picker、welcome_page 改用 token 和 context.XXX 模式
+
+### Fixed
+
+- **ReadPage initState crash** — `_loadContent()` 调用 `Dependencies.of(context)` 时 InheritedWidget 未挂载，改为 `addPostFrameCallback`
+- **MockPaperService 空标题** — `importPdf` 传入的 title 正确映射到 paper title
+- **MockConfigService 平台缺失** — 添加 `_MockPlatform` 使 widget test 可用
+- **ATL 依赖修复** — `flutter_secure_storage_windows` 插件依赖 ATL 库，改为内联 CA2W/CW2A 实现
+
+### Added
+
+- **340 测试套件**（+20 新测试）：
+  - 8 个 SearchPage widget test：空状态、搜索结果、错误、离线、导入、URL
+  - 7 个 ReadPage widget test：内容渲染、译文切换、问答、字体
+  - 5 个端到端测试：真实 PDF 验证、缓存管线、导入管线、BibTeX 导出、ReadPage 渲染
+- **test/helpers/mock_services.dart** — 11 个 mock 服务实现，即插即用
+- **Windows 便携包** — `build/ALICE-PaperPal-v0.4.0-portable.zip`
+
 ## [0.3.2] - 2026-05-12
 
 ### Fixed

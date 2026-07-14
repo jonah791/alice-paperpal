@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:logging/logging.dart';
+import '../interfaces/services.dart';
 import '../utils/retry_interceptor.dart';
 
 final _log = Logger('LLMProvider');
@@ -26,11 +27,15 @@ class LLMConfig {
   });
 }
 
-class LLMProvider {
+class LLMProvider implements ILLMProvider {
   final LLMConfig config;
   late final Dio _dio;
 
   LLMProvider({required this.config}) {
+    _initDio();
+  }
+
+  void _initDio() {
     _dio = Dio(BaseOptions(
       baseUrl: config.apiBase,
       connectTimeout: const Duration(seconds: 30),
@@ -44,6 +49,26 @@ class LLMProvider {
       RetryInterceptor(),
       HttpsInterceptor(),
     ]);
+  }
+
+  void reconfigure({required String apiKey, required String apiBase, required String model}) {
+    // Use a mutable-like pattern: update via Config's copyWith
+    // Since LLMConfig is immutable, we use reflection on the stored config's type
+    // but for simplicity, directly reinitialize Dio with new credentials
+    _dio = Dio(BaseOptions(
+      baseUrl: apiBase,
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 120),
+      headers: {
+        'Authorization': 'Bearer $apiKey',
+        'Content-Type': 'application/json',
+      },
+    ));
+    _dio.interceptors.addAll([
+      RetryInterceptor(),
+      HttpsInterceptor(),
+    ]);
+    _log.info('LLMProvider reconfigured: base=$apiBase, model=$model');
   }
 
   String get endpoint {

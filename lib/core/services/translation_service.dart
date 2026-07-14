@@ -1,10 +1,10 @@
 import 'package:logging/logging.dart';
-import '../api/llm_provider.dart';
+import '../interfaces/services.dart';
 
 final _log = Logger('TranslationService');
 
-class TranslationService {
-  final LLMProvider _llm;
+class TranslationService implements ITranslationService {
+  final ILLMProvider _llm;
 
   TranslationService(this._llm);
 

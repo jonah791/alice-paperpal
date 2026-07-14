@@ -1,4 +1,4 @@
-﻿@echo off
+@echo off
 echo PaperPal - 卸载 PDF 文件关联
 echo ========================================
 echo.

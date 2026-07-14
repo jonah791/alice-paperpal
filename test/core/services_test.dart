@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:paperpal/core/services/export_service.dart';
 import 'package:paperpal/core/services/parse_service.dart';
 import 'package:paperpal/core/services/portrait_service.dart';

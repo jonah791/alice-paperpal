@@ -8,6 +8,7 @@ void main() {
       String doi = '',
       String source = 'arXiv',
       int year = 2024,
+      String pdfUrl = '',
     }) {
       return SearchResult(
         title: title,
@@ -15,6 +16,7 @@ void main() {
         year: year,
         doi: doi,
         source: source,
+        pdfUrl: pdfUrl,
       );
     }
 
@@ -22,8 +24,17 @@ void main() {
       final all = <String, SearchResult>{};
       for (final r in [...arxivResults, ...s2Results]) {
         final key = r.doi.isNotEmpty ? r.doi : r.title.toLowerCase();
-        if (!all.containsKey(key) || all[key]!.source == 'arXiv') {
+        if (!all.containsKey(key)) {
           all[key] = r;
+        } else {
+          final existing = all[key]!;
+          final existingHasPdf = existing.pdfUrl.isNotEmpty;
+          final newHasPdf = r.pdfUrl.isNotEmpty;
+          if (!existingHasPdf && newHasPdf) {
+            all[key] = r;
+          } else if (existingHasPdf == newHasPdf && existing.source == 'arXiv') {
+            all[key] = r;
+          }
         }
       }
       return all;

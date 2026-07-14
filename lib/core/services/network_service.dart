@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:logging/logging.dart';
+import '../interfaces/services.dart';
 
 final _log = Logger('NetworkService');
 
-class NetworkService {
+class NetworkService implements INetworkService {
   final Connectivity _connectivity = Connectivity();
   final _statusController = StreamController<bool>.broadcast();
   Stream<bool> get statusStream => _statusController.stream;

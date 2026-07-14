@@ -1,4 +1,4 @@
-﻿# Third Party Notices
+# Third Party Notices
 
 PaperPal uses the following third-party libraries:
 

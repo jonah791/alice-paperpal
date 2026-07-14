@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
-import '../api/llm_provider.dart';
+import '../interfaces/services.dart';
 
 final _log = Logger('PortraitService');
 
-class PortraitService {
+class PortraitService implements IPortraitService {
   late final String _filePath;
   Map<String, dynamic> _portrait = {};
 
@@ -52,7 +52,7 @@ class PortraitService {
   Future<void> updateFromConversation(
     String userMessage,
     String assistantResponse,
-    LLMProvider llm,
+    ILLMProvider llm,
   ) async {
     try {
       final currentPortraitJson = _portrait.isEmpty ? '{}' : jsonEncode(_portrait);
