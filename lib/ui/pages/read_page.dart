@@ -680,10 +680,14 @@ class _ReadPageState extends State<ReadPage> {
                     minLines: 1,
                   ),
                 ),
-                const SizedBox(width: DesignTokens.sp1),
+                IconButton(
+                  icon: const Icon(Icons.content_paste, size: DesignTokens.iconMd),
+                  tooltip: '从选中文本创建',
+                  onPressed: _addNoteWithSelection,
+                ),
                 IconButton(
                   icon: const Icon(Icons.send, size: DesignTokens.iconMd),
-                  onPressed: _addNote,
+                  onPressed: () => _addNote(text: _noteController.text.trim()),
                 ),
               ],
             ),
@@ -691,6 +695,12 @@ class _ReadPageState extends State<ReadPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _deleteNote(Note note) async {
+    await context.noteService.deleteNote(note.id);
+    _notes = context.noteService.getNotesForPaper(widget.paper.id);
+    setState(() {});
   }
 
   Widget _buildNoteCard(Note note, ThemeData theme) {
@@ -710,17 +720,30 @@ class _ReadPageState extends State<ReadPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (note.selectedText != null && note.selectedText!.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(DesignTokens.sp1),
-              margin: const EdgeInsets.only(bottom: DesignTokens.sp1),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(RadiusTokens.sm),
+          Row(
+            children: [
+              if (note.selectedText != null && note.selectedText!.isNotEmpty)
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(DesignTokens.sp1),
+                    margin: const EdgeInsets.only(bottom: DesignTokens.sp1),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(RadiusTokens.sm),
+                    ),
+                    child: Text(note.selectedText!,
+                        style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
+                  ),
+                ),
+              InkWell(
+                onTap: () => _deleteNote(note),
+                child: Padding(
+                  padding: padOnly(l: Spacing.sm),
+                  child: Icon(Icons.close, size: 14, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
+                ),
               ),
-              child: Text(note.selectedText!,
-                  style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
-            ),
+            ],
+          ),
           Text(
             note.text,
             style: TextStyle(
@@ -729,29 +752,121 @@ class _ReadPageState extends State<ReadPage> {
               fontSize: DesignTokens.fsSm,
             ),
           ),
-          const SizedBox(height: 5),
-          Text(
-            _formatDate(note.createdAt),
-            style: TextStyle(
-              fontSize: DesignTokens.fsXxs,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.25),
-            ),
+          SizedBox(height: DesignTokens.sp1),
+          Row(
+            children: [
+              if (note.type != NoteType.note)
+                Container(
+                  padding: padSym(h: DesignTokens.sp1, v: 1),
+                  margin: padOnly(r: Spacing.sm),
+                  decoration: BoxDecoration(
+                    color: note.type == NoteType.highlight
+                        ? Colors.amber.withValues(alpha: 0.15)
+                        : theme.colorScheme.tertiaryContainer,
+                    borderRadius: BorderRadius.circular(RadiusTokens.sm),
+                  ),
+                  child: Text(_noteTypeLabel(note.type),
+                      style: TextStyle(fontSize: 9, color: note.type == NoteType.highlight ? Colors.amber.shade800 : theme.colorScheme.onTertiaryContainer)),
+                ),
+              Text(
+                _formatDate(note.createdAt),
+                style: TextStyle(
+                  fontSize: DesignTokens.fsXxs,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.25),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Future<void> _addNote() async {
-    if (_noteController.text.trim().isEmpty) return;
+  String _noteTypeLabel(NoteType t) => switch (t) {
+    NoteType.note => '笔记',
+    NoteType.highlight => '高亮',
+    NoteType.question => '问题',
+  };
+
+  Future<void> _addNote({String? text, String? selectedText}) async {
+    final content = text ?? _noteController.text.trim();
+    if (content.isEmpty) return;
 
     await context.noteService.addNote(
       paperId: widget.paper.id,
-      text: _noteController.text.trim(),
+      text: content,
+      selectedText: selectedText,
     );
     _noteController.clear();
     _notes = context.noteService.getNotesForPaper(widget.paper.id);
     setState(() {});
+  }
+
+  Future<void> _addNoteWithSelection() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final selected = data?.text?.trim() ?? '';
+    _noteController.clear();
+    if (!mounted) return;
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        final textCtrl = TextEditingController();
+        return Padding(
+          padding: EdgeInsets.fromLTRB(Spacing.lg, Spacing.lg, Spacing.lg, Spacing.lg + MediaQuery.of(sheetContext).viewInsets.bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('选中内容', style: TextStyle(fontSize: DesignTokens.fsSm, color: Theme.of(sheetContext).colorScheme.onSurfaceVariant)),
+              SizedBox(height: Spacing.sm),
+              Container(
+                width: double.infinity,
+                padding: padAll(Spacing.md),
+                decoration: BoxDecoration(
+                  color: Theme.of(sheetContext).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(RadiusTokens.md),
+                ),
+                child: Text(selected.isNotEmpty ? (selected.length > 150 ? '${selected.substring(0, 150)}...' : selected) : '(未选中文本)',
+                  style: TextStyle(fontSize: DesignTokens.fsSm),
+                  maxLines: 2, overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              SizedBox(height: Spacing.md),
+              TextField(
+                controller: textCtrl,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: '添加笔记...',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(DesignTokens.radiusLg)),
+                  filled: true,
+                  fillColor: Theme.of(sheetContext).colorScheme.surfaceContainerHighest,
+                ),
+                onSubmitted: (t) async {
+                  if (t.trim().isEmpty) return;
+                  Navigator.of(sheetContext).pop();
+                  _addNote(text: t.trim(), selectedText: selected.isNotEmpty ? selected : null);
+                },
+              ),
+              SizedBox(height: Spacing.md),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    final t = textCtrl.text.trim();
+                    if (t.isEmpty) return;
+                    Navigator.of(sheetContext).pop();
+                    _addNote(text: t, selectedText: selected.isNotEmpty ? selected : null);
+                  },
+                  icon: const Icon(Icons.note_add, size: DesignTokens.iconSm),
+                  label: const Text('添加笔记'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   String _formatDate(DateTime d) =>
