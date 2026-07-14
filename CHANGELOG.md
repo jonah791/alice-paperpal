@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.4.1] - 2026-07-14
+
+### Fixed
+
+- **chatStream 错误吞掉** — stream 静默终止时 UI 死等。改为 yield 用户可读的错误消息（API Key 无效/限频/超时/服务端错误）
+- **JSON 损坏静默丢失文库** — `cache_service.loadAllPapers()` 在 index.json 损坏时自动备份文件再返回空，而非直接清空
+- **4 个 ReadPage 方法吞错误** — `_summarize`、`_exportMarkdown`、`_exportBibtex`、`_openOriginalPdf` 失败时添加 SnackBar 反馈
+- **6 个 UI catch 块无日志** — search_page、library_page、settings_page 的 catch 添加 `_log.warning`
+- **`_activeComment()` 空 catch** — LLM 评论生成失败时记录日志而非静默
+- **`_loadSettings()` 吞错误** — 配置损坏时记录日志
+
+### UI
+
+- **SearchPage 搜索条去重** — 宽窄屏共享 TextField builder，按钮布局更紧凑
+- **LibraryPage filter 修复** — `PaperStatus.values.length` 索引偏移修正，间距 token 化
+
 ## [0.4.0] - 2026-07-14
 
 ### Refactor

@@ -184,7 +184,9 @@ class PaperService implements IPaperService {
         {'role': 'user', 'content': md.substring(0, md.length.clamp(0, 500))},
       ], maxTokens: 50);
       _log.info('activeComment: $comment');
-    } catch (_) {}
+    } catch (e) {
+      _log.warning('activeComment failed: $e');
+    }
   }
 
   Future<void> _autoTranslate(Paper paper) async {

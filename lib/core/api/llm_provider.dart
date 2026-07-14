@@ -173,12 +173,28 @@ class LLMProvider implements ILLMProvider {
             if (delta != null && delta.isNotEmpty) {
               yield delta;
             }
-          } catch (_) {}
+          } catch (e) {
+            _log.warning('chatStream: malformed SSE line: $e');
+          }
         }
       }
     } on DioException catch (e) {
+      final msg = '回答失败：${_describeError(e)}';
       _log.warning('chatStream failed: ${e.response?.statusCode} ${e.message}');
+      yield msg;
     }
+  }
+
+  String _describeError(DioException e) {
+    final code = e.response?.statusCode;
+    if (code == 401 || code == 403) return 'API Key 无效或已过期，请在设置页检查';
+    if (code == 429) return '请求过于频繁，请稍后重试';
+    if (code != null && code >= 500) return '服务端错误 ($code)，请稍后重试';
+    if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+      return '连接超时，请检查网络';
+    }
+    if (e.type == DioExceptionType.connectionError) return '网络连接失败';
+    return '未知错误，请稍后重试';
   }
 
   Future<String> translate(String text, {String target = '中文'}) async {

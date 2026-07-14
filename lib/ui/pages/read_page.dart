@@ -443,6 +443,11 @@ class _ReadPageState extends State<ReadPage> {
       }
     } catch (e) {
       _log.warning('summarize failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('生成摘要失败: $e')),
+        );
+      }
     }
   }
 
@@ -487,6 +492,11 @@ class _ReadPageState extends State<ReadPage> {
       }
     } catch (e) {
       _log.warning('export failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('导出失败: $e')),
+        );
+      }
     }
   }
 
@@ -500,6 +510,11 @@ class _ReadPageState extends State<ReadPage> {
       }
     } catch (e) {
       _log.warning('export bibtex failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('导出失败: $e')),
+        );
+      }
     }
   }
 
@@ -518,6 +533,11 @@ class _ReadPageState extends State<ReadPage> {
       await context.configService.platform.openFile(pdfPath);
     } catch (e) {
       _log.warning('open PDF failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('无法打开 PDF: $e')),
+        );
+      }
     }
   }
 

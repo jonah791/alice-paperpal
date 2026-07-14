@@ -132,7 +132,7 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   Widget _buildFilterBar(BuildContext context, ThemeData theme) {
-    final filters = [
+    final filterLabels = [
       '全部',
       PaperStatus.importing.label,
       PaperStatus.parsing.label,
@@ -143,21 +143,20 @@ class _LibraryPageState extends State<LibraryPage> {
     ];
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: 6),
+      padding: padSym(h: Spacing.lg, v: Spacing.sm),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: theme.dividerColor)),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: List.generate(filters.length, (i) {
+          children: List.generate(filterLabels.length, (i) {
             final selected = _filterStatus == i;
-            final isAll = i == PaperStatus.values.length;
-            final status = isAll ? null : PaperStatus.values[i];
+            final status = i == 0 ? null : PaperStatus.values[i - 1];
             return Padding(
-              padding: const EdgeInsets.only(right: 6),
+              padding: padOnly(r: Spacing.sm),
               child: FilterChip(
-                label: Text(filters[i], style: const TextStyle(fontSize: DesignTokens.fsSm)),
+                label: Text(filterLabels[i], style: const TextStyle(fontSize: DesignTokens.fsSm)),
                 selected: selected,
                 selectedColor: status?.color(context)?.withValues(alpha: 0.2),
                 checkmarkColor: status?.color(context),
@@ -311,6 +310,7 @@ class _LibraryPageState extends State<LibraryPage> {
         );
       }
     } catch (e) {
+      _log.warning('deleteSelected failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('删除失败: $e')),
@@ -342,6 +342,7 @@ class _LibraryPageState extends State<LibraryPage> {
         );
       }
     } catch (e) {
+      _log.warning('deletePaper failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('删除失败: $e')),

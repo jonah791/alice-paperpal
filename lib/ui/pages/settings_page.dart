@@ -61,6 +61,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
       if (mounted) setState(() => _loading = false);
     } catch (e) {
+      _log.warning('loadSettings failed: $e');
       if (mounted) setState(() => _loading = false);
     }
   }
@@ -224,6 +225,7 @@ class _SettingsPageState extends State<SettingsPage> {
         );
       }
     } catch (e) {
+      _log.warning('saveSettings failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('保存失败: $e')),

@@ -92,7 +92,11 @@ class CacheService implements ICacheService {
       final list = jsonDecode(json) as List;
       return list.map((e) => Paper.fromJson(e as Map<String, dynamic>)).toList();
     } catch (e) {
-      _log.warning('loadAllPapers failed: $e');
+      _log.warning('loadAllPapers: index.json corrupted, backing up: $e');
+      try {
+        await file.copy('${_indexPath}.corrupted.${DateTime.now().millisecondsSinceEpoch}');
+        _log.warning('loadAllPapers: backup saved, starting fresh');
+      } catch (_) {}
       return [];
     }
   }

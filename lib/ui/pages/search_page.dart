@@ -73,6 +73,7 @@ class _SearchPageState extends State<SearchPage> {
       });
     } catch (e) {
       if (!mounted) return;
+      _log.warning('search failed: $e');
       setState(() {
         _loading = false;
         _statusMessage = '搜索出错: $e';
@@ -185,6 +186,7 @@ class _SearchPageState extends State<SearchPage> {
       }
     } catch (e) {
       if (!mounted) return;
+      _log.warning('uploadPdf failed: $e');
       setState(() => _statusMessage = '导入失败: $e');
     }
   }
@@ -206,28 +208,31 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildSearchBar(ThemeData theme) {
-    return Column(
-      children: [
-        Padding(
-          padding: padOnly(l: Spacing.lg, t: Spacing.lg, r: Spacing.lg),
-          child: LayoutBuilder(
+    return Padding(
+      padding: padOnly(l: Spacing.lg, t: Spacing.lg, r: Spacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Search input + primary action row
+          LayoutBuilder(
             builder: (context, constraints) {
-              if (constraints.maxWidth > DesignTokens.bpMobile) {
+              final isWide = constraints.maxWidth > 520;
+              final searchField = TextField(
+                controller: _queryController,
+                decoration: InputDecoration(
+                  hintText: '搜索论文标题或关键词...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(DesignTokens.radiusLg)),
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest,
+                  contentPadding: padSym(h: DesignTokens.sp4, v: DesignTokens.sp3),
+                ),
+                onSubmitted: (_) => _search(),
+              );
+              if (isWide) {
                 return Row(
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _queryController,
-                        decoration: InputDecoration(
-                          hintText: '搜索论文标题或关键词...',
-                          prefixIcon: const Icon(Icons.search),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(DesignTokens.radiusLg)),
-                          filled: true,
-                          fillColor: theme.colorScheme.surfaceContainerHighest,
-                        ),
-                        onSubmitted: (_) => _search(),
-                      ),
-                    ),
+                    Expanded(child: searchField),
                     SizedBox(width: Spacing.gap),
                     _searchButton(),
                     SizedBox(width: Spacing.gap),
@@ -240,22 +245,11 @@ class _SearchPageState extends State<SearchPage> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  TextField(
-                    controller: _queryController,
-                    decoration: InputDecoration(
-                      hintText: '搜索论文标题或关键词...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(DesignTokens.radiusLg)),
-                      filled: true,
-                      fillColor: theme.colorScheme.surfaceContainerHighest,
-                    ),
-                    onSubmitted: (_) => _search(),
-                  ),
+                  searchField,
                   SizedBox(height: Spacing.gap),
-                  Wrap(
-                    runSpacing: DesignTokens.spGap,
+                  Row(
                     children: [
-                      _searchButton(),
+                      Expanded(child: _searchButton()),
                       SizedBox(width: Spacing.gap),
                       _uploadButton(),
                       SizedBox(width: Spacing.gap),
@@ -266,11 +260,10 @@ class _SearchPageState extends State<SearchPage> {
               );
             },
           ),
-        ),
-        if (_showUrlInput)
-          Padding(
-            padding: padOnly(l: Spacing.lg, t: Spacing.gap, r: Spacing.lg),
-            child: Row(
+          // URL import toggle
+          if (_showUrlInput) ...[
+            SizedBox(height: Spacing.gap),
+            Row(
               children: [
                 Expanded(
                   child: TextField(
@@ -293,9 +286,9 @@ class _SearchPageState extends State<SearchPage> {
                 ),
               ],
             ),
-          ),
-        SizedBox(height: Spacing.gap),
-      ],
+          ],
+        ],
+      ),
     );
   }
 
