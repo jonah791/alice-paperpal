@@ -123,6 +123,7 @@ class _ReadPageState extends State<ReadPage> {
                   case 'export': _showExportMenu();
                   case 'pdf': _openOriginalPdf();
                   case 'notes': _toggleNotesPanel();
+                  case 'reparse': _reparseWithMineru();
                 }
               },
               itemBuilder: (context) => [
@@ -130,6 +131,8 @@ class _ReadPageState extends State<ReadPage> {
                 const PopupMenuItem(value: 'export', child: Text('导出')),
                 const PopupMenuItem(value: 'pdf', child: Text('打开 PDF')),
                 const PopupMenuItem(value: 'notes', child: Text('笔记')),
+                if (widget.paper.sourceType != 'mineru')
+                  const PopupMenuItem(value: 'reparse', child: Text('重新解析')),
               ],
             ),
           ] else ...[
@@ -553,6 +556,60 @@ class _ReadPageState extends State<ReadPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('生成摘要失败，请重试')),
+        );
+      }
+    }
+  }
+
+  Future<void> _reparseWithMineru() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('重新解析'),
+        content: const Text('将使用 MinerU 重新解析此 PDF，替换当前内容。确认？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('确认')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final pdfPath = context.cacheService.pdfPath(widget.paper.id);
+    if (!await File(pdfPath).exists()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('原始 PDF 文件不存在，无法重新解析')),
+        );
+      }
+      return;
+    }
+
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('正在重新解析...')),
+      );
+      final paper = await context.paperService.importPdf(File(pdfPath));
+      if (!mounted) return;
+      if (paper == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('重新解析失败：请检查 MinerU API Key')),
+        );
+      } else if (paper.status == PaperStatus.parsed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('重新解析完成'), duration: Duration(seconds: 2)),
+        );
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => ReadPage(paper: paper)));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('重新解析失败: ${paper.errorMessage ?? "未知错误"}')),
+        );
+      }
+    } catch (e) {
+      _log.warning('reparse failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('重新解析失败，请检查网络和 API Key')),
         );
       }
     }

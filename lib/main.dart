@@ -329,6 +329,18 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
                       );
                     },
                   ),
+                  const SizedBox(height: 4),
+                  IconButton(
+                    icon: Icon(
+                      Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
+                      size: 20,
+                    ),
+                    tooltip: Theme.of(context).brightness == Brightness.dark ? '切换到浅色模式' : '切换到深色模式',
+                    onPressed: () {
+                      final next = Theme.of(context).brightness == Brightness.dark ? ThemeMode.light : ThemeMode.dark;
+                      widget.onThemeChanged(next);
+                    },
+                  ),
                 ],
               ),
               const VerticalDivider(width: 1),
