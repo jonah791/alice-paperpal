@@ -7,20 +7,19 @@ import 'package:path_provider/path_provider.dart';
 
 import '../api/llm_provider.dart';
 import '../api/mineru_api.dart';
-import '../interfaces/services.dart';
-import '../models/paper.dart';
 import '../models/parse_result.dart';
 import '../models/search_result.dart';
+import '../models/paper.dart';
+import '../models/note.dart';
+import '../interfaces/services.dart';
 import '../utils/page_counter.dart';
-import 'cache_service.dart';
-import 'config_service.dart';
-import 'memory_service.dart';
+import 'translation_service.dart';
 import 'parse_service.dart';
+import 'pdf_fallback_service.dart';
 import 'note_service.dart';
 import 'portrait_service.dart';
 import 'search_service.dart';
 import 'soul_service.dart';
-import 'translation_service.dart';
 
 final _log = Logger('PaperService');
 final _uuid = Uuid();
@@ -34,6 +33,7 @@ class PaperService implements IPaperService {
   final IMemoryService _memory;
   final IPortraitService _portrait;
   late final ParseService _parse;
+  final _fallback = PdfFallbackService();
   late final TranslationService _translation;
 
   final INoteService _noteService;
@@ -107,11 +107,6 @@ class PaperService implements IPaperService {
   Future<(List<SearchResult>, String?)> search(String query) => _search.search(query);
 
   Future<Paper?> importFromSearch(SearchResult result, {void Function(int, int)? onProgress}) async {
-    final apiKey = await _config.readMineruApiKey();
-    if (apiKey == null || apiKey.isEmpty) {
-      _log.warning('importFromSearch: MinerU API key not configured');
-      return null;
-    }
     if (result.pdfUrl.isEmpty) {
       _log.warning('importFromSearch: no PDF URL for ${result.title}');
       return null;
@@ -123,12 +118,6 @@ class PaperService implements IPaperService {
   }
 
   Future<Paper?> importPdf(File pdfFile, {String? title}) async {
-    final apiKey = await _config.readMineruApiKey();
-    if (apiKey == null || apiKey.isEmpty) {
-      _log.warning('importPdf: MinerU API key not configured');
-      return null;
-    }
-
     final paperId = _uuid.v4();
     final paper = Paper(
       id: paperId,
@@ -151,13 +140,13 @@ class PaperService implements IPaperService {
         title: result.title.isNotEmpty ? result.title : paper.title,
         status: PaperStatus.parsed,
         pageCount: pageCount,
+        sourceType: result.sourceType,
       );
       _papers.remove(paper);
       _papers.add(updated);
       _emitPapers();
       await _persistPaper(updated);
 
-      // Active comment after parse
       _activeComment(paperId);
 
       if (_config.config.autoTranslate) {
@@ -165,12 +154,32 @@ class PaperService implements IPaperService {
       }
       return updated;
     } catch (e) {
-      _log.warning('importPdf failed: $paperId → $e');
-      final failed = paper.copyWith(status: PaperStatus.error, errorMessage: e.toString());
-      _papers.remove(paper);
-      _papers.add(failed);
-      _emitPapers();
-      return failed;
+      _log.warning('MinerU parse failed: $e, trying fallback...');
+      try {
+        final pageCount = await PageCounter.getPageCount(pdfFile.path);
+        final result = await _fallback.parseAsText(pdfFile, pageCount);
+        await _cache.saveMarkdown(paperId, result.markdown);
+
+        final updated = paper.copyWith(
+          title: result.title.isNotEmpty ? result.title : paper.title,
+          status: PaperStatus.parsed,
+          pageCount: pageCount,
+          sourceType: result.sourceType,
+        );
+        _papers.remove(paper);
+        _papers.add(updated);
+        _emitPapers();
+        await _persistPaper(updated);
+        _log.info('fallback parse OK: $paperId');
+        return updated;
+      } catch (e2) {
+        _log.warning('importPdf all paths failed: $paperId → $e2');
+        final failed = paper.copyWith(status: PaperStatus.error, errorMessage: e2.toString());
+        _papers.remove(paper);
+        _papers.add(failed);
+        _emitPapers();
+        return failed;
+      }
     }
   }
 
