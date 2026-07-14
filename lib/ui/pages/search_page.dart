@@ -12,6 +12,9 @@ import 'read_page.dart';
 
 final _log = Logger('SearchPage');
 
+enum SearchPageAction { search, importUrl }
+final searchPageAction = ValueNotifier<SearchPageAction?>(null);
+
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
 
@@ -24,15 +27,31 @@ class _SearchPageState extends State<SearchPage> {
   final _urlController = TextEditingController();
   List<SearchResult> _results = [];
   bool _loading = false;
-  bool _showUrlInput = false;
   String _statusMessage = '';
   final _importedIds = <String>{};
+  bool _showUrlInput = false;
+
+  @override
+  void initState() {
+    super.initState();
+    searchPageAction.addListener(_onTrayAction);
+  }
 
   @override
   void dispose() {
+    searchPageAction.removeListener(_onTrayAction);
     _queryController.dispose();
     _urlController.dispose();
     super.dispose();
+  }
+
+  void _onTrayAction() {
+    final action = searchPageAction.value;
+    if (action == null || !mounted) return;
+    searchPageAction.value = null;
+    setState(() {
+      _showUrlInput = action == SearchPageAction.importUrl;
+    });
   }
 
   bool _isImported(SearchResult r) {

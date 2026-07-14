@@ -36,7 +36,10 @@ void main() async {
       await trayManager.setIcon('resources/icon.ico', iconSize: 32);
     }
     await trayManager.setContextMenu(Menu(items: [
-      MenuItem(key: 'show', label: '显示'),
+      MenuItem(key: 'show', label: '显示窗口'),
+      MenuItem.separator(),
+      MenuItem(key: 'search', label: '快速搜索...'),
+      MenuItem(key: 'import', label: '导入 arXiv 链接...'),
       MenuItem.separator(),
       MenuItem(key: 'quit', label: '退出'),
     ]));
@@ -155,6 +158,14 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
       case 'show':
         windowManager.show();
         windowManager.focus();
+      case 'search':
+        windowManager.show();
+        windowManager.focus();
+        searchPageAction.value = SearchPageAction.search;
+      case 'import':
+        windowManager.show();
+        windowManager.focus();
+        searchPageAction.value = SearchPageAction.importUrl;
       case 'quit':
         windowManager.close();
         break;
@@ -216,11 +227,19 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    searchPageAction.addListener(_onSearchPageAction);
+  }
+
+  void _onSearchPageAction() {
+    final action = searchPageAction.value;
+    if (action == null) return;
+    if (_currentIndex != 0) setState(() => _currentIndex = 0);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    searchPageAction.removeListener(_onSearchPageAction);
     _focusNode.dispose();
     super.dispose();
   }
