@@ -8,6 +8,7 @@ import '../../core/models/paper.dart';
 import '../../core/di/dependencies.dart';
 import '../../core/tokens/design_tokens.dart';
 import '../widgets/card_spinner.dart';
+import 'read_page.dart';
 
 final _log = Logger('SearchPage');
 
@@ -25,12 +26,26 @@ class _SearchPageState extends State<SearchPage> {
   bool _loading = false;
   bool _showUrlInput = false;
   String _statusMessage = '';
+  final _importedIds = <String>{};
 
   @override
   void dispose() {
     _queryController.dispose();
     _urlController.dispose();
     super.dispose();
+  }
+
+  bool _isImported(SearchResult r) {
+    final papers = context.paperService.papers;
+    return papers.any((p) => p.title == r.title);
+  }
+
+  Paper? _importedPaper(SearchResult r) {
+    try {
+      return context.paperService.papers.firstWhere((p) => p.title == r.title);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _search() async {
@@ -348,11 +363,19 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildResultCard(SearchResult result, ThemeData theme) {
+    final imported = _isImported(result);
+    final existing = _importedPaper(result);
+
     return Card(
       margin: padOnly(b: DesignTokens.spGap),
+      color: imported ? theme.colorScheme.secondaryContainer?.withValues(alpha: 0.15) : null,
       child: InkWell(
         borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
         onTap: () async {
+          if (imported && existing != null) {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => ReadPage(paper: existing)));
+            return;
+          }
           try {
             if (result.pdfUrl.isEmpty) {
               setState(() => _statusMessage = '该论文无开放获取 PDF 链接');
@@ -388,8 +411,27 @@ class _SearchPageState extends State<SearchPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(result.title,
-                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(result.title,
+                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                  ),
+                  if (imported)
+                    Padding(
+                      padding: padOnly(l: Spacing.sm),
+                      child: Chip(
+                        label: const Text('已导入', style: TextStyle(fontSize: 9)),
+                        backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.15),
+                        side: BorderSide.none,
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                ],
+              ),
               SizedBox(height: DesignTokens.sp1),
               Text(
                 result.authors.join(', '),
