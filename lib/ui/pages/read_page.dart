@@ -30,6 +30,9 @@ class _ReadPageState extends State<ReadPage> {
   final _qaController = TextEditingController();
   final _qaMessages = <Map<String, String>>[];
   String? _selectedTextForAsk;
+  bool _qaExpanded = false;
+  static const _qaPanelMin = 80.0;
+  static const _qaPanelMax = 0.4;
   bool _qaLoading = false;
   double _fontSize = DesignTokens.fsLg;
   bool _showNotes = false;
@@ -308,6 +311,12 @@ class _ReadPageState extends State<ReadPage> {
   }
 
   Widget _buildQAPanel(ThemeData theme) {
+    final qaHeight = _qaMessages.isEmpty
+        ? _qaPanelMin
+        : _qaExpanded
+            ? MediaQuery.of(context).size.height * _qaPanelMax
+            : (_qaMessages.length * 48 + _qaPanelMin).clamp(_qaPanelMin, 200.0);
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
@@ -316,79 +325,68 @@ class _ReadPageState extends State<ReadPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Header bar with expand toggle
+          if (_qaMessages.isNotEmpty)
+            GestureDetector(
+              onTap: () => setState(() => _qaExpanded = !_qaExpanded),
+              child: Container(
+                padding: padSym(h: Spacing.md, v: DesignTokens.sp1),
+                child: Row(
+                  children: [
+                    Text('问答 (${_qaMessages.length})', style: TextStyle(fontSize: DesignTokens.fsXs, color: theme.colorScheme.onSurfaceVariant)),
+                    const Spacer(),
+                    Icon(_qaExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up, size: DesignTokens.iconSm, color: theme.colorScheme.onSurfaceVariant),
+                  ],
+                ),
+              ),
+            ),
+          // Messages list
           if (_qaMessages.isNotEmpty)
             SizedBox(
-              height: 120,
+              height: qaHeight,
               child: ListView.builder(
-                padding: const EdgeInsets.all(Spacing.gap),
+                padding: padSym(h: Spacing.gap, v: Spacing.sm),
                 itemCount: _qaMessages.length,
                 itemBuilder: (context, index) {
                   final msg = _qaMessages[index];
                   final isUser = msg['role'] == 'user';
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (!isUser)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 6, top: 2),
-                          child: CircleAvatar(
-                            backgroundColor: theme.colorScheme.secondary,
-                            child: Text('A', style: TextStyle(
-                              color: theme.colorScheme.onSecondary,
-                              fontWeight: FontWeight.bold,
-                            )),
+                  return Padding(
+                    padding: padOnly(b: DesignTokens.sp1),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (!isUser)
+                          Padding(
+                            padding: padOnly(r: DesignTokens.sp1, t: DesignTokens.sp1),
+                            child: CircleAvatar(
+                              radius: 10,
+                              backgroundColor: theme.colorScheme.secondary,
+                              child: Text('A', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSecondary, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        Flexible(
+                          child: Container(
+                            padding: padAll(Spacing.sm),
+                            decoration: BoxDecoration(
+                              color: isUser ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
+                            ),
+                            child: Text(
+                              msg['content'] ?? '',
+                              style: TextStyle(fontSize: DesignTokens.fsSm, color: theme.colorScheme.onSurface),
+                            ),
                           ),
                         ),
-                      Flexible(
-                        child: isUser
-                          ? Container(
-                              margin: const EdgeInsets.symmetric(vertical: 2),
-                              padding: const EdgeInsets.all(Spacing.md),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primaryContainer,
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(14),
-                                  topRight: Radius.circular(14),
-                                  bottomLeft: Radius.circular(14),
-                                  bottomRight: Radius.circular(4),
-                                ),
-                              ),
-                              child: Text(
-                                msg['content'] ?? '',
-                                style: TextStyle(fontSize: DesignTokens.fsMd, color: theme.colorScheme.onSurface),
-                              ),
-                            )
-                          : Container(
-                              margin: const EdgeInsets.symmetric(vertical: 2),
-                              padding: const EdgeInsets.all(Spacing.md),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.surfaceContainerHighest,
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(14),
-                                  topRight: Radius.circular(14),
-                                  bottomLeft: Radius.circular(4),
-                                  bottomRight: Radius.circular(14),
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    msg['content'] ?? '',
-                                    style: TextStyle(fontSize: DesignTokens.fsMd, color: theme.colorScheme.onSurface),
-                                  ),
-                                ],
-                              ),
-                            ),
-                      ),
-                    ],
+                      ],
+                    ),
                   );
                 },
               ),
             ),
+          // Input row
           Padding(
-            padding: const EdgeInsets.all(Spacing.gap),
+            padding: padAll(Spacing.gap),
             child: Row(
               children: [
                 Expanded(
@@ -397,20 +395,16 @@ class _ReadPageState extends State<ReadPage> {
                     decoration: InputDecoration(
                       hintText: '对论文提问...',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.gap),
+                      contentPadding: padSym(h: Spacing.lg, v: Spacing.sm),
                       filled: true,
                       fillColor: theme.colorScheme.surface,
+                      isDense: true,
                     ),
                     onSubmitted: _askQuestion,
                   ),
                 ),
-                const SizedBox(width: Spacing.gap),
-          IconButton(
-            icon: const Icon(Icons.file_download),
-            tooltip: '导出',
-            onPressed: _showExportMenu,
-          ),
-          IconButton(
+                SizedBox(width: Spacing.sm),
+                IconButton(
                   icon: _qaLoading
                       ? SizedBox(
                           width: DesignTokens.sp4,
