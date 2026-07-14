@@ -225,6 +225,64 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
+  String _fileLocalName(File f) => f.path.split(Platform.pathSeparator).last;
+
+  Future<void> _importFolder() async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        allowMultiple: true,
+      );
+      if (!mounted || result == null || result.files.isEmpty) return;
+
+      final pdfs = result.files
+          .where((f) => f.path != null)
+          .map((f) => File(f.path!))
+          .toList();
+
+      if (pdfs.isEmpty) {
+        setState(() => _statusMessage = '文件夹中未找到 PDF 文件');
+        return;
+      }
+
+      setState(() => _statusMessage = '正在导入 ${pdfs.length} 篇论文...');
+      var success = 0;
+      var failed = 0;
+
+      for (var i = 0; i < pdfs.length; i++) {
+        final file = pdfs[i];
+        final fileName = _fileLocalName(file);
+        setState(() => _statusMessage = '导入中 (${i + 1}/${pdfs.length}): $fileName');
+        try {
+          final paper = await context.paperService.importPdf(
+            file,
+            title: fileName.replaceAll('.pdf', ''),
+          );
+          if (paper != null && paper.status != PaperStatus.error) {
+            success++;
+          } else {
+            failed++;
+          }
+        } catch (e) {
+          _log.warning('batch import failed: $fileName: $e');
+          failed++;
+        }
+      }
+
+      if (mounted) {
+        setState(() => _statusMessage = '导入完成: $success 成功, $failed 失败');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('批量导入完成: $success 篇成功, $failed 篇失败')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _log.warning('importFolder failed: $e');
+      setState(() => _statusMessage = '批量导入失败: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -271,6 +329,8 @@ class _SearchPageState extends State<SearchPage> {
                     _searchButton(),
                     SizedBox(width: Spacing.gap),
                     _uploadButton(),
+                    SizedBox(width: Spacing.gap),
+                    _folderButton(),
                     SizedBox(width: Spacing.gap),
                     _linkButton(),
                   ],
@@ -500,6 +560,14 @@ class _SearchPageState extends State<SearchPage> {
       onPressed: _uploadPdf,
       icon: const Icon(Icons.upload_file),
       label: const Text('上传 PDF'),
+    );
+  }
+
+  Widget _folderButton() {
+    return OutlinedButton.icon(
+      onPressed: _importFolder,
+      icon: const Icon(Icons.folder_open),
+      label: const Text('批量导入'),
     );
   }
 
