@@ -227,6 +227,19 @@ class PaperService implements IPaperService {
   Future<String?> getMarkdown(String paperId) => _cache.readMarkdown(paperId);
   Future<String?> getTranslation(String paperId) => _cache.readTranslation(paperId);
 
+  Future<void> touchPaper(String paperId) async {
+    try {
+      final paper = _papers.firstWhere((p) => p.id == paperId);
+      final updated = paper.copyWith(lastReadAt: DateTime.now());
+      _papers.remove(paper);
+      _papers.add(updated);
+      _emitPapers();
+      await _persistPaper(updated);
+    } catch (_) {
+      _log.warning('touchPaper: paper $paperId not found');
+    }
+  }
+
   String _buildPersonaPrompt() {
     final soul = _soul.getActiveOrDefault();
     final sb = StringBuffer();

@@ -44,6 +44,7 @@ class _ReadPageState extends State<ReadPage> {
   }
 
   Future<void> _loadContent() async {
+    context.paperService.touchPaper(widget.paper.id);
 
     final md = await context.paperService.getMarkdown(widget.paper.id);
     final translation = await context.paperService.getTranslation(widget.paper.id);

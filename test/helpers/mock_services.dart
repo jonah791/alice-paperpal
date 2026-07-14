@@ -358,6 +358,9 @@ class MockPaperService implements IPaperService {
   }
 
   @override
+  Future<void> touchPaper(String paperId) async {}
+
+  @override
   Future<void> reconfigureMineru() async {}
 
   @override
