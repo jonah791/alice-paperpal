@@ -150,12 +150,18 @@ class _LibraryPageState extends State<LibraryPage> {
                   _buildSortBar(theme, papers.length),
                   Expanded(
                     child: ListView.builder(
-                      padding: const EdgeInsets.only(bottom: Spacing.lg),
+                      padding: const EdgeInsets.only(bottom: 0),
                       itemCount: papers.length,
                       itemBuilder: (context, index) =>
                           _buildPaperCard(context, papers[index], theme),
                     ),
                   ),
+                  if (_selected.isEmpty)
+                    Padding(
+                      padding: padSym(h: Spacing.lg, v: DesignTokens.sp1),
+                      child: Text('长按卡片可多选对比或批量删除',
+                        style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4))),
+                    ),
                 ],
               );
             },
@@ -426,7 +432,7 @@ class _LibraryPageState extends State<LibraryPage> {
       _log.warning('deleteSelected failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('删除失败: $e')),
+          const SnackBar(content: Text('删除失败，请重试')),
         );
       }
     }
@@ -458,7 +464,7 @@ class _LibraryPageState extends State<LibraryPage> {
       _log.warning('deletePaper failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('删除失败: $e')),
+          const SnackBar(content: Text('删除失败，请重试')),
         );
       }
     }

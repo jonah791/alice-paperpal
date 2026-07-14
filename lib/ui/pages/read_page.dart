@@ -390,17 +390,29 @@ class _ReadPageState extends State<ReadPage> {
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _qaController,
-                    decoration: InputDecoration(
-                      hintText: '对论文提问...',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
-                      contentPadding: padSym(h: Spacing.lg, v: Spacing.sm),
-                      filled: true,
-                      fillColor: theme.colorScheme.surface,
-                      isDense: true,
+                  child: Focus(
+                    onKeyEvent: (node, event) {
+                      if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter &&
+                          !HardwareKeyboard.instance.isShiftPressed) {
+                        node.nextFocus();
+                        _askQuestion(_qaController.text);
+                        return KeyEventResult.handled;
+                      }
+                      return KeyEventResult.ignored;
+                    },
+                    child: TextField(
+                      controller: _qaController,
+                      decoration: InputDecoration(
+                        hintText: 'Shift+Enter 换行，Enter 发送',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
+                        contentPadding: padSym(h: Spacing.lg, v: Spacing.sm),
+                        filled: true,
+                        fillColor: theme.colorScheme.surface,
+                        isDense: true,
+                      ),
+                      maxLines: 4,
+                      minLines: 1,
                     ),
-                    onSubmitted: _askQuestion,
                   ),
                 ),
                 SizedBox(width: Spacing.sm),
@@ -540,7 +552,7 @@ class _ReadPageState extends State<ReadPage> {
       _log.warning('summarize failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('生成摘要失败: $e')),
+          const SnackBar(content: Text('生成摘要失败，请重试')),
         );
       }
     }
@@ -589,7 +601,7 @@ class _ReadPageState extends State<ReadPage> {
       _log.warning('export failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('导出失败: $e')),
+          const SnackBar(content: Text('导出失败，请重试')),
         );
       }
     }
@@ -607,7 +619,7 @@ class _ReadPageState extends State<ReadPage> {
       _log.warning('export bibtex failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('导出失败: $e')),
+          const SnackBar(content: Text('导出失败，请重试')),
         );
       }
     }
@@ -630,7 +642,7 @@ class _ReadPageState extends State<ReadPage> {
       _log.warning('open PDF failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('无法打开 PDF: $e')),
+          const SnackBar(content: Text('无法打开 PDF，请检查文件是否被移动')),
         );
       }
     }

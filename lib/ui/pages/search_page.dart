@@ -30,6 +30,7 @@ class _SearchPageState extends State<SearchPage> {
   String _statusMessage = '';
   final _importedIds = <String>{};
   bool _showUrlInput = false;
+  Paper? _lastImportedPaper;
 
   @override
   void initState() {
@@ -110,7 +111,7 @@ class _SearchPageState extends State<SearchPage> {
       _log.warning('search failed: $e');
       setState(() {
         _loading = false;
-        _statusMessage = '搜索出错: $e';
+        _statusMessage = '搜索出错，请检查网络后重试';
       });
     }
   }
@@ -216,12 +217,15 @@ class _SearchPageState extends State<SearchPage> {
         setState(() => _statusMessage = '解析失败，请检查 MinerU API Key 是否已配置');
       } else {
         _log.info('uploadPdf: imported ${paper.id}');
-        setState(() => _statusMessage = '导入成功: ${paper.title}');
+        setState(() {
+          _statusMessage = '导入成功: ${paper.title}';
+          _lastImportedPaper = paper;
+        });
       }
     } catch (e) {
       if (!mounted) return;
       _log.warning('uploadPdf failed: $e');
-      setState(() => _statusMessage = '导入失败: $e');
+      setState(() => _statusMessage = '导入失败，请检查文件');
     }
   }
 
@@ -279,7 +283,7 @@ class _SearchPageState extends State<SearchPage> {
     } catch (e) {
       if (!mounted) return;
       _log.warning('importFolder failed: $e');
-      setState(() => _statusMessage = '批量导入失败: $e');
+      setState(() => _statusMessage = '批量导入失败，请检查文件');
     }
   }
 
@@ -291,9 +295,28 @@ class _SearchPageState extends State<SearchPage> {
         _buildSearchBar(theme),
         Expanded(child: _buildBody(theme)),
         if (_statusMessage.isNotEmpty)
-          Padding(
-            padding: padAll(DesignTokens.spGap),
-            child: Text(_statusMessage, style: theme.textTheme.bodySmall),
+          Container(
+            padding: padSym(h: Spacing.lg, v: Spacing.sm),
+            color: _lastImportedPaper != null ? theme.colorScheme.primaryContainer?.withValues(alpha: 0.15) : null,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(_statusMessage, style: theme.textTheme.bodySmall),
+                ),
+                if (_lastImportedPaper != null && _lastImportedPaper!.status != PaperStatus.error)
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => ReadPage(paper: _lastImportedPaper!),
+                      )).then((_) {
+                        _lastImportedPaper = null;
+                        if (mounted) setState(() {});
+                      });
+                    },
+                    child: const Text('查看'),
+                  ),
+              ],
+            ),
           ),
       ],
     );
@@ -480,7 +503,7 @@ class _SearchPageState extends State<SearchPage> {
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('操作失败: $e')),
+                const SnackBar(content: Text('操作失败，请重试')),
               );
             }
           }

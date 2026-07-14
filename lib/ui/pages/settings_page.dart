@@ -221,14 +221,14 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         _log.info('settings saved: modelVersion=$_mineruModelVersion');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('设置已保存')),
+          const SnackBar(content: Text('设置已保存'), duration: Duration(seconds: 3)),
         );
       }
     } catch (e) {
       _log.warning('saveSettings failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('保存失败: $e')),
+          const SnackBar(content: Text('保存失败，请检查输入后重试')),
         );
       }
     }
