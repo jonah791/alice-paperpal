@@ -13,6 +13,7 @@ class Paper {
   final DateTime? lastReadAt;
   final List<String> tags;
   final String? errorMessage;
+  final String sourceType;
 
   const Paper({
     required this.id,
@@ -27,6 +28,7 @@ class Paper {
     this.lastReadAt,
     this.tags = const [],
     this.errorMessage,
+    this.sourceType = 'mineru',
   });
 
   Paper copyWith({
@@ -42,6 +44,7 @@ class Paper {
     DateTime? lastReadAt,
     List<String>? tags,
     String? errorMessage,
+    String? sourceType,
   }) {
     return Paper(
       id: id ?? this.id,
@@ -56,6 +59,7 @@ class Paper {
       lastReadAt: lastReadAt ?? this.lastReadAt,
       tags: tags ?? this.tags,
       errorMessage: errorMessage,
+      sourceType: sourceType ?? this.sourceType,
     );
   }
 
@@ -72,6 +76,7 @@ class Paper {
     'lastReadAt': lastReadAt?.toIso8601String(),
     'tags': tags,
     if (errorMessage != null) 'errorMessage': errorMessage,
+    'sourceType': sourceType,
   };
 
   factory Paper.fromJson(Map<String, dynamic> json) => Paper(
@@ -94,6 +99,7 @@ class Paper {
         : null,
     tags: (json['tags'] as List?)?.cast<String>() ?? [],
     errorMessage: json['errorMessage'] as String?,
+    sourceType: json['sourceType'] as String? ?? 'mineru',
   );
 }
 

@@ -5,6 +5,7 @@ class ParseResult {
   final String contentListJson;
   final int startPage;
   final int endPage;
+  final String sourceType;
 
   const ParseResult({
     required this.markdown,
@@ -13,6 +14,7 @@ class ParseResult {
     this.contentListJson = '',
     this.startPage = 0,
     this.endPage = 0,
+    this.sourceType = 'mineru',
   });
 }
 
