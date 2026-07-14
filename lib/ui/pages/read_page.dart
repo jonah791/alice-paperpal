@@ -145,10 +145,31 @@ class _ReadPageState extends State<ReadPage> {
           const SizedBox(width: DesignTokens.sp1),
         ],
       ),
-      body: Stack(
+      body: Column(
         children: [
-          ScrollProgressBar(controller: _scrollController),
-          Column(
+          if (widget.paper.sourceType != 'mineru')
+            Container(
+              width: double.infinity,
+              padding: padSym(h: Spacing.md, v: Spacing.sm),
+              color: theme.colorScheme.secondaryContainer,
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: DesignTokens.iconSm, color: theme.colorScheme.onSecondaryContainer),
+                  SizedBox(width: Spacing.sm),
+                  Expanded(
+                    child: Text(
+                      '轻量解析模式 — PDF 以纯文本显示，公式/图表可能不完整。',
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSecondaryContainer),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: Stack(
+              children: [
+                ScrollProgressBar(controller: _scrollController),
+                Column(
             children: [
               Expanded(
                 child: Row(
@@ -177,7 +198,10 @@ class _ReadPageState extends State<ReadPage> {
           ),
         ],
       ),
-    );
+    ),
+  ],
+),
+);
   }
 
   String _getDisplayText() {
