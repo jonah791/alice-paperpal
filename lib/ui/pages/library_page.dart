@@ -16,28 +16,90 @@ class LibraryPage extends StatefulWidget {
   State<LibraryPage> createState() => _LibraryPageState();
 }
 
+enum _SortMode { lastRead, imported, title }
+
 class _LibraryPageState extends State<LibraryPage> {
   final _selected = <String>{};
-  var _filterStatus = PaperStatus.values.length; // index for "all"
+  var _filterStatus = PaperStatus.values.length;
+  var _sortMode = _SortMode.lastRead;
+  final _searchController = TextEditingController();
+  var _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Paper> _sorted(List<Paper> papers) {
+    var result = papers;
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      result = result.where((p) =>
+        p.title.toLowerCase().contains(q) ||
+        p.authors.any((a) => a.toLowerCase().contains(q))
+      ).toList();
+    }
+    result = result.toList()..sort((a, b) {
+      switch (_sortMode) {
+        case _SortMode.lastRead:
+          final ra = a.lastReadAt ?? a.importedAt ?? DateTime(2000);
+          final rb = b.lastReadAt ?? b.importedAt ?? DateTime(2000);
+          return rb.compareTo(ra);
+        case _SortMode.imported:
+          final ia = a.importedAt ?? DateTime(2000);
+          final ib = b.importedAt ?? DateTime(2000);
+          return ib.compareTo(ia);
+        case _SortMode.title:
+          return a.title.compareTo(b.title);
+      }
+    });
+    return result;
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-
     return Column(
       children: [
         _buildSelectionBar(theme),
         _buildFilterBar(context, theme),
+        Padding(
+          padding: padSym(h: Spacing.lg, v: Spacing.sm),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: '在文库中搜索...',
+              prefixIcon: const Icon(Icons.search, size: DesignTokens.iconSm),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(DesignTokens.radiusLg)),
+              filled: true,
+              fillColor: theme.colorScheme.surfaceContainerHighest,
+              isDense: true,
+              contentPadding: padSym(v: Spacing.sm, h: Spacing.md),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: DesignTokens.iconSm),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                    )
+                  : null,
+            ),
+            onChanged: (v) => setState(() => _searchQuery = v.trim()),
+          ),
+        ),
         Expanded(
           child: StreamBuilder<List<Paper>>(
             stream: context.paperService.paperStream,
             initialData: context.paperService.papers,
             builder: (context, snapshot) {
               final allPapers = snapshot.data ?? [];
-              final papers = _filterStatus < PaperStatus.values.length
+              final filtered = _filterStatus < PaperStatus.values.length
                   ? allPapers.where((p) => p.status == PaperStatus.values[_filterStatus]).toList()
                   : allPapers;
+              final papers = _sorted(filtered);
 
               if (allPapers.isEmpty) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -74,22 +136,59 @@ class _LibraryPageState extends State<LibraryPage> {
                       Icon(Icons.filter_alt_off, size: 48,
                           color: theme.colorScheme.onSurfaceVariant),
                       const SizedBox(height: Spacing.lg),
-                      Text('当前筛选条件下没有论文', style: theme.textTheme.bodyMedium),
+                      Text(filtered.length > allPapers.length
+                          ? '当前筛选条件下没有论文'
+                          : '没有匹配的论文',
+                        style: theme.textTheme.bodyMedium),
                     ],
                   ),
                 );
               }
 
-              return ListView.builder(
-                padding: const EdgeInsets.all(Spacing.lg),
-                itemCount: papers.length,
-                itemBuilder: (context, index) =>
-                    _buildPaperCard(context, papers[index], theme),
+              return Column(
+                children: [
+                  _buildSortBar(theme, papers.length),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.only(bottom: Spacing.lg),
+                      itemCount: papers.length,
+                      itemBuilder: (context, index) =>
+                          _buildPaperCard(context, papers[index], theme),
+                    ),
+                  ),
+                ],
               );
             },
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSortBar(ThemeData theme, int count) {
+    return Padding(
+      padding: padSym(h: Spacing.lg, v: Spacing.sm),
+      child: Row(
+        children: [
+          Text('$count 篇',
+            style: theme.textTheme.bodySmall),
+          const Spacer(),
+          DropdownButton<_SortMode>(
+            value: _sortMode,
+            underline: const SizedBox(),
+            isDense: true,
+            style: TextStyle(fontSize: DesignTokens.fsSm, color: theme.colorScheme.primary),
+            items: const [
+              DropdownMenuItem(value: _SortMode.lastRead, child: Text('最近阅读')),
+              DropdownMenuItem(value: _SortMode.imported, child: Text('最新导入')),
+              DropdownMenuItem(value: _SortMode.title, child: Text('标题 A-Z')),
+            ],
+            onChanged: (v) {
+              if (v != null) setState(() => _sortMode = v);
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -249,11 +348,25 @@ class _LibraryPageState extends State<LibraryPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: Spacing.lg),
-                  Chip(
-                    label: Text(_statusText(paper.status), style: const TextStyle(fontSize: DesignTokens.fsXs)),
-                    backgroundColor: paper.status.color(context).withValues(alpha: 0.1),
-                    side: BorderSide(color: paper.status.color(context).withValues(alpha: 0.3)),
+                  const SizedBox(width: Spacing.md),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Chip(
+                        label: Text(paper.status.label, style: const TextStyle(fontSize: DesignTokens.fsXs)),
+                        backgroundColor: paper.status.color(context).withValues(alpha: 0.1),
+                        side: BorderSide(color: paper.status.color(context).withValues(alpha: 0.3)),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      if (paper.lastReadAt != null) ...[
+                        SizedBox(height: DesignTokens.sp1),
+                        Text(_timeAgo(paper.lastReadAt!),
+                          style: TextStyle(fontSize: DesignTokens.fsXs, color: theme.colorScheme.onSurfaceVariant)),
+                      ],
+                      if (paper.sourceType != 'mineru')
+                        Text(paper.sourceType == 'fallback_text' ? '文本' : '页提取',
+                          style: TextStyle(fontSize: 9, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5))),
+                    ],
                   ),
                   if (_selected.isEmpty)
                     PopupMenuButton<String>(
@@ -351,15 +464,14 @@ class _LibraryPageState extends State<LibraryPage> {
     }
   }
 
-  String _statusText(PaperStatus s) => switch (s) {
-    PaperStatus.importing => '导入中',
-    PaperStatus.downloading => '下载中',
-    PaperStatus.parsing => '解析中',
-    PaperStatus.parsed => '已解析',
-    PaperStatus.translating => '翻译中',
-    PaperStatus.translated => '已翻译',
-    PaperStatus.error => '错误',
-  };
+  String _timeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return '刚刚';
+    if (diff.inHours < 1) return '${diff.inMinutes} 分钟前';
+    if (diff.inDays < 1) return '${diff.inHours} 小时前';
+    if (diff.inDays < 30) return '${diff.inDays} 天前';
+    return '${(diff.inDays / 30).floor()} 个月前';
+  }
 }
 
 extension on PaperStatus {
