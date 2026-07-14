@@ -2,6 +2,12 @@
 
 ## [0.4.1] - 2026-07-14
 
+### Added
+
+- **MinerU fallback 轻量解析管线** — MinerU 不可用时自动降级：poppler pdftotext → flutter_pdf 逐页提取 → 仅元数据，三层兜底
+- **`sourceType` 字段** — ParseResult/Paper 记录解析来源（`mineru`/`fallback_text`/`fallback_raw`），UI 显示对应横幅
+- **359 测试** — 含 19 个 PdfFallbackService 新测（提取标题、section 拆分、header 识别、flutter_pdf 集成）
+
 ### Fixed
 
 - **chatStream 错误吞掉** — stream 静默终止时 UI 死等。改为 yield 用户可读的错误消息（API Key 无效/限频/超时/服务端错误）
