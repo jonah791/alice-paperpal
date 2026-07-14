@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:logging/logging.dart';
 import '../../core/models/paper.dart';
@@ -28,6 +29,7 @@ class _ReadPageState extends State<ReadPage> {
   _ViewMode _viewMode = _ViewMode.translated;
   final _qaController = TextEditingController();
   final _qaMessages = <Map<String, String>>[];
+  String? _selectedTextForAsk;
   bool _qaLoading = false;
   double _fontSize = DesignTokens.fsLg;
   bool _showNotes = false;
@@ -79,6 +81,12 @@ class _ReadPageState extends State<ReadPage> {
     final displayText = _getDisplayText();
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton.small(
+        heroTag: 'ask_selection',
+        onPressed: () => _askAboutSelection(),
+        tooltip: '选中文本提问',
+        child: const Icon(Icons.smart_toy_outlined, size: DesignTokens.iconMd),
+      ),
       appBar: AppBar(
         title: Text(widget.paper.title, style: const TextStyle(fontSize: DesignTokens.fsLg)),
         actions: [
@@ -446,6 +454,74 @@ class _ReadPageState extends State<ReadPage> {
         _qaLoading = false;
       });
     }
+  }
+
+  Future<void> _askAboutSelection() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final selected = data?.text?.trim() ?? '';
+    if (selected.isEmpty) return;
+
+    final controller = TextEditingController();
+
+    if (!mounted) return;
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(Spacing.lg, Spacing.lg, Spacing.lg, Spacing.lg + MediaQuery.of(sheetContext).viewInsets.bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('选中文本', style: TextStyle(fontSize: DesignTokens.fsSm, color: Theme.of(sheetContext).colorScheme.onSurfaceVariant)),
+              SizedBox(height: Spacing.sm),
+              Container(
+                width: double.infinity,
+                padding: padAll(Spacing.md),
+                decoration: BoxDecoration(
+                  color: Theme.of(sheetContext).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(RadiusTokens.md),
+                ),
+                child: Text(selected.length > 200 ? '${selected.substring(0, 200)}...' : selected,
+                  style: TextStyle(fontSize: DesignTokens.fsSm),
+                  maxLines: 3, overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              SizedBox(height: Spacing.md),
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  hintText: '关于这段内容，你想问什么？',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(DesignTokens.radiusLg)),
+                  filled: true,
+                  fillColor: Theme.of(sheetContext).colorScheme.surfaceContainerHighest,
+                ),
+                onSubmitted: (q) {
+                  if (q.trim().isEmpty) return;
+                  Navigator.of(sheetContext).pop();
+                  _askQuestion('关于以下段落的提问：\n\n$selected\n\n---\n\n我的问题：$q');
+                },
+              ),
+              SizedBox(height: Spacing.md),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    final q = controller.text.trim();
+                    if (q.isEmpty) return;
+                    Navigator.of(sheetContext).pop();
+                    _askQuestion('关于以下段落的提问：\n\n$selected\n\n---\n\n我的问题：$q');
+                  },
+                  icon: const Icon(Icons.send, size: DesignTokens.iconSm),
+                  label: const Text('提问'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _summarize() async {
