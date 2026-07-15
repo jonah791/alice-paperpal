@@ -8,8 +8,9 @@
 [![Platform](https://img.shields.io/badge/Windows-0078D6?logo=windows&logoColor=white)]()
 [![Platform](https://img.shields.io/badge/Android-34D058?logo=android&logoColor=white)]()
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
-[![GitHub release](https://img.shields.io/github/v/release/jonah791/alice-paperpal?label=v0.4.2)](https://github.com/jonah791/alice-paperpal/releases)
-[![Tests](https://img.shields.io/badge/tests-359+-brightgreen)]()
+[![GitHub release](https://img.shields.io/github/v/release/jonah791/alice-paperpal?label=v0.4.3)](https://github.com/jonah791/alice-paperpal/releases)
+[![Tests](https://img.shields.io/badge/tests-366+-brightgreen)]()
+[![Analyze](https://img.shields.io/badge/analyze-0%20issues-success)]()
 
 **基于 MinerU + DeepSeek V4 的 AI 论文阅读伴侣。**
 **搜索论文 → 导入 PDF → 自动解析 → 自动翻译 → AI 问答与摘要。**
@@ -42,10 +43,14 @@
 - **📖 从搜索到理解，全流程覆盖**
 
   ```
-  搜索论文 → 导入(单篇/批量/URL/arXiv) → 自动解析(MinerU / 轻量Fallback) → 自动翻译 → AI 问答(划词即问) + 笔记 + 摘要 + 导出
+  搜索论文 → 导入(单篇/批量/URL/arXiv/Zotero) → 自动解析(MinerU → Agent免Key → poppler → flutter_pdf → 元数据) → 自动翻译 → AI 问答(划词即问) + 高亮 + 笔记 + 摘要 + 导出
   ```
 
-- **🔍 划词问答** — 选中文本 → 浮动 Ask 按钮 → 输入问题，AI 结合上下文回答
+- **⭐ 收藏与断点续读** — 星标标记重要论文，阅读位置自动保存，下次打开回到上次位置
+- **🔍 划词问答 + 高亮** — 选中文本 → 浮动菜单 → 提问或添加高亮标记
+- **🔗 Deep link** — 点击 `paperpal://arxiv/XXXX.XXXX` 链接自动导入论文
+- **🌐 REST API** — 16 端点 HTTP 服务，支持远程调用和 SSE 流式问答
+- **📚 Zotero 集成** — 从 Zotero 文库一键导入论文
 - **🎨 Alice in Wonderland 主题** — 深紫+暖金暗色 / 暖白+金日间双主题 + 导航栏一键切换，动感渐变背景
 - **📱 桌面 & 移动端** — Windows 安装包 + Android APK，数据互通，体验一致
 - **🔒 隐私优先** — 无后端服务器，API Key 加密存储（DPAPI / Android Keystore），日志脱敏
@@ -141,8 +146,12 @@ flutter build apk --release       # → app-release.apk
 
 | 功能 | 说明 |
 |---|---|
-| **文库管理** | 按状态筛选、全文搜索、三种排序（最近阅读/最新导入/标题）、批量操作 |
-| **笔记系统** | 阅读时添加笔记（可附带选中文本），持久化保存，支持删除/类型标记 |
+| **文库管理** | 按状态/星标筛选、全文搜索、三种排序（最近阅读/最新导入/标题）、批量操作 |
+| **收藏系统** | 星标标记重要论文，文库「⭐ 星标」筛选 |
+| **笔记系统** | 阅读时添加笔记（可附带选中文本），持久化保存，支持删除/类型标记（笔记/高亮/问题）|
+| **高亮标记** | 选中文本 → 一键添加高亮，带颜色标识展示在笔记面板 |
+| **断点续读** | 阅读位置自动保存，下次打开回到上次滚动位置 |
+| **字体持久化** | 阅读字号调整后保存到全局设置，下次打开自动恢复 |
 | **AI 摘要** | 一句话 + 结构化摘要 |
 | **AI 问答** | 流式输出逐字显示，基于灵魂+记忆+画像的个性化回答，划词即问 |
 | **导出** | Markdown（含 YAML frontmatter）/ BibTeX |
@@ -171,14 +180,16 @@ flutter build apk --release       # → app-release.apk
 Frontend:    Flutter 3.41+ / Material 3
 Desktop:     Flutter Windows (native C++ runner)
 Mobile:      Android 7.0+ (API 24+)
-Parsing:     MinerU v4 API (async task model)
-LLM:         DeepSeek V4 / OpenAI / Claude
+Parsing:     MinerU v4 API → Agent API (免Key) → poppler → flutter_pdf → 元数据
+LLM:         DeepSeek V4 / OpenAI / Claude (OpenAI 兼容 API)
 Search:      arXiv API + Semantic Scholar API
+Reference:   Zotero API (ZoteroApi) 
 Security:    DPAPI (desktop) + Android Keystore (mobile) / log sanitization
 UI Theme:    Custom dual ColorScheme (deep purple + gold / warm cream + gold)
 UI Fonts:    Playfair Display / Inter / Noto Serif SC
 Packaging:   Inno Setup (Windows) / APK (Android)
 CI/CD:       GitHub Actions (analyze → test → build → release)
+API Server:  shelf + shelf_router + shelf_cors_headers (16 endpoints, SSE)
 ```
 
 ## 项目结构
@@ -187,17 +198,18 @@ CI/CD:       GitHub Actions (analyze → test → build → release)
 paperpal/
 ├── lib/
 │   ├── main.dart           # Entry + DI + AnimatedBackground
+│   ├── server_main.dart    # REST API 服务器 (Flutter entry point)
 │   ├── core/                # Pure Dart, no Flutter dependency
-│   │   ├── api/             # 5 API clients
+│   │   ├── api/             # 6 API clients (arXiv, S2, MinerU, LLM, Zotero, Dio)
 │   │   ├── models/          # 8 data models
 │   │   ├── services/        # 14 services (incl. platform abstraction)
 │   │   └── utils/           # 4 utilities
 │   └── ui/
 │       ├── pages/           # 7 pages
-│       ├── widgets/         # 10 reusable widgets
+│       ├── widgets/         # 12 reusable widgets
 │       └── theme/           # Dual Alice-in-Wonderland theme
-├── android/                 # Android project
-├── test/                    # 359 unit & widget tests
+├── android/                 # Android project + signing template
+├── test/                    # 366 unit & widget tests
 ├── tool/                    # CLI (12 commands)
 └── windows/                 # Windows project + installer script
 ```
@@ -207,10 +219,13 @@ paperpal/
 | 配置项 | 说明 | 默认 |
 |---|---|---|
 | LLM API Key | DeepSeek / OpenAI / Claude | 必填 |
-| MinerU API Key | MinerU 解析服务 Token | 可选（无 Key 自动降级为轻量解析） |
 | LLM API Base | OpenAI 兼容 API 地址 | `https://api.deepseek.com` |
+| LLM 模型 | 模型名称 | `deepseek-v4-flash` |
+| MinerU API Key | MinerU 解析服务 Token | 可选（无 Key 自动降级链: Agent → poppler → flutter_pdf → 元数据）|
 | MinerU 模型版本 | vlm（推荐）/ pipeline / MinerU-HTML | `vlm` |
 | 公式识别 / 表格识别 | 解析时是否提取 | 开启 |
+| Zotero API Key | 环境变量 `ZOTERO_API_KEY` | — |
+| Zotero User ID | 环境变量 `ZOTERO_USER_ID` | — |
 
 ## 许可
 
@@ -222,4 +237,7 @@ paperpal/
 - [DeepSeek](https://deepseek.com) — LLM API
 - [arXiv](https://arxiv.org) — 论文搜索 API
 - [Semantic Scholar](https://semanticscholar.org) — 论文搜索 API
+- [Zotero](https://www.zotero.org) — 文献管理 API
 - [Syncfusion](https://www.syncfusion.com) — PDF 库（社区许可）
+- [shelf](https://pub.dev/packages/shelf) — HTTP 服务器中间件
+- [shelf_router](https://pub.dev/packages/shelf_router) — 路由框架
