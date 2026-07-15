@@ -21,6 +21,7 @@ class CacheService implements ICacheService {
     _log.info('init: cache root = $_rootDir');
   }
 
+  @override
   String get rootDir => _rootDir;
 
   String _paperDir(String paperId) => '$_rootDir/$paperId';
@@ -34,20 +35,24 @@ class CacheService implements ICacheService {
     return dir;
   }
 
+  @override
   Future<void> savePdf(String paperId, File pdf) async {
     final dir = await ensurePaperDir(paperId);
     await pdf.copy('${dir.path}/original.pdf');
     _log.info('savePdf: $paperId');
   }
 
+  @override
   String pdfPath(String paperId) => '${_paperDir(paperId)}/original.pdf';
 
+  @override
   Future<void> saveMarkdown(String paperId, String content) async {
     final dir = await ensurePaperDir(paperId);
     await File('${dir.path}/parsed.md').writeAsString(content);
     _log.info('saveMarkdown: $paperId, ${content.length} chars');
   }
 
+  @override
   Future<String?> readMarkdown(String paperId) async {
     final file = File('${_paperDir(paperId)}/parsed.md');
     if (await file.exists()) {
@@ -56,12 +61,14 @@ class CacheService implements ICacheService {
     return null;
   }
 
+  @override
   Future<void> saveTranslation(String paperId, String content) async {
     final dir = await ensurePaperDir(paperId);
     await File('${dir.path}/translated.md').writeAsString(content);
     _log.info('saveTranslation: $paperId, ${content.length} chars');
   }
 
+  @override
   Future<String?> readTranslation(String paperId) async {
     final file = File('${_paperDir(paperId)}/translated.md');
     if (await file.exists()) {
@@ -71,6 +78,7 @@ class CacheService implements ICacheService {
   }
 
   /// Persist paper metadata to JSON index
+  @override
   Future<void> savePaperMeta(Paper paper) async {
     final all = await loadAllPapers();
     final index = all.indexWhere((p) => p.id == paper.id);
@@ -84,6 +92,7 @@ class CacheService implements ICacheService {
   }
 
   /// Load all paper metadata from JSON index
+  @override
   Future<List<Paper>> loadAllPapers() async {
     final file = File(_indexPath);
     if (!await file.exists()) return [];
@@ -94,7 +103,7 @@ class CacheService implements ICacheService {
     } catch (e) {
       _log.warning('loadAllPapers: index.json corrupted, backing up: $e');
       try {
-        await file.copy('${_indexPath}.corrupted.${DateTime.now().millisecondsSinceEpoch}');
+        await file.copy('$_indexPath.corrupted.${DateTime.now().millisecondsSinceEpoch}');
         _log.warning('loadAllPapers: backup saved, starting fresh');
       } catch (_) {}
       return [];
@@ -113,6 +122,7 @@ class CacheService implements ICacheService {
     await File(_indexPath).writeAsString(json);
   }
 
+  @override
   Future<void> deletePaper(String paperId) async {
     await deletePaperMeta(paperId);
     final dir = Directory(_paperDir(paperId));

@@ -1,8 +1,8 @@
-/// Shared application initializer — used by both Flutter (main.dart)
-/// and CLI (tool/paperpal.dart) to create services consistently.
-///
-/// Adding a new service? Register it in [createLocator] in one place.
-/// Both apps automatically pick it up.
+// Shared application initializer — used by both Flutter (main.dart)
+// and CLI (tool/paperpal.dart) to create services consistently.
+//
+// Adding a new service? Register it in [createLocator] in one place.
+// Both apps automatically pick it up.
 
 import 'api/llm_provider.dart';
 import 'interfaces/services.dart';

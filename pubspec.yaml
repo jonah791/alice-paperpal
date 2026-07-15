@@ -28,6 +28,9 @@ dependencies:
   google_fonts: any
   flutter_secure_storage: ^10.1.0
   open_filex: ^4.7.0
+  shelf: ^1.4.2
+  shelf_router: ^1.1.4
+  shelf_cors_headers: ^0.1.5
 
 dev_dependencies:
   flutter_test:

@@ -8,6 +8,7 @@ class TranslationService implements ITranslationService {
 
   TranslationService(this._llm);
 
+  @override
   String detectLanguage(String text) {
     if (text.isEmpty) return 'en';
 
@@ -19,13 +20,13 @@ class TranslationService implements ITranslationService {
 
     for (var i = 0; i < text.length && i < 2000; i++) {
       final code = text.codeUnitAt(i);
-      if (code >= 0x4E00 && code <= 0x9FFF) chineseChars++;
-      if (code >= 0x3040 && code <= 0x30FF) japaneseChars++;
-      if (code >= 0xAC00 && code <= 0xD7AF) koreanChars++;
+      if (code >= 0x4E00 && code <= 0x9FFF) { chineseChars++; }
+      if (code >= 0x3040 && code <= 0x30FF) { japaneseChars++; }
+      if (code >= 0xAC00 && code <= 0xD7AF) { koreanChars++; }
       if ((code >= 0x0041 && code <= 0x005A) ||
-          (code >= 0x0061 && code <= 0x007A)) latinChars++;
+          (code >= 0x0061 && code <= 0x007A)) { latinChars++; }
       if ((code >= 0x0400 && code <= 0x04FF) ||
-          (code >= 0x0500 && code <= 0x052F)) cyrillicChars++;
+          (code >= 0x0500 && code <= 0x052F)) { cyrillicChars++; }
     }
 
     final total = chineseChars + japaneseChars + koreanChars + latinChars + cyrillicChars;
@@ -43,11 +44,13 @@ class TranslationService implements ITranslationService {
     return 'en';
   }
 
+  @override
   bool needsTranslation(String text) {
     final lang = detectLanguage(text);
     return lang != 'zh';
   }
 
+  @override
   Future<String> translate(String markdown, {String target = '中文'}) async {
     _log.info('translate: starting, target=$target, ${markdown.length} chars');
     final result = await _llm.translate(markdown, target: target);
@@ -61,6 +64,7 @@ class TranslationService implements ITranslationService {
     return repaired;
   }
 
+  @override
   String validateLatex(String text) {
     final result = text;
 

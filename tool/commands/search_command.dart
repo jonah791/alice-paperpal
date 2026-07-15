@@ -1,5 +1,5 @@
 import 'dart:io';
-import '../../lib/core/services/search_service.dart';
+import 'package:paperpal/core/services/search_service.dart';
 import '../cli_helpers.dart' show println, bold, cyan, printError;
 
 const _help = 'search <query> [--limit N]';

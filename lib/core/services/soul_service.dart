@@ -9,7 +9,7 @@ import '../models/soul_presets.dart';
 import '../interfaces/services.dart';
 
 final _log = Logger('SoulService');
-final _uuid = Uuid();
+const _uuid = Uuid();
 
 class SoulService implements ISoulService {
   late final String _soulsDir;
@@ -25,11 +25,16 @@ class SoulService implements ISoulService {
 如果发现之前说错了，自然地纠正。
 ''';
 
+  @override
   String get metaSoulRules => _metaSoul;
+  @override
   Soul? get activeSoul => _activeSoul;
+  @override
   List<Soul> get presets => _presets;
+  @override
   List<Soul> get custom => _custom;
 
+  @override
   Future<void> init() async {
     final dir = await getApplicationSupportDirectory();
     _soulsDir = '${dir.path}/souls';
@@ -97,16 +102,19 @@ class SoulService implements ISoulService {
     return null;
   }
 
+  @override
   Soul getActiveOrDefault() {
     return _activeSoul ?? _presets.first;
   }
 
+  @override
   Future<void> setActiveSoul(Soul soul) async {
     _activeSoul = soul;
     await File(_activePath).writeAsString(soul.id);
     _log.info('setActive: ${soul.name}');
   }
 
+  @override
   Future<Soul> createCustomSoul(String name, String description, ILLMProvider llm) async {
     final prompt = '''
 根据以下用户描述，生成一个 AI 角色的灵魂定义。
@@ -145,6 +153,7 @@ class SoulService implements ISoulService {
     return soul;
   }
 
+  @override
   Future<void> deleteCustomSoul(String id) async {
     _custom.removeWhere((s) => s.id == id);
     final file = File('$_soulsDir/custom/$id.json');

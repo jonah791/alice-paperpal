@@ -5,24 +5,18 @@ import 'package:uuid/uuid.dart';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../api/llm_provider.dart';
 import '../api/mineru_api.dart';
 import '../models/parse_result.dart';
 import '../models/search_result.dart';
 import '../models/paper.dart';
-import '../models/note.dart';
 import '../interfaces/services.dart';
 import '../utils/page_counter.dart';
 import 'translation_service.dart';
 import 'parse_service.dart';
 import 'pdf_fallback_service.dart';
-import 'note_service.dart';
-import 'portrait_service.dart';
-import 'search_service.dart';
-import 'soul_service.dart';
 
 final _log = Logger('PaperService');
-final _uuid = Uuid();
+const _uuid = Uuid();
 
 class PaperService implements IPaperService {
   final ICacheService _cache;
@@ -39,6 +33,7 @@ class PaperService implements IPaperService {
   final INoteService _noteService;
   final _papers = <Paper>{};
   final _paperController = StreamController<List<Paper>>.broadcast();
+  @override
   Stream<List<Paper>> get paperStream => _paperController.stream;
 
   PaperService({
@@ -59,6 +54,7 @@ class PaperService implements IPaperService {
         _memory = memoryService,
         _portrait = portraitService;
 
+  @override
   Future<void> init() async {
     await _rebuildParseService();
     _translation = TranslationService(_llm);
@@ -84,11 +80,13 @@ class PaperService implements IPaperService {
     _parse = ParseService(api: mineruApi);
   }
 
+  @override
   Future<void> reconfigureMineru() async {
     await _rebuildParseService();
     _log.info('MinerU API reconfigured');
   }
 
+  @override
   Future<void> reconfigureLlm() async {
     final cfg = _config.config;
     final apiKey = await _config.readLlmApiKey() ?? '';
@@ -103,9 +101,12 @@ class PaperService implements IPaperService {
   void _emitPapers() => _paperController.add(_papers.toList());
   Future<void> _persistPaper(Paper p) => _cache.savePaperMeta(p);
 
+  @override
   Stream<ParseProgress> get parseProgress => _parse.progressStream;
+  @override
   Future<(List<SearchResult>, String?)> search(String query) => _search.search(query);
 
+  @override
   Future<Paper?> importFromSearch(SearchResult result, {void Function(int, int)? onProgress}) async {
     if (result.pdfUrl.isEmpty) {
       _log.warning('importFromSearch: no PDF URL for ${result.title}');
@@ -117,6 +118,7 @@ class PaperService implements IPaperService {
     return importPdf(pdf, title: result.title);
   }
 
+  @override
   Future<Paper?> importPdf(File pdfFile, {String? title}) async {
     final paperId = _uuid.v4();
     final paper = Paper(
@@ -224,9 +226,12 @@ class PaperService implements IPaperService {
     }
   }
 
+  @override
   Future<String?> getMarkdown(String paperId) => _cache.readMarkdown(paperId);
+  @override
   Future<String?> getTranslation(String paperId) => _cache.readTranslation(paperId);
 
+  @override
   Future<void> touchPaper(String paperId) async {
     try {
       final paper = _papers.firstWhere((p) => p.id == paperId);
@@ -270,6 +275,7 @@ class PaperService implements IPaperService {
     return sb.toString();
   }
 
+  @override
   Future<String> askQuestion(String paperId, String question) async {
     final md = await getMarkdown(paperId);
     if (md == null) return '论文内容不可用';
@@ -294,6 +300,7 @@ class PaperService implements IPaperService {
     return answer;
   }
 
+  @override
   Stream<String> askQuestionStream(String paperId, String question) async* {
     final md = await getMarkdown(paperId);
     if (md == null) {
@@ -322,6 +329,7 @@ class PaperService implements IPaperService {
     _memory.addMemory(question.substring(0, question.length.clamp(0, 80)), paperId: paperId);
   }
 
+  @override
   Future<String> summarize(String paperId) async {
     final md = await getMarkdown(paperId);
     if (md == null) return '论文内容不可用';
@@ -331,8 +339,10 @@ class PaperService implements IPaperService {
     return _llm.summarize(truncated);
   }
 
+  @override
   List<Paper> get papers => _papers.toList();
 
+  @override
   Paper? getPaper(String id) {
     try {
       return _papers.firstWhere((p) => p.id == id);
@@ -341,6 +351,7 @@ class PaperService implements IPaperService {
     }
   }
 
+  @override
   Future<void> deletePaper(String paperId) async {
     _papers.removeWhere((p) => p.id == paperId);
     _emitPapers();
@@ -349,6 +360,7 @@ class PaperService implements IPaperService {
     _log.info('deletePaper: $paperId');
   }
 
+  @override
   void dispose() {
     _parse.dispose();
     _paperController.close();

@@ -7,7 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../interfaces/services.dart';
 
 final _log = Logger('MemoryService');
-final _uuid = Uuid();
+const _uuid = Uuid();
 
 class MemoryItem {
   final String id;
@@ -42,6 +42,7 @@ class MemoryService implements IMemoryService {
   List<MemoryItem> _memories = [];
   static const int _maxMemories = 100;
 
+  @override
   Future<void> init() async {
     final dir = await getApplicationSupportDirectory();
     _filePath = '${dir.path}/memory.json';
@@ -66,12 +67,14 @@ class MemoryService implements IMemoryService {
     await File(_filePath).writeAsString(json);
   }
 
+  @override
   List<MemoryItem> getRecent({int limit = 10}) {
     final sorted = List<MemoryItem>.from(_memories)
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return sorted.take(limit).toList();
   }
 
+  @override
   Future<void> addMemory(String summary, {String? paperId}) async {
     _memories.add(MemoryItem(
       id: _uuid.v4(),
@@ -87,12 +90,14 @@ class MemoryService implements IMemoryService {
     _log.info('addMemory: $summary');
   }
 
+  @override
   String summarizeRecent({int limit = 10}) {
     final recent = getRecent(limit: limit);
     if (recent.isEmpty) return '';
     return recent.map((m) => '- ${m.summary}').join('\n');
   }
 
+  @override
   Future<void> prune() async {
     final cutoff = DateTime.now().subtract(const Duration(days: 30));
     _memories.removeWhere((m) => m.timestamp.isBefore(cutoff));

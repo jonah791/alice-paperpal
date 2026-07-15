@@ -106,8 +106,8 @@ class _LibraryPageState extends State<LibraryPage> {
                     return Padding(
                       padding: const EdgeInsets.all(Spacing.lg),
                       child: ListView(
-                        children: List.generate(5, (i) => Padding(
-                          padding: const EdgeInsets.only(bottom: Spacing.gap),
+                        children: List.generate(5, (i) => const Padding(
+                          padding: EdgeInsets.only(bottom: Spacing.gap),
                           child: SkeletonLoader(height: 80, borderRadius: RadiusTokens.lg),
                       )),
                     ),
@@ -263,7 +263,7 @@ class _LibraryPageState extends State<LibraryPage> {
               child: FilterChip(
                 label: Text(filterLabels[i], style: const TextStyle(fontSize: DesignTokens.fsSm)),
                 selected: selected,
-                selectedColor: status?.color(context)?.withValues(alpha: 0.2),
+                selectedColor: status?.color(context).withValues(alpha: 0.2),
                 checkmarkColor: status?.color(context),
                 onSelected: (_) => setState(() => _filterStatus = i),
             ));
@@ -365,7 +365,7 @@ class _LibraryPageState extends State<LibraryPage> {
                         visualDensity: VisualDensity.compact,
                       ),
                       if (paper.lastReadAt != null) ...[
-                        SizedBox(height: DesignTokens.sp1),
+                        const SizedBox(height: DesignTokens.sp1),
                         Text(_timeAgo(paper.lastReadAt!),
                           style: TextStyle(fontSize: DesignTokens.fsXs, color: theme.colorScheme.onSurfaceVariant)),
                       ],

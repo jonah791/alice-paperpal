@@ -1,10 +1,10 @@
 import 'dart:io';
 
-import '../../lib/core/api/arxiv_api.dart' show ArxivApi;
-import '../../lib/core/api/mineru_api.dart' show MineruApi;
-import '../../lib/core/models/paper.dart' show Paper, PaperStatus;
-import '../../lib/core/services/parse_service.dart' show ParseService;
-import '../../lib/core/services/search_service.dart' show SearchService;
+import 'package:paperpal/core/api/arxiv_api.dart' show ArxivApi;
+import 'package:paperpal/core/api/mineru_api.dart' show MineruApi;
+import 'package:paperpal/core/models/paper.dart' show Paper, PaperStatus;
+import 'package:paperpal/core/services/parse_service.dart' show ParseService;
+import 'package:paperpal/core/services/search_service.dart' show SearchService;
 import '../cli_helpers.dart' show println, bold, cyan, printError, printSuccess;
 import '../cli_state.dart' show loadConfig, loadPapersIndex, savePapersIndex, savePaperMarkdown, getSearchResults;
 
@@ -66,7 +66,7 @@ Future<Map<String, dynamic>?> _fetchArxivMetadata(String url, String title) asyn
   final arxiv = ArxivApi();
 
   try {
-    final results = await arxiv.search('$arxivId', maxResults: 1);
+    final results = await arxiv.search(arxivId, maxResults: 1);
     if (results.isNotEmpty) {
       final r = results.first;
       return {
@@ -89,7 +89,7 @@ Future<void> _importFromSearch(int index, String apiKey, Map<String, dynamic> cf
   }
 
   final result = results[index - 1];
-  println('${bold("Importing from search")}: [${index}] ${result.title}');
+  println('${bold("Importing from search")}: [$index] ${result.title}');
 
   if (result.pdfUrl.isEmpty) {
     printError('No PDF URL available for this result.');

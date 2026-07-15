@@ -8,7 +8,7 @@ import 'core/init.dart';
 import 'core/di/service_locator.dart';
 import 'core/di/dependencies.dart';
 import 'core/interfaces/services.dart';
-import 'core/services/platform_service.dart';
+
 import 'ui/pages/search_page.dart';
 import 'ui/pages/library_page.dart';
 import 'ui/pages/settings_page.dart';

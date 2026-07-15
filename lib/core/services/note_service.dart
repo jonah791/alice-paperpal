@@ -8,12 +8,13 @@ import '../models/note.dart';
 import '../interfaces/services.dart';
 
 final _log = Logger('NoteService');
-final _uuid = Uuid();
+const _uuid = Uuid();
 
 class NoteService implements INoteService {
   late final String _filePath;
   List<Note> _notes = [];
 
+  @override
   Future<void> init() async {
     final dir = await getApplicationSupportDirectory();
     _filePath = '${dir.path}/notes.json';
@@ -38,10 +39,12 @@ class NoteService implements INoteService {
     await File(_filePath).writeAsString(json);
   }
 
+  @override
   List<Note> getNotesForPaper(String paperId) =>
       _notes.where((n) => n.paperId == paperId).toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
+  @override
   Future<Note> addNote({
     required String paperId,
     required String text,
@@ -65,6 +68,7 @@ class NoteService implements INoteService {
     return note;
   }
 
+  @override
   Future<void> updateNote(String noteId, String text) async {
     final index = _notes.indexWhere((n) => n.id == noteId);
     if (index < 0) return;
@@ -73,12 +77,14 @@ class NoteService implements INoteService {
     _log.info('updateNote: $noteId');
   }
 
+  @override
   Future<void> deleteNote(String noteId) async {
     _notes.removeWhere((n) => n.id == noteId);
     await _save();
     _log.info('deleteNote: $noteId');
   }
 
+  @override
   Future<void> deleteNotesForPaper(String paperId) async {
     _notes.removeWhere((n) => n.paperId == paperId);
     _log.info('deleteNotesForPaper: $paperId -> notes cleaned');

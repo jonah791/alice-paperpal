@@ -28,7 +28,6 @@ class _ReadPageState extends State<ReadPage> {
   String? _translation;
   bool _loading = true;
   _ViewMode _viewMode = _ViewMode.translated;
-  String? _selectedTextForAsk;
   double _fontSize = DesignTokens.fsLg;
   bool _showNotes = false;
   final _scrollController = ScrollController();
@@ -89,10 +88,10 @@ class _ReadPageState extends State<ReadPage> {
           if (_translation != null)
             SegmentedButton<_ViewMode>(
               segments: [
-                ButtonSegment(value: _ViewMode.original, label: Text('原文')),
-                ButtonSegment(value: _ViewMode.translated, label: Text('译文')),
+                const ButtonSegment(value: _ViewMode.original, label: Text('原文')),
+                const ButtonSegment(value: _ViewMode.translated, label: Text('译文')),
                 if (!platform.isAndroid)
-                  ButtonSegment(value: _ViewMode.sideBySide, label: Text('对照')),
+                  const ButtonSegment(value: _ViewMode.sideBySide, label: Text('对照')),
               ],
               selected: {_viewMode},
               onSelectionChanged: (v) => setState(() => _viewMode = v.first),
@@ -162,7 +161,7 @@ class _ReadPageState extends State<ReadPage> {
               child: Row(
                 children: [
                   Icon(Icons.info_outline, size: DesignTokens.iconSm, color: theme.colorScheme.onSecondaryContainer),
-                  SizedBox(width: Spacing.sm),
+                  const SizedBox(width: Spacing.sm),
                   Expanded(
                     child: Text(
                       '轻量解析模式 — PDF 以纯文本显示，公式/图表可能不完整。',
@@ -324,7 +323,7 @@ class _ReadPageState extends State<ReadPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('选中文本', style: TextStyle(fontSize: DesignTokens.fsSm, color: Theme.of(sheetContext).colorScheme.onSurfaceVariant)),
-              SizedBox(height: Spacing.sm),
+              const SizedBox(height: Spacing.sm),
               Container(
                 width: double.infinity,
                 padding: padAll(Spacing.md),
@@ -333,11 +332,11 @@ class _ReadPageState extends State<ReadPage> {
                   borderRadius: BorderRadius.circular(RadiusTokens.md),
                 ),
                 child: Text(selected.length > 200 ? '${selected.substring(0, 200)}...' : selected,
-                  style: TextStyle(fontSize: DesignTokens.fsSm),
+                  style: const TextStyle(fontSize: DesignTokens.fsSm),
                   maxLines: 3, overflow: TextOverflow.ellipsis,
                 ),
               ),
-              SizedBox(height: Spacing.md),
+              const SizedBox(height: Spacing.md),
               TextField(
                 controller: controller,
                 decoration: InputDecoration(
@@ -352,7 +351,7 @@ class _ReadPageState extends State<ReadPage> {
                   _qaKey.currentState?.askQuestion('关于以下段落的提问：\n\n$selected\n\n---\n\n我的问题：$q');
                 },
               ),
-              SizedBox(height: Spacing.md),
+              const SizedBox(height: Spacing.md),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(

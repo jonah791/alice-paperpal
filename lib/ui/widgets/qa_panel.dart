@@ -134,7 +134,7 @@ class QAPanelState extends State<QAPanel> {
                     ),
                   ),
                 ),
-                SizedBox(width: Spacing.sm),
+                const SizedBox(width: Spacing.sm),
                 IconButton(
                   icon: _qaLoading
                       ? SizedBox(
@@ -175,10 +175,12 @@ class QAPanelState extends State<QAPanel> {
       if (mounted) setState(() => _qaLoading = false);
     } catch (e) {
       _log.warning('askQuestion failed: $e');
-      if (mounted) setState(() {
-        _qaMessages.last['content'] = _describeQAError(e);
-        _qaLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _qaMessages.last['content'] = _describeQAError(e);
+          _qaLoading = false;
+        });
+      }
     }
   }
 

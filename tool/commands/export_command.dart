@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import '../../lib/core/models/paper.dart' show Paper;
+import 'package:paperpal/core/models/paper.dart' show Paper;
 import '../cli_helpers.dart' show println, bold, printError, printSuccess;
 import '../cli_state.dart' show loadPapersIndex, readPaperMarkdown;
 

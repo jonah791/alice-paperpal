@@ -1,9 +1,6 @@
-import 'dart:io';
-
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logging/logging.dart';
 import '../models/config.dart';
-import '../utils/windows_encryption.dart' as dpapi;
 import '../interfaces/services.dart';
 import 'platform_service.dart';
 
@@ -25,9 +22,12 @@ class ConfigService implements IConfigService {
 
   ConfigService(this._platform);
 
+  @override
   AppConfig get config => _config;
+  @override
   PlatformService get platform => _platform;
 
+  @override
   Future<void> load() async {
     _prefs = await SharedPreferences.getInstance();
     _config = AppConfig(
@@ -41,12 +41,14 @@ class ConfigService implements IConfigService {
     _log.info('Config loaded');
   }
 
+  @override
   Future<void> saveLlmApiKey(String key) async {
     final encrypted = await _platform.encrypt(key);
     await _prefs?.setString(_keyLlmApiKey, encrypted);
     _log.info('LLM API key saved');
   }
 
+  @override
   Future<String?> readLlmApiKey() async {
     final stored = _prefs?.getString(_keyLlmApiKey);
     if (stored == null || stored.isEmpty) return null;
@@ -57,17 +59,20 @@ class ConfigService implements IConfigService {
     return stored;
   }
 
+  @override
   bool get hasLlmApiKey {
     final key = _prefs?.getString(_keyLlmApiKey);
     return key != null && key.isNotEmpty;
   }
 
+  @override
   Future<void> saveMineruApiKey(String key) async {
     final encrypted = await _platform.encrypt(key);
     await _prefs?.setString(_keyMineruApiKey, encrypted);
     _log.info('MinerU API key saved');
   }
 
+  @override
   Future<String?> readMineruApiKey() async {
     final stored = _prefs?.getString(_keyMineruApiKey);
     if (stored == null || stored.isEmpty) return null;
@@ -78,6 +83,7 @@ class ConfigService implements IConfigService {
     return stored;
   }
 
+  @override
   Future<void> updateConfig(AppConfig config) async {
     _config = config;
     await _prefs?.setString(_keyLlmApiBase, config.llmApiBase);

@@ -3,19 +3,26 @@
 // Run:  flutter run -t lib/server_main.dart --dart-define=PORT=4090
 // Build: flutter build windows --release -t lib/server_main.dart
 //
-// Starts an HTTP server using the full Flutter service layer.
+// Starts an HTTP server using shelf for routing + middleware.
 
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Router;
+import 'package:logging/logging.dart';
+import 'package:shelf/shelf.dart' as shelf;
+import 'package:shelf/shelf_io.dart' as shelf_io;
+import 'package:shelf_router/shelf_router.dart';
+import 'package:shelf_cors_headers/shelf_cors_headers.dart';
+
 import 'core/init.dart';
-import 'core/di/service_locator.dart';
 import 'core/interfaces/services.dart';
 import 'core/models/paper.dart';
 import 'core/models/search_result.dart';
 import 'core/models/note.dart';
+
+final _log = Logger('Server');
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,118 +35,214 @@ void main(List<String> args) async {
   final locator = await createLocator();
   await locator.get<IPaperService>().init();
 
-  stdout.write('PaperPal API server running on http://localhost:$port\n');
+  final router = Router();
 
-  final server = await HttpServer.bind(InternetAddress.anyIPv4, port);
-  await for (final request in server) {
-    try {
-      await _handle(request, locator);
-    } catch (e) {
-      _json(request, 500, {'error': '$e'});
-    }
-  }
-}
+  // ── Middleware chain ──────────────────────────────────────────
+  final handler = const shelf.Pipeline()
+      .addMiddleware(_requestLogger())
+      .addMiddleware(corsHeaders(headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      }))
+      .addHandler(router.call);
 
-Future<void> _handle(HttpRequest req, ServiceLocator l) async {
-  final path = Uri.parse(req.uri.toString()).pathSegments;
-  final m = req.method;
-  final ps = l.get<IPaperService>();
-  final ns = l.get<INoteService>();
+  // ── Routes ────────────────────────────────────────────────────
 
   // GET /health
-  if (m == 'GET' && (path.isEmpty || path[0] == 'health'))
-    return _json(req, 200, {'status': 'ok', 'papers': ps.papers.length});
+  router.get('/health', (req) async {
+    final ps = locator.get<IPaperService>();
+    return _ok({'status': 'ok', 'papers': ps.papers.length});
+  });
 
   // GET /papers
-  if (m == 'GET' && path.length == 1 && path[0] == 'papers')
-    return _json(req, 200, ps.papers.map(_p).toList());
+  router.get('/papers', (req) async {
+    final ps = locator.get<IPaperService>();
+    return _ok(ps.papers.map(_p).toList());
+  });
+
+  // GET /papers/:id
+  router.get('/papers/<id>', (req, String id) async {
+    final ps = locator.get<IPaperService>();
+    final paper = ps.getPaper(id);
+    if (paper == null) return _notFound('paper not found');
+    return _ok(_p(paper));
+  });
 
   // DELETE /papers/:id
-  if (m == 'DELETE' && path.length == 2 && path[0] == 'papers')
-    return _json(req, 200, {'deleted': await ps.deletePaper(path[1])});
+  router.delete('/papers/<id>', (req, String id) async {
+    final ps = locator.get<IPaperService>();
+    await ps.deletePaper(id);
+    return _ok({'deleted': true});
+  });
 
-  // GET /papers/:id/content , /papers/:id/translation
-  if (m == 'GET' && path.length == 3 && path[0] == 'papers' && path[2] == 'content')
-    return _json(req, 200, {'content': await ps.getMarkdown(path[1])});
-  if (m == 'GET' && path.length == 3 && path[0] == 'papers' && path[2] == 'translation')
-    return _json(req, 200, {'translation': await ps.getTranslation(path[1])});
+  // GET /papers/:id/content
+  router.get('/papers/<id>/content', (req, String id) async {
+    final ps = locator.get<IPaperService>();
+    final content = await ps.getMarkdown(id);
+    return _ok({'content': content});
+  });
+
+  // GET /papers/:id/translation
+  router.get('/papers/<id>/translation', (req, String id) async {
+    final ps = locator.get<IPaperService>();
+    final translation = await ps.getTranslation(id);
+    return _ok({'translation': translation});
+  });
 
   // POST /search
-  if (m == 'POST' && path.length == 1 && path[0] == 'search') {
-    final body = await _body(req);
-    if ((body['query'] ?? '').isEmpty) return _json(req, 400, {'error': 'query required'});
-    final (r, e) = await ps.search(body['query'] as String);
-    if (e != null) return _json(req, 500, {'error': e});
-    return _json(req, 200, r.map(_sr).toList());
-  }
+  router.post('/search', (req) async {
+    final body = await _parseBody(req);
+    final query = body['query'] as String?;
+    if (query == null || query.isEmpty) return _badRequest('query required');
+    final ps = locator.get<IPaperService>();
+    final (r, e) = await ps.search(query);
+    if (e != null) return _error(e);
+    return _ok(r.map(_sr).toList());
+  });
 
   // POST /import/search
-  if (m == 'POST' && path.length == 2 && path[0] == 'import' && path[1] == 'search') {
-    final body = await _body(req);
-    final result = SearchResult(title: body['title'] ?? '', pdfUrl: body['pdfUrl'] ?? '', authors: [], year: 0, source: 'api');
-    if (result.title.isEmpty || result.pdfUrl.isEmpty) return _json(req, 400, {'error': 'title and pdfUrl required'});
+  router.post('/import/search', (req) async {
+    final body = await _parseBody(req);
+    final result = SearchResult(
+      title: body['title'] as String? ?? '',
+      pdfUrl: body['pdfUrl'] as String? ?? '',
+      authors: [], year: 0, source: 'api',
+    );
+    if (result.title.isEmpty || result.pdfUrl.isEmpty) {
+      return _badRequest('title and pdfUrl required');
+    }
+    final ps = locator.get<IPaperService>();
     final p = await ps.importFromSearch(result);
-    return _json(req, p != null ? 201 : 500, p != null ? _p(p) : {'error': 'import failed'});
-  }
+    if (p == null) return _error('import failed');
+    return shelf.Response(201, body: jsonEncode(_p(p)), headers: {'content-type': 'application/json'});
+  });
 
   // POST /ask/:id (SSE stream)
-  if (m == 'POST' && path.length == 2 && path[0] == 'ask') {
-    final body = await _body(req);
-    final question = body['question'] as String? ?? '';
-    if (question.isEmpty) return _json(req, 400, {'error': 'question required'});
-    req.response.headers.contentType = ContentType('text', 'event-stream', charset: 'utf-8');
-    req.response.headers.set('Cache-Control', 'no-cache');
-    try {
-      await for (final chunk in ps.askQuestionStream(path[1], question)) {
-        req.response.writeln('data: ${jsonEncode({'chunk': chunk})}');
-      }
-    } catch (e) {
-      req.response.writeln('data: ${jsonEncode({'error': '$e'})}');
-    }
-    return req.response.close();
-  }
+  router.post('/ask/<id>', (req, String id) async {
+    final body = await _parseBody(req);
+    final question = body['question'] as String?;
+    if (question == null || question.isEmpty) return _badRequest('question required');
+    final ps = locator.get<IPaperService>();
+    return _sseStream(ps.askQuestionStream(id, question));
+  });
 
   // POST /summarize/:id
-  if (m == 'POST' && path.length == 2 && path[0] == 'summarize')
-    return _json(req, 200, {'summary': await ps.summarize(path[1])});
+  router.post('/summarize/<id>', (req, String id) async {
+    final ps = locator.get<IPaperService>();
+    return _ok({'summary': await ps.summarize(id)});
+  });
 
-  // GET/POST/DELETE /notes/...
-  if (m == 'GET' && path.length == 2 && path[0] == 'notes')
-    return _json(req, 200, ns.getNotesForPaper(path[1]).map(_n).toList());
-  if (m == 'POST' && path.length == 2 && path[0] == 'notes') {
-    final b = await _body(req);
-    if ((b['text'] ?? '').isEmpty) return _json(req, 400, {'error': 'text required'});
-    await ns.addNote(paperId: path[1], text: b['text'] as String);
-    return _json(req, 201, {'created': true});
-  }
-  if (m == 'DELETE' && path.length == 2 && path[0] == 'notes')
-    return _json(req, 200, {'deleted': await ns.deleteNote(path[1])});
+  // GET /notes/:paperId
+  router.get('/notes/<paperId>', (req, String paperId) async {
+    final ns = locator.get<INoteService>();
+    return _ok(ns.getNotesForPaper(paperId).map(_n).toList());
+  });
 
-  _json(req, 404, {'error': 'not found'});
+  // POST /notes/:paperId
+  router.post('/notes/<paperId>', (req, String paperId) async {
+    final body = await _parseBody(req);
+    final text = body['text'] as String?;
+    if (text == null || text.isEmpty) return _badRequest('text required');
+    final ns = locator.get<INoteService>();
+    await ns.addNote(paperId: paperId, text: text);
+    return shelf.Response(201, body: jsonEncode({'created': true}), headers: {'content-type': 'application/json'});
+  });
+
+  // DELETE /notes/:noteId
+  router.delete('/notes/<noteId>', (req, String noteId) async {
+    final ns = locator.get<INoteService>();
+    await ns.deleteNote(noteId);
+    return _ok({'deleted': true});
+  });
+
+  // OPTIONS handler (CORS preflight)
+  router.add('OPTIONS', r'/<path>', (req) => shelf.Response.ok(''));
+
+  await shelf_io.serve(handler, InternetAddress.anyIPv4, port);
+  _log.info('PaperPal API server running on http://localhost:$port');
 }
+
+// ── Middleware ─────────────────────────────────────────────────
+
+shelf.Middleware _requestLogger() {
+  return (shelf.Handler innerHandler) {
+    return (shelf.Request request) async {
+      final sw = Stopwatch()..start();
+      _log.info('${request.method} ${request.requestedUri.path}');
+      try {
+        final response = await innerHandler(request);
+        _log.info('${request.method} ${request.requestedUri.path} → ${response.statusCode} (${sw.elapsedMilliseconds}ms)');
+        return response;
+      } catch (e) {
+        _log.warning('${request.method} ${request.requestedUri.path} → ERROR: $e (${sw.elapsedMilliseconds}ms)');
+        return shelf.Response(500, body: jsonEncode({'error': '$e'}), headers: {'content-type': 'application/json'});
+      }
+    };
+  };
+}
+
+// ── SSE Streaming ──────────────────────────────────────────────
+
+shelf.Response _sseStream(Stream<String> dataStream) {
+  final controller = StreamController<List<int>>();
+  final encoder = utf8.encoder;
+
+  dataStream.listen(
+    (chunk) {
+      controller.add(encoder.convert('data: ${jsonEncode({'chunk': chunk})}\n\n'));
+    },
+    onError: (e) {
+      controller.add(encoder.convert('data: ${jsonEncode({'error': '$e'})}\n\n'));
+      controller.close();
+    },
+    onDone: () => controller.close(),
+  );
+
+  return shelf.Response.ok(
+    controller.stream,
+    headers: {
+      'content-type': 'text/event-stream; charset=utf-8',
+      'cache-control': 'no-cache',
+      'connection': 'keep-alive',
+    },
+  );
+}
+
+// ── Response helpers ───────────────────────────────────────────
+
+shelf.Response _ok(Object data) =>
+    shelf.Response.ok(jsonEncode(data), headers: {'content-type': 'application/json'});
+
+shelf.Response _badRequest(String msg) =>
+    shelf.Response(400, body: jsonEncode({'error': msg}), headers: {'content-type': 'application/json'});
+
+shelf.Response _notFound(String msg) =>
+    shelf.Response(404, body: jsonEncode({'error': msg}), headers: {'content-type': 'application/json'});
+
+shelf.Response _error(String msg) =>
+    shelf.Response(500, body: jsonEncode({'error': msg}), headers: {'content-type': 'application/json'});
+
+Future<Map<String, dynamic>> _parseBody(shelf.Request req) async {
+  final body = await req.readAsString();
+  if (body.isEmpty) return {};
+  return jsonDecode(body) as Map<String, dynamic>;
+}
+
+// ── Serializers ────────────────────────────────────────────────
 
 Map<String, dynamic> _p(Paper p) => {
   'id': p.id, 'title': p.title, 'authors': p.authors, 'year': p.year,
   'source': p.source, 'status': p.status.name, 'sourceType': p.sourceType,
   'importedAt': p.importedAt?.toIso8601String(), 'lastReadAt': p.lastReadAt?.toIso8601String(),
 };
+
 Map<String, dynamic> _sr(SearchResult r) => {
   'title': r.title, 'authors': r.authors, 'year': r.year, 'abstract': r.abstract,
   'pdfUrl': r.pdfUrl, 'source': r.source, 'citationCount': r.citationCount,
 };
+
 Map<String, dynamic> _n(Note n) => {
   'id': n.id, 'paperId': n.paperId, 'text': n.text,
   'createdAt': n.createdAt.toIso8601String(), 'type': n.type.name,
 };
-
-Future<Map<String, dynamic>> _body(HttpRequest r) async {
-  final b = await r.fold<BytesBuilder>(BytesBuilder(), (b, d) => b..add(d));
-  return jsonDecode(String.fromCharCodes(b.takeBytes())) as Map<String, dynamic>;
-}
-
-void _json(HttpRequest r, int s, Object d) {
-  r.response.statusCode = s;
-  r.response.headers.contentType = ContentType.json;
-  r.response.write(jsonEncode(d));
-  r.response.close();
-}

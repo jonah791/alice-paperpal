@@ -18,6 +18,7 @@ class SearchService implements ISearchService {
       : _arxiv = arxiv ?? ArxivApi(),
         _s2 = s2 ?? S2Api();
 
+  @override
   Future<(List<SearchResult>, String?)> search(String query) async {
     if (query.trim().isEmpty) return (<SearchResult>[], null);
 
@@ -61,6 +62,7 @@ class SearchService implements ISearchService {
     }
   }
 
+  @override
   Future<File?> downloadPdf(SearchResult result, String saveDir, {void Function(int, int)? onProgress}) async {
     if (result.pdfUrl.isEmpty) return null;
 

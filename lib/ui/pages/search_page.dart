@@ -96,10 +96,12 @@ class _SearchPageState extends State<SearchPage> {
     try {
 
       if (!context.networkService.isOnline) {
-        if (mounted) setState(() {
-          _loading = false;
-          _statusMessage = '网络不可用，请检查网络连接后重试';
-        });
+        if (mounted) {
+          setState(() {
+            _loading = false;
+            _statusMessage = '网络不可用，请检查网络连接后重试';
+          });
+        }
         return;
       }
 
@@ -309,7 +311,7 @@ class _SearchPageState extends State<SearchPage> {
         if (_statusMessage.isNotEmpty)
           Container(
             padding: padSym(h: Spacing.lg, v: Spacing.sm),
-            color: _lastImportedPaper != null ? theme.colorScheme.primaryContainer?.withValues(alpha: 0.15) : null,
+            color: _lastImportedPaper != null ? theme.colorScheme.primaryContainer.withValues(alpha: 0.15) : null,
             child: Row(
               children: [
                 Expanded(
@@ -360,13 +362,13 @@ class _SearchPageState extends State<SearchPage> {
                 return Row(
                   children: [
                     Expanded(child: searchField),
-                    SizedBox(width: Spacing.gap),
+                    const SizedBox(width: Spacing.gap),
                     _searchButton(),
-                    SizedBox(width: Spacing.gap),
+                    const SizedBox(width: Spacing.gap),
                     _uploadButton(),
-                    SizedBox(width: Spacing.gap),
+                    const SizedBox(width: Spacing.gap),
                     _folderButton(),
-                    SizedBox(width: Spacing.gap),
+                    const SizedBox(width: Spacing.gap),
                     _linkButton(),
                   ],
                 );
@@ -375,13 +377,13 @@ class _SearchPageState extends State<SearchPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   searchField,
-                  SizedBox(height: Spacing.gap),
+                  const SizedBox(height: Spacing.gap),
                   Row(
                     children: [
                       Expanded(child: _searchButton()),
-                      SizedBox(width: Spacing.gap),
+                      const SizedBox(width: Spacing.gap),
                       _uploadButton(),
-                      SizedBox(width: Spacing.gap),
+                      const SizedBox(width: Spacing.gap),
                       _linkButton(),
                     ],
                   ),
@@ -391,7 +393,7 @@ class _SearchPageState extends State<SearchPage> {
           ),
           // URL import toggle
           if (_showUrlInput) ...[
-            SizedBox(height: Spacing.gap),
+            const SizedBox(height: Spacing.gap),
             Row(
               children: [
                 Expanded(
@@ -407,7 +409,7 @@ class _SearchPageState extends State<SearchPage> {
                     onSubmitted: (_) => _importUrl(),
                   ),
                 ),
-                SizedBox(width: Spacing.gap),
+                const SizedBox(width: Spacing.gap),
                 FilledButton.tonalIcon(
                   onPressed: _importUrl,
                   icon: const Icon(Icons.download, size: DesignTokens.iconMd),
@@ -446,9 +448,9 @@ class _SearchPageState extends State<SearchPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.search_off, size: DesignTokens.sp12, color: theme.colorScheme.onSurfaceVariant),
-              SizedBox(height: Spacing.lg),
+              const SizedBox(height: Spacing.lg),
               Text('输入关键词开始搜索论文', style: theme.textTheme.bodyLarge),
-              SizedBox(height: Spacing.gap),
+              const SizedBox(height: Spacing.gap),
               Text('或点击"上传 PDF"导入本地论文', style: theme.textTheme.bodySmall),
             ],
           ),
@@ -482,7 +484,7 @@ class _SearchPageState extends State<SearchPage> {
 
     return Card(
       margin: padOnly(b: DesignTokens.spGap),
-      color: imported ? theme.colorScheme.secondaryContainer?.withValues(alpha: 0.15) : null,
+      color: imported ? theme.colorScheme.secondaryContainer.withValues(alpha: 0.15) : null,
       child: InkWell(
         borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
         onTap: () async {
@@ -549,27 +551,27 @@ class _SearchPageState extends State<SearchPage> {
                     ),
                 ],
               ),
-              SizedBox(height: DesignTokens.sp1),
+              const SizedBox(height: DesignTokens.sp1),
               Text(
                 result.authors.join(', '),
                 style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              SizedBox(height: DesignTokens.sp1),
+              const SizedBox(height: DesignTokens.sp1),
               Row(
                 children: [
                   Chip(label: Text(result.year.toString(), style: const TextStyle(fontSize: DesignTokens.fsXs))),
-                  SizedBox(width: Spacing.gap),
+                  const SizedBox(width: Spacing.gap),
                   Chip(label: Text(result.source, style: const TextStyle(fontSize: DesignTokens.fsXs))),
                   if (result.citationCount > 0) ...[
-                    SizedBox(width: Spacing.gap),
+                    const SizedBox(width: Spacing.gap),
                     Text('☆ ${result.citationCount}', style: theme.textTheme.bodySmall),
                   ],
                 ],
               ),
               if (result.abstract.isNotEmpty) ...[
-                SizedBox(height: Spacing.gap),
+                const SizedBox(height: Spacing.gap),
                 Text(result.abstract,
                     style: theme.textTheme.bodySmall,
                     maxLines: 3,
@@ -586,8 +588,8 @@ class _SearchPageState extends State<SearchPage> {
     return FilledButton.icon(
       onPressed: _loading ? null : _search,
       icon: _loading
-          ? SizedBox(width: DesignTokens.iconMd, height: DesignTokens.iconMd,
-              child: const CircularProgressIndicator(strokeWidth: DesignTokens.borderXl))
+          ? const SizedBox(width: DesignTokens.iconMd, height: DesignTokens.iconMd,
+              child: CircularProgressIndicator(strokeWidth: DesignTokens.borderXl))
           : const Icon(Icons.search),
       label: const Text('搜索'),
     );

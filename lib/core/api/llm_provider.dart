@@ -51,6 +51,7 @@ class LLMProvider implements ILLMProvider {
     ]);
   }
 
+  @override
   void reconfigure({required String apiKey, required String apiBase, required String model}) {
     // Use a mutable-like pattern: update via Config's copyWith
     // Since LLMConfig is immutable, we use reflection on the stored config's type
@@ -138,6 +139,7 @@ class LLMProvider implements ILLMProvider {
     return (current as String?) ?? '';
   }
 
+  @override
   Future<String> chat(List<Map<String, String>> messages, {int? maxTokens}) async {
     try {
       final response = await _dio.post(endpoint, data: buildBody(messages, maxTokens: maxTokens));
@@ -150,6 +152,7 @@ class LLMProvider implements ILLMProvider {
     }
   }
 
+  @override
   Stream<String> chatStream(List<Map<String, String>> messages, {int? maxTokens}) async* {
     try {
       final response = await _dio.post(
@@ -197,6 +200,7 @@ class LLMProvider implements ILLMProvider {
     return '未知错误，请稍后重试';
   }
 
+  @override
   Future<String> translate(String text, {String target = '中文'}) async {
     final systemPrompt = '''
 你是一个学术论文翻译助手。请将以下学术文本翻译为$target。
@@ -214,6 +218,7 @@ class LLMProvider implements ILLMProvider {
     ]);
   }
 
+  @override
   Future<String> summarize(String paperText) async {
     const systemPrompt = '''
 你是一个学术论文分析助手。请分析以下论文并输出结构化摘要：

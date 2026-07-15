@@ -1,7 +1,7 @@
-import '../../lib/core/api/llm_provider.dart' show LLMProvider, LLMConfig, LLMProviderType;
-import '../../lib/core/services/translation_service.dart' show TranslationService;
-import '../cli_helpers.dart' show println, bold, cyan, printError, printSuccess;
-import '../cli_state.dart' show loadConfig, readPaperMarkdown, readPaperTranslation, savePaperTranslation;
+import 'package:paperpal/core/api/llm_provider.dart' show LLMProvider, LLMConfig, LLMProviderType;
+import 'package:paperpal/core/services/translation_service.dart' show TranslationService;
+import '../cli_helpers.dart' show println, cyan, printError, printSuccess;
+import '../cli_state.dart' show loadConfig, readPaperMarkdown, savePaperTranslation;
 
 const _help = 'translate <paper-id> [--target lang]';
 

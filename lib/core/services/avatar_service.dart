@@ -18,11 +18,13 @@ class AvatarService implements IAvatarService {
     0xFFC62828,
   ];
 
+  @override
   int colorForName(String name) {
     final hash = name.hashCode.abs();
     return _builtinColors[hash % _builtinColors.length];
   }
 
+  @override
   Future<void> init() async {
     final dir = await getApplicationSupportDirectory();
     _avatarsDir = '${dir.path}/avatars';
@@ -35,17 +37,21 @@ class AvatarService implements IAvatarService {
     }
   }
 
+  @override
   String? get currentPath => _currentPath;
 
+  @override
   bool get hasCustomAvatar => _currentPath != null;
   String get storageDir => _avatarsDir;
 
+  @override
   Future<void> setAvatarFromPath(String sourcePath) async {
     final dest = File('$_avatarsDir/current.png');
     await File(sourcePath).copy(dest.path);
     _currentPath = dest.path;
   }
 
+  @override
   Future<void> deleteBuiltin() async {
     final current = File('$_avatarsDir/current.png');
     if (await current.exists()) await current.delete();

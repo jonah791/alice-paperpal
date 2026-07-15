@@ -44,8 +44,8 @@ class AppTheme {
 
   static TextTheme _textTheme(Brightness brightness) {
     final Color tc = _textColor(brightness);
-    final sans = GoogleFonts.inter;
-    final serif = GoogleFonts.playfairDisplay;
+    const sans = GoogleFonts.inter;
+    const serif = GoogleFonts.playfairDisplay;
 
     return TextTheme(
       displayLarge: serif(fontSize: DesignTokens.fs9xl, fontWeight: FontWeight.w700, color: tc),
@@ -77,7 +77,7 @@ class AppTheme {
         side: BorderSide(color: gold.withValues(alpha: DesignTokens.opacityFaint)),
       ),
       elevation: DesignTokens.borderNone,
-      margin: EdgeInsets.only(bottom: DesignTokens.spGap),
+      margin: const EdgeInsets.only(bottom: DesignTokens.spGap),
     );
   }
 

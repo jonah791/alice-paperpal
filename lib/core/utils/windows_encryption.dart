@@ -25,6 +25,7 @@ final _localFree = _kernel32.lookupFunction<
     Pointer<Void> Function(Pointer<Void>),
     Pointer<Void> Function(Pointer<Void>)>('LocalFree');
 
+// ignore: camel_case_types
 final class DATA_BLOB extends Struct {
   @Int32()
   external int cbData;
@@ -58,6 +59,7 @@ void _freeBlob(Pointer<DATA_BLOB> blob) {
   calloc.free(blob);
 }
 
+// ignore: constant_identifier_names
 const int CRYPTPROTECT_UI_FORBIDDEN = 0x00000001;
 
 /// Encrypt plaintext using Windows DPAPI (CryptProtectData).

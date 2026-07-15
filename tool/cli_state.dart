@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import '../lib/core/models/search_result.dart';
-import '../lib/core/models/soul_presets.dart' show soulPresetDefinitions;
-export '../lib/core/models/soul_presets.dart' show soulPresetDefinitions;
+import 'package:paperpal/core/models/search_result.dart';
+import 'package:paperpal/core/models/soul_presets.dart' show soulPresetDefinitions;
+export 'package:paperpal/core/models/soul_presets.dart' show soulPresetDefinitions;
 
 String get _dataDir {
   final home = Platform.environment['HOME'] ??

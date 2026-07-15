@@ -11,6 +11,7 @@ class PortraitService implements IPortraitService {
   late final String _filePath;
   Map<String, dynamic> _portrait = {};
 
+  @override
   Future<void> init() async {
     final dir = await getApplicationSupportDirectory();
     _filePath = '${dir.path}/portrait.json';
@@ -33,6 +34,7 @@ class PortraitService implements IPortraitService {
     await File(_filePath).writeAsString(jsonEncode(_portrait));
   }
 
+  @override
   String summarize() {
     if (_portrait.isEmpty) return '';
     final sb = StringBuffer();
@@ -49,6 +51,7 @@ class PortraitService implements IPortraitService {
     return sb.toString().trim();
   }
 
+  @override
   Future<void> updateFromConversation(
     String userMessage,
     String assistantResponse,

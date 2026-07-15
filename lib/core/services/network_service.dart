@@ -8,13 +8,16 @@ final _log = Logger('NetworkService');
 class NetworkService implements INetworkService {
   final Connectivity _connectivity = Connectivity();
   final _statusController = StreamController<bool>.broadcast();
+  @override
   Stream<bool> get statusStream => _statusController.stream;
 
   bool _isOnline = true;
+  @override
   bool get isOnline => _isOnline;
 
   StreamSubscription<List<ConnectivityResult>>? _subscription;
 
+  @override
   void init() {
     _checkStatus();
     _subscription = _connectivity.onConnectivityChanged.listen((results) {
@@ -40,6 +43,7 @@ class NetworkService implements INetworkService {
     }
   }
 
+  @override
   void dispose() {
     _subscription?.cancel();
     _statusController.close();

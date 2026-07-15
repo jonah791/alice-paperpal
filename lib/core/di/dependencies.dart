@@ -5,7 +5,7 @@ import 'service_locator.dart';
 /// InheritedWidget that exposes registered services to the widget tree.
 ///
 /// Retrieve any service with:
-///   final paperService = context.service<IPaperService>();
+///   final paperService = context.service();
 class Dependencies extends InheritedWidget {
   final ServiceLocator locator;
 

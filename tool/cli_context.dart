@@ -1,4 +1,4 @@
-import '../lib/core/models/soul.dart';
+import 'package:paperpal/core/models/soul.dart';
 import 'cli_state.dart' show soulPresetDefinitions, loadMemories, loadPortrait, loadActiveSoulId;
 
 const _metaSoulRules = '''

@@ -1,4 +1,4 @@
-import '../../lib/core/models/paper.dart' show Paper, PaperStatus;
+import 'package:paperpal/core/models/paper.dart' show Paper, PaperStatus;
 import '../cli_helpers.dart' show println, bold, cyan, printError, printSuccess, printJson, green, yellow, red;
 import '../cli_state.dart' show loadPapersIndex, savePapersIndex, deletePaperCache, readPaperMarkdown, readPaperTranslation;
 
@@ -87,11 +87,11 @@ void _showPaper(String id, bool showTranslated) {
   }
 
   final paper = Paper.fromJson(json);
-  println('${bold(paper.title)}');
+  println(bold(paper.title));
   if (paper.authors.isNotEmpty) println('${cyan("Authors")}: ${paper.authors.join(', ')}');
   if (paper.year > 0) println('${cyan("Year")}: ${paper.year}');
   if (paper.doi.isNotEmpty) println('${cyan("DOI")}: ${paper.doi}');
-  println('${cyan("Status")}: ${paper.status.name} | ${cyan("Source")}: ${paper.source} | ${cyan("Pages")}: ${paper.pageCount}');
+  println('${cyan("Status")}: ${paper.status.name} | ${cyan("Source")}: ${paper.source} | ${paper.pageCount}');
   println('');
 
   if (showTranslated) {

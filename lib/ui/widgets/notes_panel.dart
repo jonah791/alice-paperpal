@@ -1,13 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:logging/logging.dart';
 import '../../core/models/note.dart';
 import '../../core/di/dependencies.dart';
 import '../../core/tokens/design_tokens.dart';
-
-final _log = Logger('NotesPanel');
 
 class NotesPanel extends StatefulWidget {
   final String paperId;
@@ -141,7 +136,7 @@ class NotesPanelState extends State<NotesPanel> {
           ),
           Text(note.text, style: TextStyle(fontStyle: FontStyle.italic,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6), fontSize: DesignTokens.fsSm)),
-          SizedBox(height: DesignTokens.sp1),
+          const SizedBox(height: DesignTokens.sp1),
           Row(
             children: [
               if (note.type != NoteType.note)
@@ -197,7 +192,7 @@ class NotesPanelState extends State<NotesPanel> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('选中内容', style: TextStyle(fontSize: DesignTokens.fsSm, color: Theme.of(sheetContext).colorScheme.onSurfaceVariant)),
-              SizedBox(height: Spacing.sm),
+              const SizedBox(height: Spacing.sm),
               Container(
                 width: double.infinity,
                 padding: padAll(Spacing.md),
@@ -206,9 +201,9 @@ class NotesPanelState extends State<NotesPanel> {
                   borderRadius: BorderRadius.circular(RadiusTokens.md),
                 ),
                 child: Text(selected.isNotEmpty ? (selected.length > 150 ? '${selected.substring(0, 150)}...' : selected) : '(未选中文本)',
-                  style: TextStyle(fontSize: DesignTokens.fsSm), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  style: const TextStyle(fontSize: DesignTokens.fsSm), maxLines: 2, overflow: TextOverflow.ellipsis),
               ),
-              SizedBox(height: Spacing.md),
+              const SizedBox(height: Spacing.md),
               TextField(
                 controller: textCtrl,
                 autofocus: true,
@@ -224,7 +219,7 @@ class NotesPanelState extends State<NotesPanel> {
                   _addNote(text: t.trim(), selectedText: selected.isNotEmpty ? selected : null);
                 },
               ),
-              SizedBox(height: Spacing.md),
+              const SizedBox(height: Spacing.md),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
