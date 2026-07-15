@@ -12,6 +12,8 @@ class Paper {
   final List<String> tags;
   final String? errorMessage;
   final String sourceType;
+  final bool starred;
+  final double scrollPosition;
 
   const Paper({
     required this.id,
@@ -27,6 +29,8 @@ class Paper {
     this.tags = const [],
     this.errorMessage,
     this.sourceType = 'mineru',
+    this.starred = false,
+    this.scrollPosition = 0,
   });
 
   Paper copyWith({
@@ -43,6 +47,8 @@ class Paper {
     List<String>? tags,
     String? errorMessage,
     String? sourceType,
+    bool? starred,
+    double? scrollPosition,
   }) {
     return Paper(
       id: id ?? this.id,
@@ -58,6 +64,8 @@ class Paper {
       tags: tags ?? this.tags,
       errorMessage: errorMessage,
       sourceType: sourceType ?? this.sourceType,
+      starred: starred ?? this.starred,
+      scrollPosition: scrollPosition ?? this.scrollPosition,
     );
   }
 
@@ -75,6 +83,8 @@ class Paper {
     'tags': tags,
     if (errorMessage != null) 'errorMessage': errorMessage,
     'sourceType': sourceType,
+    'starred': starred,
+    'scrollPosition': scrollPosition,
   };
 
   factory Paper.fromJson(Map<String, dynamic> json) => Paper(
@@ -98,6 +108,8 @@ class Paper {
     tags: (json['tags'] as List?)?.cast<String>() ?? [],
     errorMessage: json['errorMessage'] as String?,
     sourceType: json['sourceType'] as String? ?? 'mineru',
+    starred: json['starred'] as bool? ?? false,
+    scrollPosition: (json['scrollPosition'] as num?)?.toDouble() ?? 0,
   );
 }
 

@@ -353,6 +353,15 @@ class MockPaperService implements IPaperService {
   Future<String> summarize(String paperId) async => '## Summary\n\nThis is a mock summary.';
 
   @override
+  Future<void> updatePaper(Paper paper) async {
+    final index = papers.indexWhere((p) => p.id == paper.id);
+    if (index >= 0) {
+      papers[index] = paper;
+      _paperController.add(List.unmodifiable(papers));
+    }
+  }
+
+  @override
   Future<void> deletePaper(String paperId) async {
     papers.removeWhere((p) => p.id == paperId);
     _paperController.add(List.unmodifiable(papers));

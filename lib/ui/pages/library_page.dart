@@ -98,9 +98,11 @@ class _LibraryPageState extends State<LibraryPage> {
             initialData: context.paperService.papers,
             builder: (context, snapshot) {
               final allPapers = snapshot.data ?? [];
-              final filtered = _filterStatus == 0
-                  ? allPapers
-                  : allPapers.where((p) => p.status == PaperStatus.values[_filterStatus - 1]).toList();
+              final filtered = switch (_filterStatus) {
+                0 => allPapers,
+                1 => allPapers.where((p) => p.starred).toList(),
+                _ => allPapers.where((p) => p.status == PaperStatus.values[_filterStatus - 2]).toList(),
+              };
               final papers = _sorted(filtered);
 
               if (allPapers.isEmpty) {
@@ -247,6 +249,7 @@ class _LibraryPageState extends State<LibraryPage> {
   Widget _buildFilterBar(BuildContext context, ThemeData theme) {
     final filterLabels = [
       '全部',
+      '⭐ 星标',
       PaperStatus.importing.label,
       PaperStatus.parsing.label,
       PaperStatus.parsed.label,
@@ -265,7 +268,7 @@ class _LibraryPageState extends State<LibraryPage> {
         child: Row(
           children: List.generate(filterLabels.length, (i) {
             final selected = _filterStatus == i;
-            final status = i == 0 ? null : PaperStatus.values[i - 1];
+            final status = i <= 1 ? null : PaperStatus.values[i - 2];
             return Padding(
               padding: padOnly(r: Spacing.sm),
               child: FilterChip(
@@ -345,6 +348,7 @@ class _LibraryPageState extends State<LibraryPage> {
                         Row(
                           children: [
                             Text(suit, style: theme.textTheme.titleSmall),
+                            if (paper.starred) const Icon(Icons.star, size: 14, color: Colors.amber),
                             const SizedBox(width: Spacing.gap),
                             Expanded(
                               child: Text(paper.title,

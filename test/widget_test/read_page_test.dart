@@ -184,6 +184,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('字体大小'), findsOneWidget);
-    expect(find.text('14 px'), findsOneWidget);
+    expect(find.text('16 px'), findsOneWidget);
   });
 }

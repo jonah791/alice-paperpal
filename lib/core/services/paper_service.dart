@@ -352,6 +352,15 @@ class PaperService implements IPaperService {
   }
 
   @override
+  Future<void> updatePaper(Paper paper) async {
+    _papers.removeWhere((p) => p.id == paper.id);
+    _papers.add(paper);
+    _emitPapers();
+    await _cache.savePaperMeta(paper);
+    _log.info('updatePaper: ${paper.id}');
+  }
+
+  @override
   Future<void> deletePaper(String paperId) async {
     _papers.removeWhere((p) => p.id == paperId);
     _emitPapers();

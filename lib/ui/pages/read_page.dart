@@ -6,6 +6,7 @@ import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:logging/logging.dart';
 import '../../core/models/paper.dart';
 import '../../core/services/export_service.dart';
+import '../../core/interfaces/services.dart';
 import '../../core/di/dependencies.dart';
 import '../../core/tokens/design_tokens.dart';
 import '../widgets/explain_dialog.dart';
@@ -34,10 +35,19 @@ class _ReadPageState extends State<ReadPage> {
   final _qaKey = GlobalKey<QAPanelState>();
   final _notesKey = GlobalKey<NotesPanelState>();
 
+  late IPaperService _paperSvc;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadContent());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _fontSize = context.configService.config.fontSize;
+    _paperSvc = context.paperService;
   }
 
   Future<void> _loadContent() async {
@@ -52,10 +62,20 @@ class _ReadPageState extends State<ReadPage> {
       _loading = false;
       if (translation == null) _viewMode = _ViewMode.original;
     });
+    if (widget.paper.scrollPosition > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(widget.paper.scrollPosition);
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
+    if (_scrollController.hasClients) {
+      _paperSvc.updatePaper(widget.paper.copyWith(scrollPosition: _scrollController.position.pixels));
+    }
     _scrollController.dispose();
     super.dispose();
   }
@@ -85,6 +105,11 @@ class _ReadPageState extends State<ReadPage> {
       appBar: AppBar(
         title: Text(widget.paper.title, style: const TextStyle(fontSize: DesignTokens.fsLg)),
         actions: [
+          IconButton(
+            icon: Icon(widget.paper.starred ? Icons.star : Icons.star_border, color: widget.paper.starred ? Colors.amber : null),
+            tooltip: widget.paper.starred ? '取消收藏' : '收藏',
+            onPressed: _toggleStar,
+          ),
           if (_translation != null)
             SegmentedButton<_ViewMode>(
               segments: [
@@ -399,6 +424,12 @@ class _ReadPageState extends State<ReadPage> {
     }
   }
 
+  void _toggleStar() {
+    final updated = widget.paper.copyWith(starred: !widget.paper.starred);
+    context.paperService.updatePaper(updated);
+    setState(() {});
+  }
+
   Future<void> _reparseWithMineru() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -572,7 +603,10 @@ class _ReadPageState extends State<ReadPage> {
             ],
           ),
         ),
-        actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('确定'))],
+        actions: [FilledButton(onPressed: () {
+          context.configService.updateConfig(context.configService.config.copyWith(fontSize: _fontSize));
+          Navigator.pop(ctx);
+        }, child: const Text('确定'))],
       ),
     );
   }
