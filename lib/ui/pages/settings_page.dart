@@ -17,6 +17,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   final _llmKeyController = TextEditingController();
   final _llmBaseController = TextEditingController();
+  final _llmModelController = TextEditingController();
   final _mineruKeyController = TextEditingController();
   bool _loading = true;
   bool _loaded = false;
@@ -56,6 +57,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
       _llmKeyController.text = llmKey ?? '';
       _llmBaseController.text = cfg.llmApiBase;
+      _llmModelController.text = cfg.llmModel;
       _mineruKeyController.text = mineruKey ?? '';
       _mineruModelVersion = cfg.mineruModelVersion;
       _enableFormula = cfg.enableFormula;
@@ -72,6 +74,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void dispose() {
     _llmKeyController.dispose();
     _llmBaseController.dispose();
+    _llmModelController.dispose();
     _mineruKeyController.dispose();
     super.dispose();
   }
@@ -119,6 +122,15 @@ class _SettingsPageState extends State<SettingsPage> {
                   decoration: const InputDecoration(
                     labelText: 'API Base',
                     hintText: 'https://api.deepseek.com',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: Spacing.md),
+                TextField(
+                  controller: _llmModelController,
+                  decoration: const InputDecoration(
+                    labelText: '模型',
+                    hintText: 'deepseek-v4-flash',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -220,6 +232,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
       final currentCfg = cs.config;
       final updatedConfig = currentCfg.copyWith(
+        llmModel: _llmModelController.text.isNotEmpty
+            ? _llmModelController.text
+            : currentCfg.llmModel,
         llmApiBase: _llmBaseController.text.isNotEmpty
             ? _llmBaseController.text
             : currentCfg.llmApiBase,

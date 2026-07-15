@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:logging/logging.dart';
@@ -9,6 +10,14 @@ final _log = Logger('PdfFallbackService');
 
 class PdfFallbackService {
   Future<ParseResult> parseAsText(File pdfFile, int pageCount) async {
+    try {
+      final result = await _parseWithAgentApi(pdfFile);
+      _log.info('agent API fallback OK: ${result.markdown.length} chars');
+      return result;
+    } catch (e) {
+      _log.warning('agent API failed: $e');
+    }
+
     if (await _hasPoppler()) {
       try {
         final result = await _parseWithPoppler(pdfFile);
@@ -33,6 +42,48 @@ class PdfFallbackService {
       markdown: '# $name\n\n*无法解析此 PDF 的内容。*',
       title: name,
       sourceType: 'fallback_raw',
+    );
+  }
+
+  Future<ParseResult> _parseWithAgentApi(File pdfFile) async {
+    final uri = Uri.parse('https://mineru.net/api/v1/agent/parse/file');
+    final request = await HttpClient().postUrl(uri);
+    final boundary = 'boundary${DateTime.now().millisecondsSinceEpoch}';
+    request.headers.set('Content-Type', 'multipart/form-data; boundary=$boundary');
+    request.headers.set('User-Agent', 'PaperPal/0.4.3');
+
+    final bytes = await pdfFile.readAsBytes();
+    final fileName = pdfFile.path.split(Platform.pathSeparator).last;
+    final body = utf8.encode('--$boundary\r\n'
+        'Content-Disposition: form-data; name="file"; filename="$fileName"\r\n'
+        'Content-Type: application/pdf\r\n\r\n');
+    final footer = utf8.encode('\r\n--$boundary--\r\n');
+
+    request.add(body);
+    request.add(bytes);
+    request.add(footer);
+    final response = await request.close();
+    final responseBody = await response.transform(utf8.decoder).join();
+
+    if (response.statusCode != 200) {
+      throw Exception('Agent API returned HTTP ${response.statusCode}');
+    }
+
+    final json = jsonDecode(responseBody) as Map<String, dynamic>;
+    if (json['code'] != 0) {
+      throw Exception('Agent API error: ${json['msg']}');
+    }
+
+    final data = json['data'] as Map<String, dynamic>?;
+    final markdown = data?['markdown'] as String?;
+    if (markdown == null || markdown.isEmpty) {
+      throw Exception('Agent API returned empty markdown');
+    }
+
+    return ParseResult(
+      markdown: markdown,
+      title: extractTitle(markdown),
+      sourceType: 'fallback_text',
     );
   }
 

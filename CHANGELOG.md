@@ -20,6 +20,8 @@
 ### Changed
 
 - **AnimatedBackground**：包裹 `RepaintBoundary` 隔离重绘区域 + 降低 `_GradientPainter` 每帧分配量
+- **设置页新增「模型」字段**：可自定义 LLM 模型名（如 gpt-4o），不再硬编码 deepseek-v4-flash
+- **PDF 解析降级增强**：新增 MinerU Agent API（免 Key，≤20页/10MB）作为第一降级层，在标准 MinerU 失败时自动启用
 - **Deep link**：`paperpal://arxiv/XXXX.XXXX` 协议支持，C++ runner + Dart 解析 + Inno Setup 注册
 - **CI 安装包**：新增 `paperpal://` 协议注册
 
