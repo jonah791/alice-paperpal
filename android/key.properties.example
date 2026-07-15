@@ -1,0 +1,10 @@
+# Android release signing configuration
+# Copy to key.properties and fill in your keystore details.
+# NEVER commit key.properties to version control.
+#
+# Generate a keystore:
+#   keytool -genkey -v -keystore paperpal-upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
+storeFile=../paperpal-upload.jks
+storePassword=your_store_password
+keyAlias=upload
+keyPassword=your_key_password

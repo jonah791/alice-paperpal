@@ -20,6 +20,9 @@ Thumbs.db
 .env
 .env.local
 
+# Android signing
+android/key.properties
+
 # Python
 __pycache__/
 *.pyc

@@ -37,11 +37,29 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            val props = java.util.Properties()
+            val propsFile = rootProject.file("key.properties")
+            if (propsFile.exists()) {
+                props.load(propsFile.inputStream())
+                storeFile = file(props.getProperty("storeFile", ""))
+                storePassword = props.getProperty("storePassword", "")
+                keyAlias = props.getProperty("keyAlias", "")
+                keyPassword = props.getProperty("keyPassword", "")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
             isShrinkResources = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (rootProject.file("key.properties").exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
