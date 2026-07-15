@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -6,12 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:logging/logging.dart';
 import '../../core/models/paper.dart';
-import '../../core/models/note.dart';
 import '../../core/services/export_service.dart';
 import '../../core/di/dependencies.dart';
 import '../../core/tokens/design_tokens.dart';
 import '../widgets/explain_dialog.dart';
 import '../widgets/progress_bar.dart';
+import '../widgets/qa_panel.dart';
+import '../widgets/notes_panel.dart';
 
 final _log = Logger('ReadPage');
 
@@ -28,18 +28,12 @@ class _ReadPageState extends State<ReadPage> {
   String? _translation;
   bool _loading = true;
   _ViewMode _viewMode = _ViewMode.translated;
-  final _qaController = TextEditingController();
-  final _qaMessages = <Map<String, String>>[];
   String? _selectedTextForAsk;
-  bool _qaExpanded = false;
-  static const _qaPanelMin = 80.0;
-  static const _qaPanelMax = 0.4;
-  bool _qaLoading = false;
   double _fontSize = DesignTokens.fsLg;
   bool _showNotes = false;
-  final _noteController = TextEditingController();
-  List<Note> _notes = [];
   final _scrollController = ScrollController();
+  final _qaKey = GlobalKey<QAPanelState>();
+  final _notesKey = GlobalKey<NotesPanelState>();
 
   @override
   void initState() {
@@ -50,7 +44,6 @@ class _ReadPageState extends State<ReadPage> {
   Future<void> _loadContent() async {
     final md = await context.paperService.getMarkdown(widget.paper.id);
     final translation = await context.paperService.getTranslation(widget.paper.id);
-    _notes = context.noteService.getNotesForPaper(widget.paper.id);
     // Touch (update lastReadAt) only after content is confirmed accessible
     if (md != null) context.paperService.touchPaper(widget.paper.id);
 
@@ -64,8 +57,6 @@ class _ReadPageState extends State<ReadPage> {
 
   @override
   void dispose() {
-    _qaController.dispose();
-    _noteController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -204,12 +195,12 @@ class _ReadPageState extends State<ReadPage> {
                     if (_showNotes && !platform.isAndroid)
                       SizedBox(
                         width: 280,
-                        child: _buildNotesPanel(theme),
+                        child: NotesPanel(key: _notesKey, paperId: widget.paper.id),
                       ),
                   ],
                 ),
               ),
-              _buildQAPanel(theme),
+              QAPanel(key: _qaKey, paperId: widget.paper.id),
             ],
           ),
         ],
@@ -314,160 +305,6 @@ class _ReadPageState extends State<ReadPage> {
     return segments;
   }
 
-  Widget _buildQAPanel(ThemeData theme) {
-    final qaHeight = _qaMessages.isEmpty
-        ? _qaPanelMin
-        : _qaExpanded
-            ? MediaQuery.of(context).size.height * _qaPanelMax
-            : (_qaMessages.length * 48 + _qaPanelMin).clamp(_qaPanelMin, 200.0);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        border: Border(top: BorderSide(color: theme.dividerColor)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header bar with expand toggle
-          if (_qaMessages.isNotEmpty)
-            GestureDetector(
-              onTap: () => setState(() => _qaExpanded = !_qaExpanded),
-              child: Container(
-                padding: padSym(h: Spacing.md, v: DesignTokens.sp1),
-                child: Row(
-                  children: [
-                    Text('问答 (${_qaMessages.length})', style: TextStyle(fontSize: DesignTokens.fsXs, color: theme.colorScheme.onSurfaceVariant)),
-                    const Spacer(),
-                    Icon(_qaExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up, size: DesignTokens.iconSm, color: theme.colorScheme.onSurfaceVariant),
-                  ],
-                ),
-              ),
-            ),
-          // Messages list
-          if (_qaMessages.isNotEmpty)
-            SizedBox(
-              height: qaHeight,
-              child: ListView.builder(
-                padding: padSym(h: Spacing.gap, v: Spacing.sm),
-                itemCount: _qaMessages.length,
-                itemBuilder: (context, index) {
-                  final msg = _qaMessages[index];
-                  final isUser = msg['role'] == 'user';
-                  return Padding(
-                    padding: padOnly(b: DesignTokens.sp1),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (!isUser)
-                          Padding(
-                            padding: padOnly(r: DesignTokens.sp1, t: DesignTokens.sp1),
-                            child: CircleAvatar(
-                              radius: 10,
-                              backgroundColor: theme.colorScheme.secondary,
-                              child: Text('A', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSecondary, fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                        Flexible(
-                          child: Container(
-                            padding: padAll(Spacing.sm),
-                            decoration: BoxDecoration(
-                              color: isUser ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
-                            ),
-                            child: Text(
-                              msg['content'] ?? '',
-                              style: TextStyle(fontSize: DesignTokens.fsSm, color: theme.colorScheme.onSurface),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          // Input row
-          Padding(
-            padding: padAll(Spacing.gap),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Focus(
-                    onKeyEvent: (node, event) {
-                      if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter &&
-                          !HardwareKeyboard.instance.isShiftPressed) {
-                        node.nextFocus();
-                        _askQuestion(_qaController.text);
-                        return KeyEventResult.handled;
-                      }
-                      return KeyEventResult.ignored;
-                    },
-                    child: TextField(
-                      controller: _qaController,
-                      decoration: InputDecoration(
-                        hintText: 'Shift+Enter 换行，Enter 发送',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
-                        contentPadding: padSym(h: Spacing.lg, v: Spacing.sm),
-                        filled: true,
-                        fillColor: theme.colorScheme.surface,
-                        isDense: true,
-                      ),
-                      maxLines: 4,
-                      minLines: 1,
-                    ),
-                  ),
-                ),
-                SizedBox(width: Spacing.sm),
-                IconButton(
-                  icon: _qaLoading
-                      ? SizedBox(
-                          width: DesignTokens.sp4,
-                          height: DesignTokens.sp4,
-                          child: CircularProgressIndicator(strokeWidth: DesignTokens.borderXl, color: theme.colorScheme.secondary),
-                        )
-                      : const Icon(Icons.send),
-                  onPressed: _qaLoading ? null : () => _askQuestion(_qaController.text),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _askQuestion(String question) async {
-    if (question.trim().isEmpty) return;
-
-    setState(() {
-      _qaMessages.add({'role': 'user', 'content': question});
-      _qaMessages.add({'role': 'assistant', 'content': ''});
-      _qaLoading = true;
-    });
-    _qaController.clear();
-
-    try {
-  
-      final buffer = StringBuffer();
-      await for (final chunk in context.paperService.askQuestionStream(widget.paper.id, question)) {
-        if (!mounted) break;
-        buffer.write(chunk);
-        setState(() {
-          _qaMessages.last['content'] = buffer.toString();
-        });
-      }
-      if (mounted) setState(() => _qaLoading = false);
-    } catch (e) {
-      _log.warning('askQuestion failed: $e');
-      if (mounted) setState(() {
-        _qaMessages.last['content'] = _describeQAError(e);
-        _qaLoading = false;
-      });
-    }
-  }
-
   Future<void> _askAboutSelection() async {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
     final selected = data?.text?.trim() ?? '';
@@ -512,7 +349,7 @@ class _ReadPageState extends State<ReadPage> {
                 onSubmitted: (q) {
                   if (q.trim().isEmpty) return;
                   Navigator.of(sheetContext).pop();
-                  _askQuestion('关于以下段落的提问：\n\n$selected\n\n---\n\n我的问题：$q');
+                  _qaKey.currentState?.askQuestion('关于以下段落的提问：\n\n$selected\n\n---\n\n我的问题：$q');
                 },
               ),
               SizedBox(height: Spacing.md),
@@ -523,7 +360,7 @@ class _ReadPageState extends State<ReadPage> {
                     final q = controller.text.trim();
                     if (q.isEmpty) return;
                     Navigator.of(sheetContext).pop();
-                    _askQuestion('关于以下段落的提问：\n\n$selected\n\n---\n\n我的问题：$q');
+                    _qaKey.currentState?.askQuestion('关于以下段落的提问：\n\n$selected\n\n---\n\n我的问题：$q');
                   },
                   icon: const Icon(Icons.send, size: DesignTokens.iconSm),
                   label: const Text('提问'),
@@ -707,247 +544,6 @@ class _ReadPageState extends State<ReadPage> {
     }
   }
 
-  Widget _buildNotesPanel(ThemeData theme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        border: Border(left: BorderSide(color: theme.dividerColor)),
-      ),
-      child: Column(
-        children: [
-          Expanded(
-            child: _notes.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(Spacing.lg),
-                      child: Text('暂无笔记\n选中文本后点击"添加笔记"',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          )),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(Spacing.gap),
-                    itemCount: _notes.length,
-                    itemBuilder: (ctx, i) => _buildNoteCard(_notes[i], theme),
-                  ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(Spacing.gap),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _noteController,
-                    decoration: InputDecoration(
-                      hintText: '添加笔记...',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(RadiusTokens.lg)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.gap),
-                      filled: true,
-                      fillColor: theme.colorScheme.surface,
-                    ),
-                    maxLines: 2,
-                    minLines: 1,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.content_paste, size: DesignTokens.iconMd),
-                  tooltip: '从选中文本创建',
-                  onPressed: _addNoteWithSelection,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.send, size: DesignTokens.iconMd),
-                  onPressed: () => _addNote(text: _noteController.text.trim()),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _deleteNote(Note note) async {
-    await context.noteService.deleteNote(note.id);
-    _notes = context.noteService.getNotesForPaper(widget.paper.id);
-    setState(() {});
-  }
-
-  Widget _buildNoteCard(Note note, ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(Spacing.md),
-      margin: const EdgeInsets.only(top: 10),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(10),
-        border: Border(
-          left: BorderSide(
-            color: theme.colorScheme.secondary,
-            width: 3,
-          ),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              if (note.selectedText != null && note.selectedText!.isNotEmpty)
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(DesignTokens.sp1),
-                    margin: const EdgeInsets.only(bottom: DesignTokens.sp1),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(RadiusTokens.sm),
-                    ),
-                    child: Text(note.selectedText!,
-                        style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
-                  ),
-                ),
-              InkWell(
-                onTap: () => _deleteNote(note),
-                child: Padding(
-                  padding: padOnly(l: Spacing.sm),
-                  child: Icon(Icons.close, size: 14, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
-                ),
-              ),
-            ],
-          ),
-          Text(
-            note.text,
-            style: TextStyle(
-              fontStyle: FontStyle.italic,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              fontSize: DesignTokens.fsSm,
-            ),
-          ),
-          SizedBox(height: DesignTokens.sp1),
-          Row(
-            children: [
-              if (note.type != NoteType.note)
-                Container(
-                  padding: padSym(h: DesignTokens.sp1, v: 1),
-                  margin: padOnly(r: Spacing.sm),
-                  decoration: BoxDecoration(
-                    color: note.type == NoteType.highlight
-                        ? Colors.amber.withValues(alpha: 0.15)
-                        : theme.colorScheme.tertiaryContainer,
-                    borderRadius: BorderRadius.circular(RadiusTokens.sm),
-                  ),
-                  child: Text(_noteTypeLabel(note.type),
-                      style: TextStyle(fontSize: DesignTokens.fsXxs, color: note.type == NoteType.highlight ? Colors.amber.shade800 : theme.colorScheme.onTertiaryContainer)),
-                ),
-              Text(
-                _formatDate(note.createdAt),
-                style: TextStyle(
-                  fontSize: DesignTokens.fsXxs,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.25),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _describeQAError(Object e) {
-    if (e is TimeoutException) return '回答超时，请重试或简化问题';
-    return '抱歉，回答时出现错误。';
-  }
-
-  String _noteTypeLabel(NoteType t) => switch (t) {
-    NoteType.note => '笔记',
-    NoteType.highlight => '高亮',
-    NoteType.question => '问题',
-  };
-
-  Future<void> _addNote({String? text, String? selectedText}) async {
-    final content = text ?? _noteController.text.trim();
-    if (content.isEmpty) return;
-
-    await context.noteService.addNote(
-      paperId: widget.paper.id,
-      text: content,
-      selectedText: selectedText,
-    );
-    _noteController.clear();
-    _notes = context.noteService.getNotesForPaper(widget.paper.id);
-    setState(() {});
-  }
-
-  Future<void> _addNoteWithSelection() async {
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    final selected = data?.text?.trim() ?? '';
-    _noteController.clear();
-    if (!mounted) return;
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        final textCtrl = TextEditingController();
-        return Padding(
-          padding: EdgeInsets.fromLTRB(Spacing.lg, Spacing.lg, Spacing.lg, Spacing.lg + MediaQuery.of(sheetContext).viewInsets.bottom),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('选中内容', style: TextStyle(fontSize: DesignTokens.fsSm, color: Theme.of(sheetContext).colorScheme.onSurfaceVariant)),
-              SizedBox(height: Spacing.sm),
-              Container(
-                width: double.infinity,
-                padding: padAll(Spacing.md),
-                decoration: BoxDecoration(
-                  color: Theme.of(sheetContext).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(RadiusTokens.md),
-                ),
-                child: Text(selected.isNotEmpty ? (selected.length > 150 ? '${selected.substring(0, 150)}...' : selected) : '(未选中文本)',
-                  style: TextStyle(fontSize: DesignTokens.fsSm),
-                  maxLines: 2, overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              SizedBox(height: Spacing.md),
-              TextField(
-                controller: textCtrl,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: '添加笔记...',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(DesignTokens.radiusLg)),
-                  filled: true,
-                  fillColor: Theme.of(sheetContext).colorScheme.surfaceContainerHighest,
-                ),
-                onSubmitted: (t) async {
-                  if (t.trim().isEmpty) return;
-                  Navigator.of(sheetContext).pop();
-                  _addNote(text: t.trim(), selectedText: selected.isNotEmpty ? selected : null);
-                },
-              ),
-              SizedBox(height: Spacing.md),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () {
-                    final t = textCtrl.text.trim();
-                    if (t.isEmpty) return;
-                    Navigator.of(sheetContext).pop();
-                    _addNote(text: t, selectedText: selected.isNotEmpty ? selected : null);
-                  },
-                  icon: const Icon(Icons.note_add, size: DesignTokens.iconSm),
-                  label: const Text('添加笔记'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  String _formatDate(DateTime d) =>
-      '${d.month}/${d.day} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
-
   void _showFontSizePicker() {
     showDialog(
       context: context,
@@ -995,7 +591,7 @@ class _ReadPageState extends State<ReadPage> {
                 child: Text('笔记', style: Theme.of(context).textTheme.titleMedium),
               ),
               const Divider(),
-              Expanded(child: _buildNotesPanel(Theme.of(context))),
+              Expanded(child: NotesPanel(paperId: widget.paper.id)),
             ],
           ),
         ),
