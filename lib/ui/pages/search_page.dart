@@ -45,6 +45,22 @@ class _SearchPageState extends State<SearchPage> {
     super.dispose();
   }
 
+  /// 从异常中提取用户可读的错误详情
+  String _errorDetail(Object e) {
+    final s = e.toString();
+    // SocketException → 网络不可达
+    if (s.contains('SocketException') || s.contains('Connection refused') || s.contains('连接')) return '网络连接失败';
+    if (s.contains('TimeoutException') || s.contains('timed out')) return '请求超时';
+    if (s.contains('401') || s.contains('Unauthorized') || s.contains('401')) return 'API Key 无效或过期';
+    if (s.contains('429') || s.contains('Rate limit')) return '请求过于频繁，请稍后重试';
+    if (s.contains('500') || s.contains('Internal Server')) return '服务端错误，请稍后重试';
+    if (s.contains('FileSystemException') || s.contains('No such file')) return '文件不存在或无法访问';
+    // Fallback: 截取关键错误信息
+    final clean = s.replaceAll(RegExp(r'(Exception|Error|Instance of|DioException|\[\w+\])'), '').trim();
+    if (clean.length > 80) return '${clean.substring(0, 80)}...';
+    return clean.isNotEmpty ? clean : '未知错误';
+  }
+
   void _onTrayAction() {
     final action = searchPageAction.value;
     if (action == null || !mounted) return;
@@ -110,7 +126,7 @@ class _SearchPageState extends State<SearchPage> {
       _log.warning('search failed: $e');
       setState(() {
         _loading = false;
-        _statusMessage = '搜索出错，请检查网络后重试';
+        _statusMessage = '搜索出错: ${_errorDetail(e)}';
       });
     }
   }
@@ -161,9 +177,10 @@ class _SearchPageState extends State<SearchPage> {
       }
 
       final paper = await context.paperService.importPdf(file, title: title);
+      final importError = paper?.errorMessage;
       if (paper == null || paper.status == PaperStatus.error) {
         setState(() {
-          _statusMessage = '解析失败，请检查 MinerU API Key 是否已配置';
+          _statusMessage = '解析失败: ${importError ?? "请检查 MinerU API Key"}';
           _loading = false;
         });
       } else {
@@ -178,7 +195,7 @@ class _SearchPageState extends State<SearchPage> {
     } catch (e) {
       _log.warning('importUrl failed: $e');
       setState(() {
-        _statusMessage = '导入失败: 无法下载或解析';
+        _statusMessage = '导入失败: ${_errorDetail(e)}';
         _loading = false;
       });
     }
@@ -207,7 +224,7 @@ class _SearchPageState extends State<SearchPage> {
       if (!mounted) return;
 
       if (paper == null || paper.status == PaperStatus.error) {
-        setState(() => _statusMessage = '解析失败，请检查 MinerU API Key 是否已配置');
+        setState(() => _statusMessage = '解析失败: ${paper?.errorMessage ?? "请检查 MinerU API Key"}');
       } else {
         _log.info('uploadPdf: imported ${paper.id}');
         setState(() {
@@ -218,7 +235,7 @@ class _SearchPageState extends State<SearchPage> {
     } catch (e) {
       if (!mounted) return;
       _log.warning('uploadPdf failed: $e');
-      setState(() => _statusMessage = '导入失败，请检查文件');
+      setState(() => _statusMessage = '导入失败: ${_errorDetail(e)}');
     }
   }
 
@@ -260,10 +277,12 @@ class _SearchPageState extends State<SearchPage> {
             success++;
           } else {
             failed++;
+            if (mounted) setState(() => _statusMessage = '导入失败: ${paper?.errorMessage ?? _errorDetail(paper?.errorMessage ?? "未知")}');
           }
         } catch (e) {
           _log.warning('batch import failed: $fileName: $e');
           failed++;
+          if (mounted) setState(() => _statusMessage = '导入失败 ($fileName): ${_errorDetail(e)}');
         }
       }
 
@@ -276,7 +295,7 @@ class _SearchPageState extends State<SearchPage> {
     } catch (e) {
       if (!mounted) return;
       _log.warning('importFolder failed: $e');
-      setState(() => _statusMessage = '批量导入失败，请检查文件');
+      setState(() => _statusMessage = '批量导入失败: ${_errorDetail(e)}');
     }
   }
 
@@ -488,7 +507,7 @@ class _SearchPageState extends State<SearchPage> {
             if (paper == null) {
               setState(() => _statusMessage = '下载失败，请检查网络或重试');
             } else if (paper.status == PaperStatus.error) {
-              setState(() => _statusMessage = '解析失败，请检查 MinerU API Key 是否已配置');
+              setState(() => _statusMessage = '解析失败: ${paper.errorMessage ?? "请检查 MinerU API Key"}');
             } else {
               _log.info('importFromSearch: ${paper.id}');
               setState(() {
@@ -499,7 +518,7 @@ class _SearchPageState extends State<SearchPage> {
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('操作失败，请重试')),
+                SnackBar(content: Text('操作失败: ${_errorDetail(e)}')),
               );
             }
           }
