@@ -22,13 +22,14 @@ import 'utils/logger.dart';
 
 /// Creates and wires all application services.
 /// Call once at startup, then pass [locator] to [Dependencies] (Flutter)
-/// or use [locator.get] directly (CLI).
-Future<ServiceLocator> createLocator() async {
+/// or use [locator.get] directly (CLI/server).
+/// Pass [platform] to override the platform service (e.g. for headless server).
+Future<ServiceLocator> createLocator({PlatformService? platform}) async {
   final locator = ServiceLocator();
-  final platform = createPlatformService();
+  final platformService = platform ?? createPlatformService();
 
   await initLogger();
-  final configService = ConfigService(platform);
+  final configService = ConfigService(platformService);
   await configService.load();
   locator.registerInstance<IConfigService>(configService);
 
