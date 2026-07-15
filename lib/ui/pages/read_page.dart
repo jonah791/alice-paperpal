@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:logging/logging.dart';
 import '../../core/models/paper.dart';
+import '../../core/models/note.dart';
 import '../../core/services/export_service.dart';
 import '../../core/interfaces/services.dart';
 import '../../core/di/dependencies.dart';
@@ -376,20 +377,37 @@ class _ReadPageState extends State<ReadPage> {
                   _qaKey.currentState?.askQuestion('关于以下段落的提问：\n\n$selected\n\n---\n\n我的问题：$q');
                 },
               ),
-              const SizedBox(height: Spacing.md),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () {
-                    final q = controller.text.trim();
-                    if (q.isEmpty) return;
-                    Navigator.of(sheetContext).pop();
-                    _qaKey.currentState?.askQuestion('关于以下段落的提问：\n\n$selected\n\n---\n\n我的问题：$q');
-                  },
-                  icon: const Icon(Icons.send, size: DesignTokens.iconSm),
-                  label: const Text('提问'),
+            const SizedBox(height: Spacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      context.noteService.addNote(paperId: widget.paper.id, text: selected, type: NoteType.highlight, selectedText: selected);
+                      Navigator.of(sheetContext).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('已添加高亮'), duration: Duration(seconds: 2)),
+                      );
+                    },
+                    icon: const Icon(Icons.highlight, size: DesignTokens.iconMd),
+                    label: const Text('添加高亮'),
+                  ),
                 ),
-              ),
+                const SizedBox(width: Spacing.gap),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      final q = controller.text.trim();
+                      if (q.isEmpty) return;
+                      Navigator.of(sheetContext).pop();
+                      _qaKey.currentState?.askQuestion('关于以下段落的提问：\n\n$selected\n\n---\n\n我的问题：$q');
+                    },
+                    icon: const Icon(Icons.smart_toy_outlined, size: DesignTokens.iconMd),
+                    label: const Text('提问'),
+                  ),
+                ),
+              ],
+            ),
             ],
           ),
         );

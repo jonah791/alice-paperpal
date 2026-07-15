@@ -29,6 +29,7 @@
 - **收藏系统**：Paper.starred 字段 + ReadPage 星标切换 + 文库星标筛选 + 卡片星标指示
 - **断点续读**：Paper.scrollPosition 字段 + ReadPage dispose 时保存 + 打开时恢复滚动位置
 - **UI widget 测试**：新增 ExplainDialog / AvatarPicker / SoulSelector 共 7 个 widget 测试（359→366）
+- **Zotero 集成**：ZoteroApi 客户端（listItems）+ 搜索页「Zotero」按钮 + 导入对话框（环境变量 ZOTERO_API_KEY / ZOTERO_USER_ID）
 - **Deep link**：`paperpal://arxiv/XXXX.XXXX` 协议支持，C++ runner + Dart 解析 + Inno Setup 注册
 - **CI 安装包**：新增 `paperpal://` 协议注册
 

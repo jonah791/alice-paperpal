@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:logging/logging.dart';
+import '../../core/api/zotero_api.dart';
 import '../../core/models/search_result.dart';
 import '../../core/models/paper.dart';
 import '../../core/di/dependencies.dart';
@@ -387,6 +388,8 @@ class _SearchPageState extends State<SearchPage> {
                       _uploadButton(),
                       const SizedBox(width: Spacing.gap),
                       _linkButton(),
+                      const SizedBox(width: Spacing.gap),
+                      _zoteroButton(),
                     ],
                   ),
                 ],
@@ -613,11 +616,87 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
+  Widget _zoteroButton() {
+    return OutlinedButton.icon(
+      onPressed: _importFromZotero,
+      icon: const Icon(Icons.bookmark, size: DesignTokens.iconMd),
+      label: const Text('Zotero'),
+    );
+  }
+
   Widget _linkButton() {
     return OutlinedButton.icon(
       onPressed: () => setState(() => _showUrlInput = !_showUrlInput),
       icon: Icon(_showUrlInput ? Icons.expand_less : Icons.link),
       label: const Text('贴链接'),
     );
+  }
+
+  Future<void> _importFromZotero() async {
+    try {
+      final key = Platform.environment['ZOTERO_API_KEY'] ?? '';
+      final uid = Platform.environment['ZOTERO_USER_ID'] ?? '';
+      if (key.isEmpty || uid.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('请设置环境变量 ZOTERO_API_KEY 和 ZOTERO_USER_ID')),
+          );
+        }
+        return;
+      }
+      final zotero = ZoteroApi(apiKey: key, userId: uid);
+      final items = await zotero.listItems();
+      if (!mounted) return;
+
+      if (items.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Zotero 文库为空')),
+        );
+        return;
+      }
+
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('从 Zotero 导入'),
+          content: SizedBox(
+            width: 400,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: items.length,
+              itemBuilder: (_, i) {
+                final item = items[i];
+                return ListTile(
+                  dense: true,
+                  title: Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  subtitle: Text(item.authors.join(', '), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  trailing: FilledButton.tonal(
+                    onPressed: () async {
+                      final ps = context.paperService;
+                      final result = SearchResult(
+                        title: item.title, authors: item.authors,
+                        year: item.year, abstract: item.abstract,
+                        pdfUrl: item.pdfUrl, doi: item.doi, source: 'zotero',
+                      );
+                      await ps.importFromSearch(result);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    },
+                    child: const Text('导入'),
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭'))],
+        ),
+      );
+    } catch (e) {
+      _log.warning('Zotero import failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Zotero 导入失败: ${_errorDetail(e)}')),
+        );
+      }
+    }
   }
 }
