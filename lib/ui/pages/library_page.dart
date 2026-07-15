@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import 'search_page.dart' show searchPageAction, SearchPageAction;
+
 import '../../core/models/paper.dart';
 import '../../core/di/dependencies.dart';
 import '../../core/tokens/design_tokens.dart';
@@ -122,7 +124,13 @@ class _LibraryPageState extends State<LibraryPage> {
                       const SizedBox(height: Spacing.lg),
                       Text('还没有论文', style: theme.textTheme.titleMedium),
                       const SizedBox(height: Spacing.gap),
-                      Text('去搜索页找一篇吧', style: theme.textTheme.bodySmall),
+                      Text('搜索论文或直接上传 PDF', style: theme.textTheme.bodySmall),
+                      const SizedBox(height: Spacing.lg),
+                      FilledButton.icon(
+                        onPressed: () => searchPageAction.value = SearchPageAction.search,
+                        icon: const Icon(Icons.search, size: DesignTokens.iconMd),
+                        label: const Text('去搜索'),
+                      ),
                     ],
                   ),
                 );

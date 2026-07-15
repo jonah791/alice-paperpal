@@ -12,6 +12,7 @@ import 'core/interfaces/services.dart';
 
 import 'ui/pages/search_page.dart';
 import 'ui/pages/library_page.dart';
+import 'ui/pages/read_page.dart';
 import 'ui/pages/settings_page.dart';
 import 'ui/pages/welcome_page.dart';
 import 'ui/theme/app_theme.dart';
@@ -127,6 +128,7 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
     final paper = await ps.importFromSearch(result);
     if (paper == null) return;
     _log.info('deep link: imported arXiv $arxivId');
+    paperToView.value = paper.id;
   }
 
   Future<void> _importFromArg(String path) async {
@@ -253,6 +255,7 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     searchPageAction.addListener(_onSearchPageAction);
+    paperToView.addListener(_onPaperToView);
   }
 
   void _onSearchPageAction() {
@@ -261,10 +264,21 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
     if (_currentIndex != 0) setState(() => _currentIndex = 0);
   }
 
+  void _onPaperToView() {
+    final paperId = paperToView.value;
+    if (paperId == null) return;
+    paperToView.value = null;
+    final ps = widget.locator.get<IPaperService>();
+    final paper = ps.getPaper(paperId);
+    if (paper == null) return;
+    Navigator.push(context, MaterialPageRoute(builder: (_) => ReadPage(paper: paper)));
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     searchPageAction.removeListener(_onSearchPageAction);
+    paperToView.removeListener(_onPaperToView);
     _focusNode.dispose();
     super.dispose();
   }

@@ -20,6 +20,7 @@ class _SettingsPageState extends State<SettingsPage> {
   final _llmModelController = TextEditingController();
   final _mineruKeyController = TextEditingController();
   bool _loading = true;
+  bool _saving = false;
   bool _loaded = false;
   String _mineruModelVersion = 'vlm';
   bool _enableFormula = true;
@@ -209,15 +210,23 @@ class _SettingsPageState extends State<SettingsPage> {
 
         // Save
         FilledButton.icon(
-          onPressed: _saveSettings,
-          icon: const Icon(Icons.save),
-          label: const Text('保存'),
+          onPressed: _saving ? null : _saveSettings,
+          icon: _saving
+              ? const SizedBox(
+                  width: DesignTokens.iconMd,
+                  height: DesignTokens.iconMd,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.save),
+          label: Text(_saving ? '保存中...' : '保存'),
         ),
       ],
     );
   }
 
   Future<void> _saveSettings() async {
+    if (!mounted) return;
+    setState(() => _saving = true);
     try {
       final cs = context.configService;
       final ps = context.paperService;
@@ -260,6 +269,8 @@ class _SettingsPageState extends State<SettingsPage> {
           const SnackBar(content: Text('保存失败，请检查输入后重试')),
         );
       }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 

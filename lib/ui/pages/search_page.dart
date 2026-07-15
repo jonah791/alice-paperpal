@@ -14,6 +14,7 @@ final _log = Logger('SearchPage');
 
 enum SearchPageAction { search, importUrl }
 final searchPageAction = ValueNotifier<SearchPageAction?>(null);
+final paperToView = ValueNotifier<String?>(null);
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
