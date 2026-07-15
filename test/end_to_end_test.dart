@@ -3,6 +3,7 @@
 /// 覆盖链路：
 ///   PDF 文件 → CacheService.savePdf → ParseService(模拟) → PaperService 状态管理
 ///   → ReadPage 渲染 → QA/摘要 → 导出 → 删除
+library;
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -20,7 +21,7 @@ void main() {
 
   setUpAll(() async {
     // Locate the real PDF
-    final pdfPath = r'C:\Users\tr\Documents\中国股市量化选股因子全解析：从基本面到情绪面.pdf';
+    const pdfPath = r'C:\Users\tr\Documents\中国股市量化选股因子全解析：从基本面到情绪面.pdf';
     realPdfFile = File(pdfPath);
     if (!await realPdfFile.exists()) {
       throw Exception('PDF not found: $pdfPath');
@@ -54,7 +55,7 @@ void main() {
 
     test('CacheService can store and retrieve the PDF', () async {
       final mockCache = MockCacheService();
-      final paperId = 'e2e_test_paper';
+      const paperId = 'e2e_test_paper';
 
       // Save PDF
       await mockCache.savePdf(paperId, realPdfFile);
@@ -95,7 +96,7 @@ void main() {
     });
 
     test('PaperService import flow with mock MinerU', () async {
-      final mockMarkdown = '''
+      const mockMarkdown = '''
 # 中国股市量化选股因子全解析
 
 ## 摘要
@@ -156,7 +157,7 @@ void main() {
     });
 
     test('ExportService generates BibTeX from real paper data', () {
-      final paper = Paper(
+      const paper = Paper(
         id: 'cn_quant_001',
         title: '中国股市量化选股因子全解析：从基本面到情绪面',
         year: 2024,
@@ -205,7 +206,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: Dependencies(
           locator: locator,
-          child: Scaffold(
+          child: const Scaffold(
             body: ReadPage(paper: Paper(
               id: 'e2e_read',
               title: '中国股市量化选股因子全解析',

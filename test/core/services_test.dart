@@ -8,7 +8,7 @@ import 'package:paperpal/core/models/paper.dart';
 void main() {
   group('ExportService.generateBibtex', () {
     test('DOI key replaces dots and slashes', () {
-      final p = Paper(id: '1', title: 'Deep Learning', authors: ['Hinton G'], year: 2023, doi: '10.1234/dl.2023');
+      const p = Paper(id: '1', title: 'Deep Learning', authors: ['Hinton G'], year: 2023, doi: '10.1234/dl.2023');
       final b = ExportService.generateBibtex(p);
       expect(b, contains('@article{10_1234_dl_2023'));
       expect(b, contains('title={Deep Learning}'));
@@ -16,30 +16,30 @@ void main() {
     });
 
     test('title-based key when no DOI', () {
-      final p = Paper(id: '1', title: 'A Novel Approach to ML', authors: ['Smith J'], year: 2024);
+      const p = Paper(id: '1', title: 'A Novel Approach to ML', authors: ['Smith J'], year: 2024);
       final b = ExportService.generateBibtex(p);
       expect(b, contains('@article{A_Novel_Approach'));
       expect(b, contains('author={J, Smith}'));
     });
 
     test('single word author name', () {
-      final p = Paper(id: '1', title: 'T', authors: ['Einstein'], year: 2024);
+      const p = Paper(id: '1', title: 'T', authors: ['Einstein'], year: 2024);
       expect(ExportService.generateBibtex(p), contains('author={Einstein}'));
     });
 
     test('empty authors becomes Anonymous', () {
-      final p = Paper(id: '1', title: 'T', authors: [], year: 2024);
+      const p = Paper(id: '1', title: 'T', authors: [], year: 2024);
       final b = ExportService.generateBibtex(p);
       expect(b, contains('author={{Anonymous}}'));
     });
 
     test('multi-word author name last-name-first', () {
-      final p = Paper(id: '1', title: 'T', authors: ['John A. Doe', 'Jane B. Smith'], year: 2024);
+      const p = Paper(id: '1', title: 'T', authors: ['John A. Doe', 'Jane B. Smith'], year: 2024);
       expect(ExportService.generateBibtex(p), contains('author={Doe, John A. and Smith, Jane B.}'));
     });
 
     test('full BibTeX format', () {
-      final p = Paper(id: '1', title: 'Test', authors: ['Author A'], year: 2024);
+      const p = Paper(id: '1', title: 'Test', authors: ['Author A'], year: 2024);
       final b = ExportService.generateBibtex(p);
       expect(b, startsWith('@article{'));
       expect(b, endsWith('}'));
@@ -152,7 +152,7 @@ void main() {
 
   group('SoulService', () {
     test('presets are structurally valid', () {
-      final presets = SoulService.presetDefinitions;
+      const presets = SoulService.presetDefinitions;
       expect(presets.length, greaterThanOrEqualTo(1));
       for (final entry in presets.entries) {
         final d = entry.value;

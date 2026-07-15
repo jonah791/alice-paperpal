@@ -70,7 +70,7 @@ class MockCacheService implements ICacheService {
   final _papers = <String, Paper>{};
   final _markdowns = <String, String>{};
   final _translations = <String, String>{};
-  String _rootDir = '/tmp/mock_cache';
+  final String _rootDir = '/tmp/mock_cache';
 
   @override
   String get rootDir => _rootDir;
@@ -176,7 +176,7 @@ class MockSoulService implements ISoulService {
     custom.removeWhere((s) => s.id == id);
   }
 
-  static final Soul _defaultSoul = Soul(
+  static const Soul _defaultSoul = Soul(
     id: 'academic_mentor',
     name: '学术导师',
     description: '严谨专业的学术伙伴',
@@ -269,6 +269,7 @@ class MockPaperService implements IPaperService {
   final _paperController = StreamController<List<Paper>>.broadcast();
   final _progressController = StreamController<ParseProgress>.broadcast();
 
+  @override
   List<Paper> papers = [];
   Map<String, String> markdowns = {};
   Map<String, String> translations = {};

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:logging/logging.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'core/init.dart';
@@ -85,6 +86,8 @@ class PaperPalApp extends StatefulWidget {
   @override
   State<PaperPalApp> createState() => _PaperPalAppState();
 }
+
+final _log = Logger('PaperPalApp');
 
 class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
   ThemeMode _themeMode = ThemeMode.system;

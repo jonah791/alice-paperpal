@@ -92,7 +92,7 @@ void main() {
 
   group('ParseProgress model', () {
     test('construction with defaults', () {
-      final p = ParseProgress(currentBatch: 1, totalBatches: 5);
+      const p = ParseProgress(currentBatch: 1, totalBatches: 5);
       expect(p.currentBatch, 1);
       expect(p.totalBatches, 5);
       expect(p.currentPage, 0);
@@ -100,7 +100,7 @@ void main() {
     });
 
     test('full construction', () {
-      final p = ParseProgress(currentBatch: 2, totalBatches: 3, currentPage: 50, totalPages: 150);
+      const p = ParseProgress(currentBatch: 2, totalBatches: 3, currentPage: 50, totalPages: 150);
       expect(p.currentBatch, 2);
       expect(p.totalBatches, 3);
       expect(p.currentPage, 50);

@@ -38,14 +38,14 @@ void main() {
 
   group('splitSections', () {
     test('splits on blank lines', () {
-      final text = 'Line 1\nLine 2\n\nLine 3\n\nLine 4';
+      const text = 'Line 1\nLine 2\n\nLine 3\n\nLine 4';
       final sections = service.splitSections(text);
       expect(sections.length, 3);
       expect(sections[0], 'Line 1\nLine 2');
     });
 
     test('marks common section headers with ##', () {
-      final text = 'Abstract\nThis is the abstract.\n\nIntroduction\nContent.';
+      const text = 'Abstract\nThis is the abstract.\n\nIntroduction\nContent.';
       final sections = service.splitSections(text);
       expect(sections.any((s) => s.startsWith('## Abstract')), true);
       expect(sections.any((s) => s.startsWith('## Introduction')), true);
@@ -60,7 +60,7 @@ void main() {
     });
 
     test('removes trailing empty sections', () {
-      final text = 'Section 1\n\nSection 2\n\n';
+      const text = 'Section 1\n\nSection 2\n\n';
       final sections = service.splitSections(text);
       expect(sections.length, 2);
       expect(sections[0], 'Section 1');

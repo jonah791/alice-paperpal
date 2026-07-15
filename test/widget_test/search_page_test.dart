@@ -61,7 +61,7 @@ void main() {
 
     testWidgets('shows search results after query', (tester) async {
       searchService.mockResults = [
-        SearchResult(
+        const SearchResult(
           title: 'Attention Is All You Need',
           authors: ['Vaswani et al.'],
           year: 2017,
@@ -70,7 +70,7 @@ void main() {
           source: 'arXiv',
           citationCount: 50000,
         ),
-        SearchResult(
+        const SearchResult(
           title: 'BERT: Pre-training of Deep Bidirectional Transformers',
           authors: ['Devlin et al.'],
           year: 2019,
@@ -153,7 +153,7 @@ void main() {
 
     testWidgets('imports paper when result is tapped', (tester) async {
       searchService.mockResults = [
-        SearchResult(
+        const SearchResult(
           title: 'Test Paper',
           authors: ['Author'],
           year: 2024,
@@ -186,7 +186,7 @@ void main() {
 
     testWidgets('shows error when importing paper without PDF URL', (tester) async {
       searchService.mockResults = [
-        SearchResult(
+        const SearchResult(
           title: 'No PDF Paper',
           authors: ['Author'],
           year: 2024,

@@ -58,7 +58,7 @@ void main() {
     });
 
     test('full constructor with optional fields', () {
-      final t = MineruTask(
+      const t = MineruTask(
         id: 'task_1', state: MineruTaskState.done, zipUrl: 'https://cdn.mineru.net/result.zip',
         errorMessage: null, extractedPages: 10, totalPages: 50,
       );
@@ -69,7 +69,7 @@ void main() {
     });
 
     test('errorMessage populated on failed', () {
-      final t = MineruTask(id: '1', state: MineruTaskState.failed, errorMessage: 'file too large');
+      const t = MineruTask(id: '1', state: MineruTaskState.failed, errorMessage: 'file too large');
       expect(t.errorMessage, 'file too large');
     });
   });

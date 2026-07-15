@@ -29,7 +29,7 @@ void main() {
       final api = MineruApi(apiKey: 'k');
       final archive = Archive();
       archive.addFile(ArchiveFile('output.md', 10, Uint8List.fromList('Hello world'.codeUnits)));
-      final zipBytes = ZipEncoder().encode(archive)!;
+      final zipBytes = ZipEncoder().encode(archive);
       final result = api.extractZip(zipBytes, '/tmp/test_mineru');
       expect(result.markdown, 'Hello world');
       expect(result.imagePaths, isEmpty);
@@ -41,7 +41,7 @@ void main() {
       final archive = Archive();
       archive.addFile(ArchiveFile('output.md', 4, Uint8List.fromList('text'.codeUnits)));
       archive.addFile(ArchiveFile('content_list_v2.json', 2, Uint8List.fromList('[]'.codeUnits)));
-      final zipBytes = ZipEncoder().encode(archive)!;
+      final zipBytes = ZipEncoder().encode(archive);
       final result = api.extractZip(zipBytes, '/tmp/test_mineru');
       expect(result.markdown, 'text');
       expect(result.contentListJson, '[]');
@@ -52,7 +52,7 @@ void main() {
       final archive = Archive();
       archive.addFile(ArchiveFile('doc.md', 2, Uint8List.fromList('a'.codeUnits)));
       archive.addFile(ArchiveFile('doc_content_list.json', 2, Uint8List.fromList('{}'.codeUnits)));
-      final zipBytes = ZipEncoder().encode(archive)!;
+      final zipBytes = ZipEncoder().encode(archive);
       final result = api.extractZip(zipBytes, '/tmp/test_mineru');
       expect(result.markdown, 'a');
       expect(result.contentListJson, '{}');
@@ -63,7 +63,7 @@ void main() {
       final archive = Archive();
       archive.addFile(ArchiveFile('.hidden.md', 3, Uint8List.fromList('bad'.codeUnits)));
       archive.addFile(ArchiveFile('visible.md', 4, Uint8List.fromList('good'.codeUnits)));
-      final zipBytes = ZipEncoder().encode(archive)!;
+      final zipBytes = ZipEncoder().encode(archive);
       final result = api.extractZip(zipBytes, '/tmp/test_mineru');
       expect(result.markdown, 'good');
     });
@@ -75,7 +75,7 @@ void main() {
       final imgData = Uint8List.fromList([137, 80, 78, 71, 13, 10, 26, 10]);
       archive.addFile(ArchiveFile('images/fig1.png', imgData.length, imgData));
       archive.addFile(ArchiveFile('images/charts/graph.jpg', 2, Uint8List(2)));
-      final zipBytes = ZipEncoder().encode(archive)!;
+      final zipBytes = ZipEncoder().encode(archive);
       final result = api.extractZip(zipBytes, '/tmp/test_mineru');
       expect(result.markdown, 'markd');
       // Image paths include output directory prefix
@@ -85,7 +85,7 @@ void main() {
     test('handles empty ZIP archive', () {
       final api = MineruApi(apiKey: 'k');
       final archive = Archive();
-      final zipBytes = ZipEncoder().encode(archive)!;
+      final zipBytes = ZipEncoder().encode(archive);
       final result = api.extractZip(zipBytes, '/tmp/test_mineru');
       expect(result.markdown, '');
       expect(result.imagePaths, isEmpty);
@@ -97,7 +97,7 @@ void main() {
       final archive = Archive();
       archive.addFile(ArchiveFile('first.md', 5, Uint8List.fromList('first'.codeUnits)));
       archive.addFile(ArchiveFile('second.md', 6, Uint8List.fromList('second'.codeUnits)));
-      final zipBytes = ZipEncoder().encode(archive)!;
+      final zipBytes = ZipEncoder().encode(archive);
       final result = api.extractZip(zipBytes, '/tmp/test_mineru');
       expect(result.markdown, 'second');
     });

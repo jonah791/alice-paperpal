@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:paperpal/core/services/search_service.dart';
 import '../cli_helpers.dart' show println, bold, cyan, printError;
 
@@ -11,11 +10,6 @@ Future<void> searchCommand(List<String> args) async {
   }
 
   final query = args.first;
-  var limit = 10;
-  final limitIdx = args.indexOf('--limit');
-  if (limitIdx >= 0 && limitIdx + 1 < args.length) {
-    limit = int.tryParse(args[limitIdx + 1]) ?? 10;
-  }
 
   println('${bold("Searching")}: $query');
   

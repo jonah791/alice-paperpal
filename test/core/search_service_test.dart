@@ -136,7 +136,7 @@ void main() {
 
   group('SearchService downloadPdf mock logic', () {
     test('empty pdfUrl returns null', () {
-      final result = SearchResult(title: 'T', authors: ['A'], pdfUrl: '');
+      const result = SearchResult(title: 'T', authors: ['A'], pdfUrl: '');
       expect(result.pdfUrl, isEmpty);
     });
   });

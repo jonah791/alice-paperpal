@@ -59,7 +59,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final s = ConfigService(_p());
       await s.load();
-      await s.updateConfig(AppConfig(
+      await s.updateConfig(const AppConfig(
         llmApiBase: 'https://new.api.com',
         mineruModelVersion: 'MinerU-HTML',
         enableFormula: false,

@@ -1,4 +1,4 @@
-import 'package:paperpal/core/models/paper.dart' show Paper, PaperStatus;
+import 'package:paperpal/core/models/paper.dart' show Paper;
 import '../cli_helpers.dart' show println, bold, cyan, printError, printSuccess, printJson, green, yellow, red;
 import '../cli_state.dart' show loadPapersIndex, savePapersIndex, deletePaperCache, readPaperMarkdown, readPaperTranslation;
 

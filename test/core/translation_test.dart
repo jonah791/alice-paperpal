@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:paperpal/core/services/translation_service.dart';
 import 'package:paperpal/core/api/llm_provider.dart';
 
-LLMProvider _dummyProvider() => LLMProvider(config: LLMConfig(
+LLMProvider _dummyProvider() => LLMProvider(config: const LLMConfig(
   type: LLMProviderType.deepseek,
   apiKey: 'test',
 ));

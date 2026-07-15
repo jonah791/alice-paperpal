@@ -13,7 +13,7 @@ import 'package:paperpal/core/services/memory_service.dart';
 void main() {
   group('Paper', () {
     test('defaults', () {
-      final p = Paper(id: 'x', title: 'T');
+      const p = Paper(id: 'x', title: 'T');
       expect(p.id, 'x');
       expect(p.title, 'T');
       expect(p.authors, isEmpty);
@@ -39,14 +39,14 @@ void main() {
     });
 
     test('copyWith is immutable', () {
-      final p = Paper(id: '1', title: 'O', authors: ['A']);
+      const p = Paper(id: '1', title: 'O', authors: ['A']);
       p.copyWith(title: 'C', authors: ['B']);
       expect(p.title, 'O');
       expect(p.authors, ['A']);
     });
 
     test('copyWith overrides single field', () {
-      final p = Paper(id: '1', title: 'T', authors: ['A'], year: 2020);
+      const p = Paper(id: '1', title: 'T', authors: ['A'], year: 2020);
       final u = p.copyWith(title: 'New');
       expect(u.title, 'New');
       expect(u.authors, ['A']);
@@ -115,20 +115,20 @@ void main() {
 
   group('ParseResult', () {
     test('defaults', () {
-      final r = ParseResult(markdown: '# M');
+      const r = ParseResult(markdown: '# M');
       expect(r.markdown, '# M');
       expect(r.title, '');
       expect(r.imagePaths, isEmpty);
     });
 
     test('defaults when markdown is empty', () {
-      final r = ParseResult(markdown: '');
+      const r = ParseResult(markdown: '');
       expect(r.markdown, '');
       expect(r.contentListJson, '');
     });
 
     test('full fields', () {
-      final r = ParseResult(
+      const r = ParseResult(
         markdown: '# T', title: 'T', imagePaths: ['a.png'],
         contentListJson: '[]', startPage: 1, endPage: 5,
       );
@@ -138,7 +138,7 @@ void main() {
     });
 
     test('ParseProgress construction', () {
-      final p = ParseProgress(currentBatch: 1, totalBatches: 3, currentPage: 0, totalPages: 10);
+      const p = ParseProgress(currentBatch: 1, totalBatches: 3, currentPage: 0, totalPages: 10);
       expect(p.totalBatches, 3);
       expect(p.totalPages, 10);
     });
@@ -146,7 +146,7 @@ void main() {
 
   group('SearchResult', () {
     test('defaults', () {
-      final r = SearchResult(title: 'T', authors: []);
+      const r = SearchResult(title: 'T', authors: []);
       expect(r.year, 0);
       expect(r.abstract, '');
       expect(r.pdfUrl, '');
@@ -154,7 +154,7 @@ void main() {
     });
 
     test('full fields', () {
-      final r = SearchResult(
+      const r = SearchResult(
         title: 'T', authors: ['A', 'B'], year: 2024,
         abstract: 'abs', pdfUrl: 'https://x.com/p.pdf',
         source: 'arXiv', doi: '10.1', citationCount: 42,
@@ -165,14 +165,14 @@ void main() {
     });
 
     test('empty pdfUrl', () {
-      final r = SearchResult(title: 'T', authors: ['A']);
+      const r = SearchResult(title: 'T', authors: ['A']);
       expect(r.pdfUrl, isEmpty);
     });
   });
 
   group('AppConfig', () {
     test('defaults', () {
-      final c = AppConfig();
+      const c = AppConfig();
       expect(c.defaultProvider, 'deepseek');
       expect(c.llmModel, 'deepseek-v4-flash');
       expect(c.llmApiBase, 'https://api.deepseek.com');
@@ -184,7 +184,7 @@ void main() {
     });
 
     test('copyWith overrides', () {
-      final c = AppConfig();
+      const c = AppConfig();
       final u = c.copyWith(llmApiBase: 'https://c.c', batchSize: 10, enableFormula: false);
       expect(u.llmApiBase, 'https://c.c');
       expect(u.batchSize, 10);
@@ -192,7 +192,7 @@ void main() {
     });
 
     test('copyWith preserves unset', () {
-      final c = AppConfig(llmModel: 'gpt-4', mineruModelVersion: 'pipeline');
+      const c = AppConfig(llmModel: 'gpt-4', mineruModelVersion: 'pipeline');
       final u = c.copyWith(llmApiBase: 'https://o.c');
       expect(u.llmModel, 'gpt-4');
       expect(u.mineruModelVersion, 'pipeline');
@@ -200,7 +200,7 @@ void main() {
     });
 
     test('all fields', () {
-      final c = AppConfig(
+      const c = AppConfig(
         defaultProvider: 'o', llmModel: 'g', llmApiBase: 'https://o.c',
         mineruModelVersion: 'p', autoTranslate: false, enableFormula: false,
         enableTable: false, forceDarkMode: true, themeMode: AppThemeMode.dark,
@@ -258,7 +258,7 @@ void main() {
 
   group('Soul', () {
     test('defaults', () {
-      final s = Soul(id: 'a', name: 'N', description: 'D', systemPrompt: 'P');
+      const s = Soul(id: 'a', name: 'N', description: 'D', systemPrompt: 'P');
       expect(s.traits, isEmpty);
       expect(s.style, '');
       expect(s.speechPattern, isNull);
@@ -267,7 +267,7 @@ void main() {
     });
 
     test('full constructor', () {
-      final s = Soul(
+      const s = Soul(
         id: 'c', name: 'N', description: 'D', traits: ['a', 'b'],
         style: 's', specialty: 'sp', systemPrompt: 'P',
         speechPattern: 'like', isBuiltin: true, isCustom: false,
@@ -278,7 +278,7 @@ void main() {
     });
 
     test('toJson fromJson round-trip', () {
-      final s = Soul(
+      const s = Soul(
         id: 'x', name: 'N', description: 'D', traits: ['a'],
         style: 'S', specialty: 'Sp', systemPrompt: 'P', speechPattern: 'like',
         isBuiltin: true, isCustom: false,

@@ -11,13 +11,13 @@ import 'package:paperpal/core/services/memory_service.dart';
 void main() {
   group('Paper edge cases', () {
     test('copyWith clears errorMessage when null explicitly', () {
-      final p = Paper(id: '1', title: 'T', errorMessage: 'old error');
+      const p = Paper(id: '1', title: 'T', errorMessage: 'old error');
       final u = p.copyWith(errorMessage: null);
       expect(u.errorMessage, isNull);
     });
 
     test('copyWith nulls errorMessage when not provided (explicit null param)', () {
-      final p = Paper(id: '1', title: 'T', errorMessage: 'err');
+      const p = Paper(id: '1', title: 'T', errorMessage: 'err');
       final u = p.copyWith(title: 'New');
       // copyWith signature: errorMessage is optional with default null
       // Since it's passed as `errorMessage: errorMessage` (no ?? this.errorMessage),
@@ -26,7 +26,7 @@ void main() {
     });
 
     test('copyWith overrides multiple fields', () {
-      final p = Paper(id: '1', title: 'O', authors: ['A'], year: 2023, source: 'arXiv');
+      const p = Paper(id: '1', title: 'O', authors: ['A'], year: 2023, source: 'arXiv');
       final u = p.copyWith(title: 'N', authors: ['B'], year: 2024, doi: '10.0');
       expect(u.title, 'N');
       expect(u.authors, ['B']);
@@ -36,19 +36,19 @@ void main() {
     });
 
     test('copyWith replaces tags', () {
-      final p = Paper(id: '1', title: 'T', tags: ['ML']);
+      const p = Paper(id: '1', title: 'T', tags: ['ML']);
       final u = p.copyWith(tags: ['AI', 'DL']);
       expect(u.tags, ['AI', 'DL']);
     });
 
     test('toJson excludes errorMessage when null', () {
-      final p = Paper(id: '1', title: 'T');
+      const p = Paper(id: '1', title: 'T');
       final json = p.toJson();
       expect(json.containsKey('errorMessage'), false);
     });
 
     test('toJson includes errorMessage when set', () {
-      final p = Paper(id: '1', title: 'T', errorMessage: 'fail');
+      const p = Paper(id: '1', title: 'T', errorMessage: 'fail');
       final json = p.toJson();
       expect(json['errorMessage'], 'fail');
     });
@@ -71,43 +71,43 @@ void main() {
 
   group('AppConfig edge cases', () {
     test('copyWith can set forceDarkMode', () {
-      final c = AppConfig();
+      const c = AppConfig();
       final u = c.copyWith(forceDarkMode: true);
       expect(u.forceDarkMode, true);
     });
 
     test('copyWith can set autoTranslate', () {
-      final c = AppConfig(autoTranslate: true);
+      const c = AppConfig(autoTranslate: true);
       final u = c.copyWith(autoTranslate: false);
       expect(u.autoTranslate, false);
     });
 
     test('copyWith can set fontSize', () {
-      final c = AppConfig(fontSize: 14.0);
+      const c = AppConfig(fontSize: 14.0);
       final u = c.copyWith(fontSize: 20.0);
       expect(u.fontSize, 20.0);
     });
 
     test('copyWith can set logRetentionDays', () {
-      final c = AppConfig(logRetentionDays: 7);
+      const c = AppConfig(logRetentionDays: 7);
       final u = c.copyWith(logRetentionDays: 30);
       expect(u.logRetentionDays, 30);
     });
 
     test('copyWith can set themeMode', () {
-      final c = AppConfig();
+      const c = AppConfig();
       final u = c.copyWith(themeMode: AppThemeMode.dark);
       expect(u.themeMode, AppThemeMode.dark);
     });
 
     test('copyWith can set mineruApiEndpoint', () {
-      final c = AppConfig();
+      const c = AppConfig();
       final u = c.copyWith(mineruApiEndpoint: 'https://selfhost.example.com');
       expect(u.mineruApiEndpoint, 'https://selfhost.example.com');
     });
 
     test('copyWith can set defaultProvider', () {
-      final c = AppConfig();
+      const c = AppConfig();
       final u = c.copyWith(defaultProvider: 'openai');
       expect(u.defaultProvider, 'openai');
     });
@@ -172,17 +172,17 @@ void main() {
 
   group('SearchResult edge cases', () {
     test('source defaults to empty', () {
-      final r = SearchResult(title: 'T', authors: ['A']);
+      const r = SearchResult(title: 'T', authors: ['A']);
       expect(r.source, '');
     });
 
     test('doi defaults to empty', () {
-      final r = SearchResult(title: 'T', authors: ['A']);
+      const r = SearchResult(title: 'T', authors: ['A']);
       expect(r.doi, '');
     });
 
     test('constructor with all defaults', () {
-      final r = SearchResult(title: 'T', authors: []);
+      const r = SearchResult(title: 'T', authors: []);
       expect(r.authors, isEmpty);
       expect(r.year, 0);
       expect(r.abstract, '');
@@ -240,7 +240,7 @@ void main() {
     });
 
     test('toJson of custom soul', () {
-      final s = Soul(
+      const s = Soul(
         id: 'custom_1', name: 'Custom', description: 'D',
         systemPrompt: 'P', isBuiltin: false, isCustom: true,
       );
@@ -252,13 +252,13 @@ void main() {
 
   group('ParseResult edge cases', () {
     test('startPage and endPage defaults', () {
-      final r = ParseResult(markdown: '# M');
+      const r = ParseResult(markdown: '# M');
       expect(r.startPage, 0);
       expect(r.endPage, 0);
     });
 
     test('contentListJson defaults to empty', () {
-      final r = ParseResult(markdown: '# M');
+      const r = ParseResult(markdown: '# M');
       expect(r.contentListJson, '');
     });
   });

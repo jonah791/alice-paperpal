@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paperpal/core/services/portrait_service.dart';
 import 'package:paperpal/core/services/soul_service.dart';
-import 'package:paperpal/core/models/soul.dart';
 import 'package:paperpal/core/models/paper.dart';
 import 'package:paperpal/core/services/export_service.dart';
 
@@ -126,19 +125,19 @@ void main() {
 
   group('ExportService.generateBibtex title-based key', () {
     test('title with single character produces valid key', () {
-      final p = Paper(id: '1', title: 'X', authors: ['A'], year: 2024);
+      const p = Paper(id: '1', title: 'X', authors: ['A'], year: 2024);
       final b = ExportService.generateBibtex(p);
       expect(b, contains('@article{X'));
     });
 
     test('title with two words produces two-word key', () {
-      final p = Paper(id: '1', title: 'Hello World', authors: ['A'], year: 2024);
+      const p = Paper(id: '1', title: 'Hello World', authors: ['A'], year: 2024);
       final b = ExportService.generateBibtex(p);
       expect(b, contains('@article{Hello_World'));
     });
 
     test('title with 5 words limits to 3 words', () {
-      final p = Paper(id: '1', title: 'One Two Three Four Five', authors: ['A'], year: 2024);
+      const p = Paper(id: '1', title: 'One Two Three Four Five', authors: ['A'], year: 2024);
       final b = ExportService.generateBibtex(p);
       expect(b, contains('@article{One_Two_Three'));
     });

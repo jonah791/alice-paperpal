@@ -1,5 +1,5 @@
 import 'package:paperpal/core/api/llm_provider.dart' show LLMProvider, LLMConfig, LLMProviderType;
-import '../cli_helpers.dart' show println, bold, cyan, printError;
+import '../cli_helpers.dart' show println, cyan, printError;
 import '../cli_state.dart' show loadConfig, readPaperMarkdown;
 import '../cli_context.dart' show buildPersonaPrompt;
 

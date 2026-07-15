@@ -82,17 +82,17 @@ void main() {
 
   group('LLMProvider.endpoint', () {
     test('deepseek uses /v1/chat/completions', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k'));
       expect(p.endpoint, '/v1/chat/completions');
     });
 
     test('openai uses /v1/chat/completions', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.openai, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.openai, apiKey: 'k'));
       expect(p.endpoint, '/v1/chat/completions');
     });
 
     test('claude uses /v1/messages', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
       expect(p.endpoint, '/v1/messages');
     });
 
@@ -100,7 +100,7 @@ void main() {
 
   group('LLMProvider.buildClaudeBody', () {
     test('converts system messages to top-level system param', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.claude, apiKey: 'k', model: 'claude-3-opus'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.claude, apiKey: 'k', model: 'claude-3-opus'));
       final body = p.buildClaudeBody([
         {'role': 'system', 'content': 'You are helpful.'},
         {'role': 'user', 'content': 'Hello'},
@@ -113,7 +113,7 @@ void main() {
     });
 
     test('converts assistant role correctly', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
       final body = p.buildClaudeBody([
         {'role': 'system', 'content': 'You are helpful.'},
         {'role': 'user', 'content': 'Q'},
@@ -125,7 +125,7 @@ void main() {
     });
 
     test('handles missing system message', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
       final body = p.buildClaudeBody([
         {'role': 'user', 'content': 'Hello'},
       ]);
@@ -134,7 +134,7 @@ void main() {
     });
 
     test('handles multiple system messages (takes last)', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
       final body = p.buildClaudeBody([
         {'role': 'system', 'content': 'First'},
         {'role': 'system', 'content': 'Second'},
@@ -144,7 +144,7 @@ void main() {
     });
 
     test('respects maxTokens parameter', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
       final body = p.buildClaudeBody([
         {'role': 'user', 'content': 'Hello'},
       ], maxTokens: 1024);
@@ -152,7 +152,7 @@ void main() {
     });
 
     test('defaults maxTokens to 4096', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
       final body = p.buildClaudeBody([
         {'role': 'user', 'content': 'Hello'},
       ]);
@@ -160,7 +160,7 @@ void main() {
     });
 
     test('handles empty content in messages', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
       final body = p.buildClaudeBody([
         {'role': 'user', 'content': ''},
       ]);
@@ -170,7 +170,7 @@ void main() {
 
   group('LLMProvider.buildBody (OpenAI/DeepSeek format)', () {
     test('deepseek format includes model and messages', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k', model: 'deepseek-v4-flash'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k', model: 'deepseek-v4-flash'));
       final body = p.buildBody([
         {'role': 'system', 'content': 'Prompt'},
         {'role': 'user', 'content': 'Hello'},
@@ -181,7 +181,7 @@ void main() {
     });
 
     test('openai format preserves system message in array', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.openai, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.openai, apiKey: 'k'));
       final body = p.buildBody([
         {'role': 'system', 'content': 'Prompt'},
         {'role': 'user', 'content': 'Hello'},
@@ -191,7 +191,7 @@ void main() {
     });
 
     test('respects custom maxTokens', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k'));
       final body = p.buildBody([
         {'role': 'user', 'content': 'Hello'},
       ], maxTokens: 100);
@@ -201,7 +201,7 @@ void main() {
 
   group('LLMProvider.extractContent', () {
     test('deepseek/openai format extracts content', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k'));
       final data = {
         'choices': [
           {'message': {'content': 'Hello, world!'}},
@@ -211,13 +211,13 @@ void main() {
     });
 
     test('deepseek format with empty choices returns empty', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.openai, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.openai, apiKey: 'k'));
       final data = {'choices': []};
       expect(p.extractContent(data), '');
     });
 
     test('deepseek format with null content returns empty', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k'));
       final data = {
         'choices': [{'message': {}}],
       };
@@ -225,7 +225,7 @@ void main() {
     });
 
     test('claude format extracts text from content array', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
       final data = {
         'content': [
           {'type': 'text', 'text': 'Claude response'},
@@ -235,25 +235,25 @@ void main() {
     });
 
     test('claude format with empty content array returns empty', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
       final data = {'content': []};
       expect(p.extractContent(data), '');
     });
 
     test('claude format with missing content key returns empty', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
       final data = <String, dynamic>{};
       expect(p.extractContent(data), '');
     });
 
     test('deepseek format with missing choices key returns empty', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k'));
       final data = <String, dynamic>{};
       expect(p.extractContent(data), '');
     });
 
     test('multiple choices extracts first content', () {
-      final p = LLMProvider(config: LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k'));
+      final p = LLMProvider(config: const LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k'));
       final data = {
         'choices': [
           {'message': {'content': 'First choice'}},
@@ -277,17 +277,17 @@ void main() {
 
   group('LLMConfig', () {
     test('deepseek defaults model to deepseek-v4-flash', () {
-      final c = LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k');
+      const c = LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k');
       expect(c.model, 'deepseek-v4-flash');
     });
 
     test('openai defaults apiBase to deepseek', () {
-      final c = LLMConfig(type: LLMProviderType.openai, apiKey: 'k');
+      const c = LLMConfig(type: LLMProviderType.openai, apiKey: 'k');
       expect(c.apiBase, 'https://api.deepseek.com');
     });
 
     test('all custom fields', () {
-      final c = LLMConfig(
+      const c = LLMConfig(
         type: LLMProviderType.claude,
         apiKey: 'sk-ant-key',
         apiBase: 'https://api.anthropic.com',
@@ -349,7 +349,7 @@ void main() {
 
   group('LLMProvider constructor', () {
     test('sets up config correctly', () {
-      final p = LLMProvider(config: LLMConfig(
+      final p = LLMProvider(config: const LLMConfig(
         type: LLMProviderType.deepseek,
         apiKey: 'sk-test',
         apiBase: 'https://custom.api.com',

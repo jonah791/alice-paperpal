@@ -7,19 +7,19 @@ import 'package:paperpal/core/models/search_result.dart';
 void main() {
   group('LLMConfig', () {
     test('deepseek defaults', () {
-      final c = LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k');
+      const c = LLMConfig(type: LLMProviderType.deepseek, apiKey: 'k');
       expect(c.apiBase, 'https://api.deepseek.com');
       expect(c.model, 'deepseek-v4-flash');
     });
 
     test('openai custom', () {
-      final c = LLMConfig(type: LLMProviderType.openai, apiKey: 'k', apiBase: 'https://o.c', model: 'gpt-4');
+      const c = LLMConfig(type: LLMProviderType.openai, apiKey: 'k', apiBase: 'https://o.c', model: 'gpt-4');
       expect(c.apiBase, 'https://o.c');
       expect(c.model, 'gpt-4');
     });
 
     test('claude config', () {
-      final c = LLMConfig(type: LLMProviderType.claude, apiKey: 'k', model: 'claude-3-opus');
+      const c = LLMConfig(type: LLMProviderType.claude, apiKey: 'k', model: 'claude-3-opus');
       expect(c.type, LLMProviderType.claude);
       // Default apiBase is deepseek — Claude users must set apiBase explicitly to https://api.anthropic.com
       expect(c.apiBase, 'https://api.deepseek.com');
@@ -58,7 +58,7 @@ void main() {
     });
 
     test('parseXml single entry', () {
-      final xml = '<feed><entry>'
+      const xml = '<feed><entry>'
           '<title>  My Paper  </title>'
           '<author><name>Alice Doe</name></author>'
           '<author><name>Bob Smith</name></author>'
@@ -79,7 +79,7 @@ void main() {
     });
 
     test('parseXml multiple entries', () {
-      final xml = '<feed>'
+      const xml = '<feed>'
           '<entry><title>Paper A</title><author><name>Author A</name></author><published>2024</published><summary>Abs A</summary></entry>'
           '<entry><title>Paper B</title><author><name>Author B</name></author><published>2023</published><summary>Abs B</summary></entry>'
           '</feed>';
@@ -87,7 +87,7 @@ void main() {
     });
 
     test('parseXml missing optional fields', () {
-      final xml = '<feed><entry><title>T</title><author><name>A</name></author></entry></feed>';
+      const xml = '<feed><entry><title>T</title><author><name>A</name></author></entry></feed>';
       final results = api.parseXml(xml);
       expect(results, hasLength(1));
       expect(results[0].year, 0);
@@ -96,7 +96,7 @@ void main() {
     });
 
     test('parseXml malformed entry creates result with empty title', () {
-      final xml = '<feed><entry><title>Good</title><author><name>A</name></author></entry><entry>bad</entry></feed>';
+      const xml = '<feed><entry><title>Good</title><author><name>A</name></author></entry><entry>bad</entry></feed>';
       final results = api.parseXml(xml);
       expect(results, hasLength(2));
       expect(results[0].title, 'Good');
@@ -116,7 +116,7 @@ void main() {
     });
 
     test('extractPdfLink', () {
-      final xml = '<link title="pdf" href="https://arxiv.org/pdf/2401.00001.pdf"/>';
+      const xml = '<link title="pdf" href="https://arxiv.org/pdf/2401.00001.pdf"/>';
       expect(api.extractPdfLink(xml), 'https://arxiv.org/pdf/2401.00001.pdf');
     });
 
@@ -133,7 +133,7 @@ void main() {
     });
 
     test('extractAuthors', () {
-      final xml = '<author><name>Alice</name></author><author><name>Bob</name></author>';
+      const xml = '<author><name>Alice</name></author><author><name>Bob</name></author>';
       expect(api.extractAuthors(xml), ['Alice', 'Bob']);
     });
 
@@ -152,7 +152,7 @@ void main() {
 
   group('SearchResult from API mapping', () {
     test('full S2-like result', () {
-      final r = SearchResult(
+      const r = SearchResult(
         title: 'Attention Is All You Need', authors: ['Vaswani', 'Shazeer'],
         year: 2017, abstract: 'abstract here',
         pdfUrl: 'https://arxiv.org/pdf/1706.03762.pdf',
@@ -163,12 +163,12 @@ void main() {
     });
 
     test('authors stored verbatim with empty strings unfiltered', () {
-      final r = SearchResult(title: 'T', authors: ['', 'Valid', ''], source: 'arXiv');
+      const r = SearchResult(title: 'T', authors: ['', 'Valid', ''], source: 'arXiv');
       expect(r.authors, ['', 'Valid', '']);
     });
 
     test('zero citation count', () {
-      final r = SearchResult(title: 'T', authors: ['A']);
+      const r = SearchResult(title: 'T', authors: ['A']);
       expect(r.citationCount, 0);
     });
   });

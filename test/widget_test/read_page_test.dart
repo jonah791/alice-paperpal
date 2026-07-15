@@ -57,7 +57,7 @@ void main() {
     paperService.markdowns['test_1'] = '# Test Paper\n\nThis is the introduction section.';
 
     await tester.pumpWidget(buildApp(
-      paper: Paper(id: 'test_1', title: 'Test Paper', year: 2024),
+      paper: const Paper(id: 'test_1', title: 'Test Paper', year: 2024),
       paperService: paperService,
       configService: configService,
     ));
@@ -75,7 +75,7 @@ void main() {
     paperService.translations['test_2'] = '# 译文';
 
     await tester.pumpWidget(buildApp(
-      paper: Paper(id: 'test_2', title: 'Test Paper', year: 2024),
+      paper: const Paper(id: 'test_2', title: 'Test Paper', year: 2024),
       paperService: paperService,
       configService: configService,
     ));
@@ -93,7 +93,7 @@ void main() {
     paperService.translations['test_2'] = '# 译文';
 
     await tester.pumpWidget(buildApp(
-      paper: Paper(id: 'test_2', title: 'Test Paper', year: 2024),
+      paper: const Paper(id: 'test_2', title: 'Test Paper', year: 2024),
       paperService: paperService,
       configService: configService,
     ));
@@ -108,7 +108,7 @@ void main() {
     paperService.translations['test_3'] = '# Translated Content';
 
     await tester.pumpWidget(buildApp(
-      paper: Paper(id: 'test_3', title: 'Test Paper', year: 2024),
+      paper: const Paper(id: 'test_3', title: 'Test Paper', year: 2024),
       paperService: paperService,
       configService: configService,
     ));
@@ -134,7 +134,7 @@ void main() {
     paperService.markdowns['loading_test'] = '# Loaded';
 
     await tester.pumpWidget(buildApp(
-      paper: Paper(id: 'loading_test', title: 'Loading', year: 2024),
+      paper: const Paper(id: 'loading_test', title: 'Loading', year: 2024),
       paperService: paperService,
       configService: configService,
     ));
@@ -151,7 +151,7 @@ void main() {
     paperService.markdowns['test_4'] = '# Q&A Test';
 
     await tester.pumpWidget(buildApp(
-      paper: Paper(id: 'test_4', title: 'Test Paper', year: 2024),
+      paper: const Paper(id: 'test_4', title: 'Test Paper', year: 2024),
       paperService: paperService,
       configService: configService,
     ));
@@ -172,7 +172,7 @@ void main() {
     paperService.markdowns['test_5'] = '# Font Test';
 
     await tester.pumpWidget(buildApp(
-      paper: Paper(id: 'test_5', title: 'Font Test', year: 2024),
+      paper: const Paper(id: 'test_5', title: 'Font Test', year: 2024),
       paperService: paperService,
       configService: configService,
     ));

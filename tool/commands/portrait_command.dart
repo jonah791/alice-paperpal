@@ -1,8 +1,6 @@
 import '../cli_helpers.dart' show println, bold, cyan, printJson;
 import '../cli_state.dart' show loadPortrait;
 
-const _help = 'portrait show [--json]';
-
 void portraitCommand(List<String> args) {
   final asJson = args.contains('--json');
   final portrait = loadPortrait();
