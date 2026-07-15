@@ -96,9 +96,9 @@ class _LibraryPageState extends State<LibraryPage> {
             initialData: context.paperService.papers,
             builder: (context, snapshot) {
               final allPapers = snapshot.data ?? [];
-              final filtered = _filterStatus < PaperStatus.values.length
-                  ? allPapers.where((p) => p.status == PaperStatus.values[_filterStatus]).toList()
-                  : allPapers;
+              final filtered = _filterStatus == 0
+                  ? allPapers
+                  : allPapers.where((p) => p.status == PaperStatus.values[_filterStatus - 1]).toList();
               final papers = _sorted(filtered);
 
               if (allPapers.isEmpty) {
@@ -136,7 +136,7 @@ class _LibraryPageState extends State<LibraryPage> {
                       Icon(Icons.filter_alt_off, size: 48,
                           color: theme.colorScheme.onSurfaceVariant),
                       const SizedBox(height: Spacing.lg),
-                      Text(filtered.length > allPapers.length
+                      Text(_filterStatus != 0 || _searchQuery.isNotEmpty
                           ? '当前筛选条件下没有论文'
                           : '没有匹配的论文',
                         style: theme.textTheme.bodyMedium),
@@ -371,7 +371,7 @@ class _LibraryPageState extends State<LibraryPage> {
                       ],
                       if (paper.sourceType != 'mineru')
                         Text(paper.sourceType == 'fallback_text' ? '文本' : '页提取',
-                          style: TextStyle(fontSize: 9, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5))),
+                          style: TextStyle(fontSize: DesignTokens.fsXxs, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5))),
                     ],
                   ),
                   if (_selected.isEmpty)

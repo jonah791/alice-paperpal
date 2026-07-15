@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -47,11 +48,11 @@ class _ReadPageState extends State<ReadPage> {
   }
 
   Future<void> _loadContent() async {
-    context.paperService.touchPaper(widget.paper.id);
-
     final md = await context.paperService.getMarkdown(widget.paper.id);
     final translation = await context.paperService.getTranslation(widget.paper.id);
     _notes = context.noteService.getNotesForPaper(widget.paper.id);
+    // Touch (update lastReadAt) only after content is confirmed accessible
+    if (md != null) context.paperService.touchPaper(widget.paper.id);
 
     setState(() {
       _markdown = md;
@@ -451,16 +452,17 @@ class _ReadPageState extends State<ReadPage> {
   
       final buffer = StringBuffer();
       await for (final chunk in context.paperService.askQuestionStream(widget.paper.id, question)) {
+        if (!mounted) break;
         buffer.write(chunk);
         setState(() {
           _qaMessages.last['content'] = buffer.toString();
         });
       }
-      setState(() => _qaLoading = false);
+      if (mounted) setState(() => _qaLoading = false);
     } catch (e) {
       _log.warning('askQuestion failed: $e');
-      setState(() {
-        _qaMessages.last['content'] = '抱歉，回答时出现错误。';
+      if (mounted) setState(() {
+        _qaMessages.last['content'] = _describeQAError(e);
         _qaLoading = false;
       });
     }
@@ -835,7 +837,7 @@ class _ReadPageState extends State<ReadPage> {
                     borderRadius: BorderRadius.circular(RadiusTokens.sm),
                   ),
                   child: Text(_noteTypeLabel(note.type),
-                      style: TextStyle(fontSize: 9, color: note.type == NoteType.highlight ? Colors.amber.shade800 : theme.colorScheme.onTertiaryContainer)),
+                      style: TextStyle(fontSize: DesignTokens.fsXxs, color: note.type == NoteType.highlight ? Colors.amber.shade800 : theme.colorScheme.onTertiaryContainer)),
                 ),
               Text(
                 _formatDate(note.createdAt),
@@ -849,6 +851,11 @@ class _ReadPageState extends State<ReadPage> {
         ],
       ),
     );
+  }
+
+  String _describeQAError(Object e) {
+    if (e is TimeoutException) return '回答超时，请重试或简化问题';
+    return '抱歉，回答时出现错误。';
   }
 
   String _noteTypeLabel(NoteType t) => switch (t) {

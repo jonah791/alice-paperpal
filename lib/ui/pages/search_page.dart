@@ -28,9 +28,8 @@ class _SearchPageState extends State<SearchPage> {
   List<SearchResult> _results = [];
   bool _loading = false;
   String _statusMessage = '';
-  final _importedIds = <String>{};
   bool _showUrlInput = false;
-  Paper? _lastImportedPaper;
+  Paper? _lastImportedPaper; // set on import success, shows "查看" button
 
   @override
   void initState() {
@@ -162,12 +161,7 @@ class _SearchPageState extends State<SearchPage> {
       }
 
       final paper = await context.paperService.importPdf(file, title: title);
-      if (paper == null) {
-        setState(() {
-          _statusMessage = '导入失败：文件读取错误';
-          _loading = false;
-        });
-      } else if (paper.status == PaperStatus.error) {
+      if (paper == null || paper.status == PaperStatus.error) {
         setState(() {
           _statusMessage = '解析失败，请检查 MinerU API Key 是否已配置';
           _loading = false;
@@ -178,6 +172,7 @@ class _SearchPageState extends State<SearchPage> {
           _loading = false;
           _urlController.clear();
           _showUrlInput = false;
+          _lastImportedPaper = paper;
         });
       }
     } catch (e) {
@@ -211,9 +206,7 @@ class _SearchPageState extends State<SearchPage> {
 
       if (!mounted) return;
 
-      if (paper == null) {
-        setState(() => _statusMessage = '导入失败：请先在设置页配置 MinerU API Key');
-      } else if (paper.status == PaperStatus.error) {
+      if (paper == null || paper.status == PaperStatus.error) {
         setState(() => _statusMessage = '解析失败，请检查 MinerU API Key 是否已配置');
       } else {
         _log.info('uploadPdf: imported ${paper.id}');
@@ -498,7 +491,10 @@ class _SearchPageState extends State<SearchPage> {
               setState(() => _statusMessage = '解析失败，请检查 MinerU API Key 是否已配置');
             } else {
               _log.info('importFromSearch: ${paper.id}');
-              setState(() => _statusMessage = '导入成功: ${paper.title}');
+              setState(() {
+                _statusMessage = '导入成功: ${paper.title}';
+                _lastImportedPaper = paper;
+              });
             }
           } catch (e) {
             if (mounted) {
@@ -524,7 +520,7 @@ class _SearchPageState extends State<SearchPage> {
                     Padding(
                       padding: padOnly(l: Spacing.sm),
                       child: Chip(
-                        label: const Text('已导入', style: TextStyle(fontSize: 9)),
+                        label: const Text('已导入', style: TextStyle(fontSize: DesignTokens.fsXxs)),
                         backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.15),
                         side: BorderSide.none,
                         visualDensity: VisualDensity.compact,

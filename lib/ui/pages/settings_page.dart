@@ -23,6 +23,8 @@ class _SettingsPageState extends State<SettingsPage> {
   String _mineruModelVersion = 'vlm';
   bool _enableFormula = true;
   bool _enableTable = true;
+  bool _llmKeyVisible = false;
+  bool _mineruKeyVisible = false;
 
   static const _modelVersions = ['vlm', 'pipeline', 'MinerU-HTML'];
   static const _modelVersionLabels = {
@@ -101,10 +103,14 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: Spacing.lg),
                 TextField(
                   controller: _llmKeyController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
+                  obscureText: !_llmKeyVisible,
+                  decoration: InputDecoration(
                     labelText: 'API Key',
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(_llmKeyVisible ? Icons.visibility_off : Icons.visibility, size: 18),
+                      onPressed: () => setState(() => _llmKeyVisible = !_llmKeyVisible),
+                    ),
                   ),
                 ),
                 const SizedBox(height: Spacing.md),
@@ -143,10 +149,14 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: Spacing.lg),
                 TextField(
                   controller: _mineruKeyController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
+                  obscureText: !_mineruKeyVisible,
+                  decoration: InputDecoration(
                     labelText: 'API Key',
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(_mineruKeyVisible ? Icons.visibility_off : Icons.visibility, size: 18),
+                      onPressed: () => setState(() => _mineruKeyVisible = !_mineruKeyVisible),
+                    ),
                   ),
                 ),
                 const SizedBox(height: Spacing.md),
@@ -238,7 +248,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return Text(
       title,
       style: TextStyle(
-        fontSize: 9,
+        fontSize: DesignTokens.fsXxs,
         color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.4),
         letterSpacing: 2,
         fontWeight: FontWeight.w500,
