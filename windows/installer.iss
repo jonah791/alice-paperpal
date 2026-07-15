@@ -50,3 +50,8 @@ Root: "HKCR"; Subkey: ".pdf\OpenWithProgids"; ValueType: string; ValueName: "Pap
 Root: "HKCR"; Subkey: "PaperPal.PDF"; ValueType: string; ValueName: ""; ValueData: "PaperPal Document"; Flags: uninsdeletekey
 Root: "HKCR"; Subkey: "PaperPal.PDF\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
 Root: "HKCR"; Subkey: "PaperPal.PDF\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
+; paperpal:// protocol handler (deep link)
+Root: "HKCR"; Subkey: "paperpal"; ValueType: string; ValueName: ""; ValueData: "URL:PaperPal Protocol"; Flags: uninsdeletekey
+Root: "HKCR"; Subkey: "paperpal"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
+Root: "HKCR"; Subkey: "paperpal\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
+Root: "HKCR"; Subkey: "paperpal\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1""""

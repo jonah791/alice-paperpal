@@ -15,6 +15,13 @@
 
 - **错误详情可见**：导入/搜索失败时显示具体原因（网络断开/超时/401/500 等），而非泛化提示
 - **QA 面板 dispose 后 setState**：流式响应添加 `mounted` 守卫，防止页面退出后崩溃
+- **`use_build_context_synchronously`**：18 处 async 后 context 引用全部修复，lib/ 分析归零
+
+### Changed
+
+- **AnimatedBackground**：包裹 `RepaintBoundary` 隔离重绘区域 + 降低 `_GradientPainter` 每帧分配量
+- **Deep link**：`paperpal://arxiv/XXXX.XXXX` 协议支持，C++ runner + Dart 解析 + Inno Setup 注册
+- **CI 安装包**：新增 `paperpal://` 协议注册
 
 ## [0.4.2] - 2026-07-15
 

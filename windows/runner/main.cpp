@@ -32,6 +32,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
     }
   }
 
+  // Check for deep link (paperpal://arxiv/XXXX.XXXX)
+  for (const auto& arg : command_line_arguments) {
+    if (arg.rfind("paperpal://", 0) == 0) {
+      ::SetEnvironmentVariableA("PAPERPAL_DEEP_LINK", arg.c_str());
+      break;
+    }
+  }
+
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 720);

@@ -49,12 +49,14 @@ void main() async {
   final showWelcome = !configService.hasLlmApiKey;
 
   String? pdfFileArg;
+  String? deepLinkUrl;
   if (!platform.isAndroid) {
     try {
       final pdfPath = Platform.environment['PAPERPAL_PDF_PATH'];
       if (pdfPath != null && pdfPath.isNotEmpty && File(pdfPath).existsSync()) {
         pdfFileArg = pdfPath;
       }
+      deepLinkUrl = Platform.environment['PAPERPAL_DEEP_LINK'];
     } catch (_) {}
   }
 
@@ -62,6 +64,7 @@ void main() async {
     locator: locator,
     showWelcome: showWelcome,
     initialPdfPath: pdfFileArg,
+    deepLinkUrl: deepLinkUrl,
   ));
 }
 
@@ -69,12 +72,14 @@ class PaperPalApp extends StatefulWidget {
   final ServiceLocator locator;
   final bool showWelcome;
   final String? initialPdfPath;
+  final String? deepLinkUrl;
 
   const PaperPalApp({
     super.key,
     required this.locator,
     this.showWelcome = false,
     this.initialPdfPath,
+    this.deepLinkUrl,
   });
 
   @override
@@ -99,9 +104,26 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _importFromArg(widget.initialPdfPath!);
       });
+    } else if (widget.deepLinkUrl != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _handleDeepLink(widget.deepLinkUrl!);
+      });
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _startupGreeting());
+  }
+
+  Future<void> _handleDeepLink(String url) async {
+    final arxivMatch = RegExp(r'arxiv/(\d+\.\d+)').firstMatch(url);
+    if (arxivMatch == null) return;
+    final arxivId = arxivMatch.group(1)!;
+    final ps = widget.locator.get<IPaperService>();
+    final (results, _) = await ps.search(arxivId);
+    if (results.isEmpty) return;
+    final result = results.first;
+    final paper = await ps.importFromSearch(result);
+    if (paper == null) return;
+    _log.info('deep link: imported arXiv $arxivId');
   }
 
   Future<void> _importFromArg(String path) async {
