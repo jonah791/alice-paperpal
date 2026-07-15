@@ -1,7 +1,7 @@
 # ALICE PaperPal — 项目交接文档
 
 **项目名：** ALICE PaperPal  
-**版本：** v0.4.0  
+**版本：** v0.4.2  
 **仓库：** https://github.com/jonah791/alice-paperpal  
 **技术栈：** Flutter (Dart) 桌面端 Windows EXE + Android APK + CLI 命令行工具  
 **构建状态：** CI 自动构建 → Release 发布（ZIP 便携版 + Setup.exe 安装包 + split APK）
@@ -124,7 +124,7 @@ paperpal/
 │       └── theme/
 │           └── app_theme.dart             # [v0.2.0 重写] 完整双主题 ColorScheme + 自字义 TextTheme/CardTheme/InputTheme/ButtonTheme
 │
-├── test/                                  # 测试（15+ 文件，320+ 测试）
+├── test/                                  # 测试（20+ 文件，359 测试）
 │   ├── core/
 │   │   ├── models_test.dart               # Paper/Soul/Note/MemoryItem 等序列化（48 测试）
 │   │   ├── services_test.dart             # ExportService/MergeService/PortraitService/SoulService（29 测试）
@@ -617,7 +617,7 @@ git push origin v0.x.x
 
 ## 六、测试覆盖
 
-**当前 320+ 个测试，覆盖全部纯逻辑层 + AppTheme widget smoke test：**
+**当前 359 个测试，覆盖全部纯逻辑层 + Widget 交互 + 端到端管线：**
 
 ### 核心测试（161 个，v0.1.1-0.1.2）
 
