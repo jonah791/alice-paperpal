@@ -1,7 +1,7 @@
 # ALICE PaperPal — 项目交接文档
 
 **项目名：** ALICE PaperPal  
-**版本：** v0.4.2  
+**版本：** v0.4.3  
 **仓库：** https://github.com/jonah791/alice-paperpal  
 **技术栈：** Flutter (Dart) 桌面端 Windows EXE + Android APK + CLI 命令行工具  
 **构建状态：** CI 自动构建 → Release 发布（ZIP 便携版 + Setup.exe 安装包 + split APK）

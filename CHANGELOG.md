@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.4.3] - 2026-07-15
+
+### Added
+
+- **REST API 服务器** — `lib/server_main.dart`，全功能 HTTP 接口。运行：`flutter run -t lib/server_main.dart --dart-define=PORT=4090`
+- **API 端点**：`/health`、`/papers`、`/papers/:id/content`、`/papers/:id/translation`、`/search`、`/import/search`、`/ask/:id`（SSE 流式）、`/summarize/:id`、`/notes` CRUD
+
+### Changed
+
+- **重构**：QA 面板和笔记面板从 `read_page.dart` 拆分为独立 Widget（`qa_panel.dart` 177 行、`notes_panel.dart` 245 行），ReadPage 从 1000 行降至 575 行
+
+### Fixed
+
+- **错误详情可见**：导入/搜索失败时显示具体原因（网络断开/超时/401/500 等），而非泛化提示
+- **QA 面板 dispose 后 setState**：流式响应添加 `mounted` 守卫，防止页面退出后崩溃
+
 ## [0.4.2] - 2026-07-15
 
 ### Added

@@ -88,6 +88,21 @@ dart run tool/paperpal.dart ask <id> "核心贡献是什么？"
 dart run tool/paperpal.dart help
 ```
 
+### API 服务器
+
+将 PaperPal 作为 HTTP 服务运行，支持远程调用和集成：
+
+```bash
+# 开发模式（热重载）
+flutter run -t lib/server_main.dart --dart-define=PORT=4090
+
+# 生产构建（无窗口 headless EXE）
+flutter build windows --release -t lib/server_main.dart
+./build/windows/x64/runner/Release/paperpal.exe --port 4090
+```
+
+所有核心功能通过 REST API 暴露，包括流式问答（SSE）。
+
 ### 从源码构建
 
 ```bash
