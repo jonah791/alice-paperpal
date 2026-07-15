@@ -33,8 +33,6 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: any
-  shelf: any
-  shelf_router: any
 
 flutter:
   uses-material-design: true
