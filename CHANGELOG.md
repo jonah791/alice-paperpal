@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.4.2] - 2026-07-15
+
+### Added
+
+- **划词问答** — 浮动 Ask 按钮 + 选中文本智能问答（读剪贴板 → 底部面板输入问题 → LLM 回答）
+- **文库排序** — 最近阅读/最新导入/标题 A-Z 三模式，默认最近阅读
+- **库内搜索** — 按标题+作者实时过滤
+- **批量导入 PDF** — 多选文件，逐篇导入+状态提示
+- **系统托盘增强** — 右键「快速搜索」「导入 arXiv 链接」，自动切到搜索页
+- **深色模式一键切换** — 导航栏底部 🌙/☀️ 按钮
+- **搜索「已导入」标识** — 已导入 Chip + 直达读页
+
+### Fixed
+
+- **库筛选索引偏移** — 「全部」错误显示 importing 论文；「导入中」错误显示 downloading。改为 `_filterStatus == 0 → all`
+- **QA dispose crash** — `setState()` after dispose（stream 后置操作），加 `mounted` 守卫
+- **10 处 `$e` 暴露给用户** — 所有用户可见错误消息替换为友好文案，原始异常保留日志
+- **search_page 2 处不可达 null 检查** — `importPdf` 恒不为 null，移除多余分支
+- **`_lastImportedPaper` 未设置** — URL 导入和结果卡片导入后无「查看」按钮
+- **`touchPaper` 时机过早** — 在内容加载之前标记已读，改为内容加载成功后调用
+- **settings `fontSize: 9` 硬编码** — 违反 DesignTokens，改为 `DesignTokens.fsXxs`
+- **settings API Key 无可见性切换** — 加 👁️ suffixIcon
+- **CLI 帮助不完整** — soul/note/translate 子命令缺失
+
+### UI Polish
+
+- **QA 面板动态高度** — 按消息量自动扩展，最大 40% 屏幕，可收起
+- **QA 输入框快捷键** — Enter 发送，Shift+Enter 换行，`maxLines: 4`
+- **笔记选中文本捕获** — 读剪贴板作为笔记上下文、删除按钮、类型徽章
+- **文库长按提示** — 列表底部「长按卡片可多选」
+- **导入后「查看」按钮** — 三种导入路径均显示直达读页按钮
+- **回退解析论文「重新解析」** — ReadPage 菜单一键调用 MinerU 替换内容
+
 ## [0.4.1] - 2026-07-14
 
 ### Added
