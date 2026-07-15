@@ -7,10 +7,9 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.41+-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Platform](https://img.shields.io/badge/Windows-0078D6?logo=windows&logoColor=white)]()
 [![Platform](https://img.shields.io/badge/Android-34D058?logo=android&logoColor=white)]()
-[![Tests](https://img.shields.io/badge/tests-320+-brightgreen)]()
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
-[![GitHub release](https://img.shields.io/github/v/release/jonah791/alice-paperpal?label=v0.4.0)](https://github.com/jonah791/alice-paperpal/releases)
-[![Tests](https://img.shields.io/badge/tests-340+-brightgreen)]()
+[![GitHub release](https://img.shields.io/github/v/release/jonah791/alice-paperpal?label=v0.4.2)](https://github.com/jonah791/alice-paperpal/releases)
+[![Tests](https://img.shields.io/badge/tests-359+-brightgreen)]()
 
 **基于 MinerU + DeepSeek V4 的 AI 论文阅读伴侣。**
 **搜索论文 → 导入 PDF → 自动解析 → 自动翻译 → AI 问答与摘要。**
@@ -30,7 +29,7 @@
 
 | 它能做什么 | 你获得什么 |
 |---|---|
-| 自动解析 PDF 中的公式和表格 | 不再对着 LaTeX 发愣 |
+| 自动解析 PDF（MinerU + 轻量 Fallback） | 无需自建服务也能用 |
 | 非中文论文自动翻译 | 母语阅读，速度翻倍 |
 | AI 问答基于全论文上下文 | 像教授一样随时答疑 |
 | 记住你讨论过的一切 | 伙伴了解你的研究轨迹 |
@@ -43,10 +42,11 @@
 - **📖 从搜索到理解，全流程覆盖**
 
   ```
-  搜索论文 → 一键导入 → 自动解析(MinerU) → 自动翻译 → AI 问答 + 摘要 + 笔记 + 导出
+  搜索论文 → 导入(单篇/批量/URL/arXiv) → 自动解析(MinerU / 轻量Fallback) → 自动翻译 → AI 问答(划词即问) + 笔记 + 摘要 + 导出
   ```
 
-- **🎨 Alice in Wonderland 主题** — 深紫+暖金暗色 / 暖白+金日间双主题，动感渐变背景，扑克牌花色装饰。每一处细节都经设计
+- **🔍 划词问答** — 选中文本 → 浮动 Ask 按钮 → 输入问题，AI 结合上下文回答
+- **🎨 Alice in Wonderland 主题** — 深紫+暖金暗色 / 暖白+金日间双主题 + 导航栏一键切换，动感渐变背景
 - **📱 桌面 & 移动端** — Windows 安装包 + Android APK，数据互通，体验一致
 - **🔒 隐私优先** — 无后端服务器，API Key 加密存储（DPAPI / Android Keystore），日志脱敏
 
@@ -115,9 +115,9 @@ flutter build apk --release       # → app-release.apk
 
 | 功能 | 说明 |
 |---|---|
-| **搜索** | arXiv + Semantic Scholar 一键搜索，实时下载进度 |
-| **导入** | 本地上传 / URL 导入（自动补全元数据）/ 搜索结果直接导入 |
-| **解析** | MinerU v4 API — 公式→LaTeX、表格→HTML、图片提取 |
+| **搜索** | arXiv + Semantic Scholar 一键搜索，已导入论文标记「已导入」 |
+| **导入** | 单篇上传 / 批量多选 / URL 导入（自动补全元数据）/ 搜索结果一键导入 |
+| **解析** | MinerU v4 API 主引擎 + PdfFallbackService 三层降级（poppler → flutter_pdf → 元数据） |
 | **翻译** | 自动语言检测 + DeepSeek 全文翻译，原文/译文/对照三模式 |
 | **公式解释** | 点击任意公式 → AI 解读 |
 | **多论文对比** | 选择多篇论文 → AI 对比分析 |
@@ -126,22 +126,21 @@ flutter build apk --release       # → app-release.apk
 
 | 功能 | 说明 |
 |---|---|
-| **文库管理** | 按状态筛选、批量删除、错误详情查看 |
-| **笔记系统** | 阅读时添加笔记，持久化保存，支持 LaTeX 高亮标记 |
+| **文库管理** | 按状态筛选、全文搜索、三种排序（最近阅读/最新导入/标题）、批量操作 |
+| **笔记系统** | 阅读时添加笔记（可附带选中文本），持久化保存，支持删除/类型标记 |
 | **AI 摘要** | 一句话 + 结构化摘要 |
-| **AI 问答** | 流式输出逐字显示，基于灵魂+记忆+画像的个性化回答 |
+| **AI 问答** | 流式输出逐字显示，基于灵魂+记忆+画像的个性化回答，划词即问 |
 | **导出** | Markdown（含 YAML frontmatter）/ BibTeX |
 
 ### 视觉体验
 
 | 功能 | 说明 |
 |---|---|
-| **双主题** | 深紫+暖金暗色 / 暖白+金日间，一键切换 |
+| **双主题** | 深紫+暖金暗色 / 暖白+金日间，导航栏一键切换 |
 | **动感背景** | Canvas 径向渐变缓慢漂移 + 花色暗纹叠加 |
 | **自定义字体** | Playfair Display（标题）+ Inter（UI）+ Noto Serif SC（中文） |
-| **页面过渡** | cubic-bezier 滑入动画 |
-| **加载动画** | 扑克牌花色错位淡入 + 骨架屏 |
-| **阅读进度** | 3px 金色渐变进度条 |
+| **阅读进度** | 3px 金色渐变进度条 + 可调字体大小 |
+| **键盘快捷键** | Ctrl+S 搜索 / Ctrl+L 文库 / Ctrl+P 设置 / Ctrl+Q 退出 |
 
 ### 跨平台
 
@@ -183,7 +182,7 @@ paperpal/
 │       ├── widgets/         # 10 reusable widgets
 │       └── theme/           # Dual Alice-in-Wonderland theme
 ├── android/                 # Android project
-├── test/                    # 320+ unit tests
+├── test/                    # 359 unit & widget tests
 ├── tool/                    # CLI (12 commands)
 └── windows/                 # Windows project + installer script
 ```
@@ -193,7 +192,7 @@ paperpal/
 | 配置项 | 说明 | 默认 |
 |---|---|---|
 | LLM API Key | DeepSeek / OpenAI / Claude | 必填 |
-| MinerU API Key | MinerU 解析服务 Token | 必填 |
+| MinerU API Key | MinerU 解析服务 Token | 可选（无 Key 自动降级为轻量解析） |
 | LLM API Base | OpenAI 兼容 API 地址 | `https://api.deepseek.com` |
 | MinerU 模型版本 | vlm（推荐）/ pipeline / MinerU-HTML | `vlm` |
 | 公式识别 / 表格识别 | 解析时是否提取 | 开启 |
