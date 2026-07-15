@@ -34,9 +34,9 @@ void printWarning(String msg) {
 }
 
 void println(String msg) {
-  print(msg);
+  stdout.writeln(msg);
 }
 
 void printJson(Object data) {
-  print(const JsonEncoder.withIndent('  ').convert(data));
+  stdout.writeln(const JsonEncoder.withIndent('  ').convert(data));
 }

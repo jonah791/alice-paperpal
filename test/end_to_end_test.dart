@@ -50,6 +50,7 @@ void main() {
       expect(bytes[2], 0x44); // 'D'
       expect(bytes[3], 0x46); // 'F'
 
+      // ignore: avoid_print
       print('PDF size: ${(bytes.length / 1024).toStringAsFixed(1)} KB');
     });
 
