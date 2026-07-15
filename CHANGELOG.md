@@ -28,6 +28,7 @@
 - **字号持久化**：ReadPage 字号调整后保存到全局配置，下次打开自动恢复
 - **收藏系统**：Paper.starred 字段 + ReadPage 星标切换 + 文库星标筛选 + 卡片星标指示
 - **断点续读**：Paper.scrollPosition 字段 + ReadPage dispose 时保存 + 打开时恢复滚动位置
+- **UI widget 测试**：新增 ExplainDialog / AvatarPicker / SoulSelector 共 7 个 widget 测试（359→366）
 - **Deep link**：`paperpal://arxiv/XXXX.XXXX` 协议支持，C++ runner + Dart 解析 + Inno Setup 注册
 - **CI 安装包**：新增 `paperpal://` 协议注册
 
