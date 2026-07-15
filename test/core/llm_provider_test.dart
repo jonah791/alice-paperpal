@@ -95,6 +95,7 @@ void main() {
       final p = LLMProvider(config: LLMConfig(type: LLMProviderType.claude, apiKey: 'k'));
       expect(p.endpoint, '/v1/messages');
     });
+
   });
 
   group('LLMProvider.buildClaudeBody', () {

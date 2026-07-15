@@ -41,10 +41,10 @@ class _ReadPageState extends State<ReadPage> {
   }
 
   Future<void> _loadContent() async {
-    final md = await context.paperService.getMarkdown(widget.paper.id);
-    final translation = await context.paperService.getTranslation(widget.paper.id);
-    // Touch (update lastReadAt) only after content is confirmed accessible
-    if (md != null) context.paperService.touchPaper(widget.paper.id);
+    final ps = context.paperService;
+    final md = await ps.getMarkdown(widget.paper.id);
+    final translation = await ps.getTranslation(widget.paper.id);
+    if (md != null) ps.touchPaper(widget.paper.id);
 
     setState(() {
       _markdown = md;
@@ -413,10 +413,13 @@ class _ReadPageState extends State<ReadPage> {
     );
     if (confirmed != true || !mounted) return;
 
-    final pdfPath = context.cacheService.pdfPath(widget.paper.id);
+    final messenger = ScaffoldMessenger.of(context);
+    final cache = context.cacheService;
+    final ps2 = context.paperService;
+    final pdfPath = cache.pdfPath(widget.paper.id);
     if (!await File(pdfPath).exists()) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('原始 PDF 文件不存在，无法重新解析')),
         );
       }
@@ -424,17 +427,17 @@ class _ReadPageState extends State<ReadPage> {
     }
 
     try {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('正在重新解析...')),
       );
-      final paper = await context.paperService.importPdf(File(pdfPath));
+      final paper = await ps2.importPdf(File(pdfPath));
       if (!mounted) return;
       if (paper == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('重新解析失败：请检查 MinerU API Key')),
         );
       } else if (paper.status == PaperStatus.parsed) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('重新解析完成'), duration: Duration(seconds: 2)),
         );
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => ReadPage(paper: paper)));
@@ -521,22 +524,24 @@ class _ReadPageState extends State<ReadPage> {
   }
 
   Future<void> _openOriginalPdf() async {
-
-    final pdfPath = context.cacheService.pdfPath(widget.paper.id);
+    final messenger = ScaffoldMessenger.of(context);
+    final cache = context.cacheService;
+    final platform = context.configService.platform;
+    final pdfPath = cache.pdfPath(widget.paper.id);
     if (!await File(pdfPath).exists()) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('原始 PDF 文件不存在')),
         );
       }
       return;
     }
     try {
-      await context.configService.platform.openFile(pdfPath);
+      await platform.openFile(pdfPath);
     } catch (e) {
       _log.warning('open PDF failed: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('无法打开 PDF，请检查文件是否被移动')),
         );
       }

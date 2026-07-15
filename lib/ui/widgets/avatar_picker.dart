@@ -51,10 +51,10 @@ class AvatarPicker extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: () async {
                     try {
-                  
+                      final avSvc = context.avatarService;
                       final result = await ImagePicker().pickImage(source: ImageSource.gallery);
                       if (result != null) {
-                        await context.avatarService.setAvatarFromPath(result.path);
+                        await avSvc.setAvatarFromPath(result.path);
                         if (context.mounted) (context as Element).markNeedsBuild();
                       }
                     } catch (e) {

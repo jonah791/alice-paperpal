@@ -153,7 +153,8 @@ class _SearchPageState extends State<SearchPage> {
     }
 
     try {
-
+      final ss = context.searchService;
+      final ps3 = context.paperService;
       final tempDir = await Directory.systemTemp.createTemp('paperwise_');
       final result = SearchResult(
         title: title ?? url,
@@ -161,7 +162,7 @@ class _SearchPageState extends State<SearchPage> {
         pdfUrl: pdfUrl,
         source: 'url',
       );
-      final file = await context.searchService.downloadPdf(result, tempDir.path,
+      final file = await ss.downloadPdf(result, tempDir.path,
         onProgress: (received, total) {
           if (total > 0) {
             final pct = (received / total * 100).toInt();
@@ -178,7 +179,7 @@ class _SearchPageState extends State<SearchPage> {
         return;
       }
 
-      final paper = await context.paperService.importPdf(file, title: title);
+      final paper = await ps3.importPdf(file, title: title);
       final importError = paper?.errorMessage;
       if (paper == null || paper.status == PaperStatus.error) {
         setState(() {

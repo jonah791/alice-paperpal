@@ -37,23 +37,27 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
 
     return Stack(
       children: [
-        Positioned.fill(
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, _) {
-              return CustomPaint(
-                painter: _GradientPainter(
-                  value: _controller.value,
-                  primary: primary,
-                  secondary: secondary,
-                ),
-              );
-            },
+        RepaintBoundary(
+          child: Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) {
+                return CustomPaint(
+                  painter: _GradientPainter(
+                    value: _controller.value,
+                    primary: primary,
+                    secondary: secondary,
+                  ),
+                );
+              },
+            ),
           ),
         ),
-        Positioned.fill(
-          child: CustomPaint(
-            painter: _SuitPatternPainter(textColor: secondary),
+        RepaintBoundary(
+          child: Positioned.fill(
+            child: CustomPaint(
+              painter: _SuitPatternPainter(textColor: secondary),
+            ),
           ),
         ),
         widget.child,
@@ -75,27 +79,24 @@ class _GradientPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final colors = [
-      primary.withValues(alpha: 0.06),
-      secondary.withValues(alpha: 0.04),
-    ];
+    final c1 = primary.withValues(alpha: 0.06);
+    final c2 = secondary.withValues(alpha: 0.04);
+    final w = size.width;
+    final h = size.height;
+    final angle = value * 2 * math.pi;
 
     for (int i = 0; i < 3; i++) {
       final phase = i * 2.094;
-      final cx = size.width *
-          (0.5 + 0.3 * math.sin(value * 2 * math.pi * 0.3 + phase));
-      final cy = size.height *
-          (0.5 + 0.3 * math.cos(value * 2 * math.pi * 0.2 + phase));
-      final radius = size.width * 0.6;
+      final cx = w * (0.5 + 0.3 * math.sin(angle * 0.3 + phase));
+      final cy = h * (0.5 + 0.3 * math.cos(angle * 0.2 + phase));
+      final radius = w * 0.6;
 
-      final shader = RadialGradient(
-        colors: [
-          colors[i % 2],
-          colors[i % 2].withValues(alpha: 0),
-        ],
+      final a = i.isEven ? c1 : c2;
+      final paint = Paint()..shader = RadialGradient(
+        colors: [a, a.withValues(alpha: 0)],
       ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: radius));
 
-      canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
+      canvas.drawRect(Offset.zero & size, paint);
     }
   }
 

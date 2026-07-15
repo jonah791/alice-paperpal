@@ -49,10 +49,10 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _loadSettings() async {
     try {
-
-      final cfg = context.configService.config;
-      final llmKey = await context.configService.readLlmApiKey();
-      final mineruKey = await context.configService.readMineruApiKey();
+      final cs = context.configService;
+      final cfg = cs.config;
+      final llmKey = await cs.readLlmApiKey();
+      final mineruKey = await cs.readMineruApiKey();
 
       _llmKeyController.text = llmKey ?? '';
       _llmBaseController.text = cfg.llmApiBase;
@@ -207,30 +207,34 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _saveSettings() async {
     try {
+      final cs = context.configService;
+      final ps = context.paperService;
+      final messenger = ScaffoldMessenger.of(context);
 
       if (_llmKeyController.text.isNotEmpty) {
-        await context.configService.saveLlmApiKey(_llmKeyController.text);
+        await cs.saveLlmApiKey(_llmKeyController.text);
       }
       if (_mineruKeyController.text.isNotEmpty) {
-        await context.configService.saveMineruApiKey(_mineruKeyController.text);
+        await cs.saveMineruApiKey(_mineruKeyController.text);
       }
 
-      final updatedConfig = context.configService.config.copyWith(
+      final currentCfg = cs.config;
+      final updatedConfig = currentCfg.copyWith(
         llmApiBase: _llmBaseController.text.isNotEmpty
             ? _llmBaseController.text
-            : context.configService.config.llmApiBase,
+            : currentCfg.llmApiBase,
         mineruModelVersion: _mineruModelVersion,
         enableFormula: _enableFormula,
         enableTable: _enableTable,
       );
-      await context.configService.updateConfig(updatedConfig);
+      await cs.updateConfig(updatedConfig);
 
-      await context.paperService.reconfigureMineru();
-      await context.paperService.reconfigureLlm();
+      await ps.reconfigureMineru();
+      await ps.reconfigureLlm();
 
       if (mounted) {
         _log.info('settings saved: modelVersion=$_mineruModelVersion');
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('设置已保存'), duration: Duration(seconds: 3)),
         );
       }

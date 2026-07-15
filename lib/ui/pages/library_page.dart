@@ -439,6 +439,8 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 
   Future<void> _confirmDelete(Paper paper) async {
+    final ps = context.paperService;
+    final messenger = ScaffoldMessenger.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -453,17 +455,16 @@ class _LibraryPageState extends State<LibraryPage> {
     if (confirmed != true) return;
 
     try {
-  
-      await context.paperService.deletePaper(paper.id);
+      await ps.deletePaper(paper.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(content: Text('已删除: ${paper.title}')),
         );
       }
     } catch (e) {
       _log.warning('deletePaper failed: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('删除失败，请重试')),
         );
       }

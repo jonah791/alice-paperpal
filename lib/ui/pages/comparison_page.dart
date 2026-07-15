@@ -27,9 +27,10 @@ class _ComparisonPageState extends State<ComparisonPage> {
     setState(() => _loading = true);
     try {
 
+      final ps = context.paperService;
       final contents = <Map<String, String>>[];
       for (final paper in widget.papers) {
-        final md = await context.paperService.getMarkdown(paper.id);
+        final md = await ps.getMarkdown(paper.id);
         if (md != null) {
           contents.add({'title': paper.title, 'content': md.substring(0, md.length.clamp(0, 4000))});
         }
@@ -56,7 +57,7 @@ class _ComparisonPageState extends State<ComparisonPage> {
       prompt.writeln('4. 优势与不足');
       prompt.writeln('5. 总结');
 
-      final answer = await context.paperService.askQuestion(widget.papers.first.id, prompt.toString());
+      final answer = await ps.askQuestion(widget.papers.first.id, prompt.toString());
       setState(() {
         _analysis = answer;
         _loading = false;

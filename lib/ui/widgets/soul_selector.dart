@@ -169,13 +169,14 @@ class _SoulSelectorState extends State<SoulSelector> {
                     if (nameController.text.trim().isEmpty) return;
                     setLocalState(() => loading = true);
                     try {
-                  
-                      final soul = await context.soulService.createCustomSoul(
+                      final ss2 = context.soulService;
+                      final llm = context.llmProvider;
+                      final soul = await ss2.createCustomSoul(
                         nameController.text.trim(),
                         descController.text.trim(),
-                        context.llmProvider,
+                        llm,
                       );
-                      await context.soulService.setActiveSoul(soul);
+                      await ss2.setActiveSoul(soul);
                       setState(() {
                         _creating = false;
                       });

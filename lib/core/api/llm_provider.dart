@@ -53,9 +53,6 @@ class LLMProvider implements ILLMProvider {
 
   @override
   void reconfigure({required String apiKey, required String apiBase, required String model}) {
-    // Use a mutable-like pattern: update via Config's copyWith
-    // Since LLMConfig is immutable, we use reflection on the stored config's type
-    // but for simplicity, directly reinitialize Dio with new credentials
     _dio = Dio(BaseOptions(
       baseUrl: apiBase,
       connectTimeout: const Duration(seconds: 30),
