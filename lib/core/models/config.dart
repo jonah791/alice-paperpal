@@ -1,5 +1,8 @@
 enum AppThemeMode { system, light, dark }
 
+/// Default theme variant name (alice = original PaperPal theme).
+const String defaultThemeVariant = 'alice';
+
 class AppConfig {
   final String defaultProvider;
   final String llmModel;
@@ -11,6 +14,8 @@ class AppConfig {
   final bool enableTable;
   final bool forceDarkMode;
   final AppThemeMode themeMode;
+  final String themeVariant; // 'blue','cyan','green','orange','red','black','alice'
+  final bool amoledMode;
   final double fontSize;
   final int batchSize;
   final int logRetentionDays;
@@ -26,6 +31,8 @@ class AppConfig {
     this.enableTable = true,
     this.forceDarkMode = false,
     this.themeMode = AppThemeMode.system,
+    this.themeVariant = defaultThemeVariant,
+    this.amoledMode = false,
     this.fontSize = 16.0,
     this.batchSize = 50,
     this.logRetentionDays = 7,
@@ -42,6 +49,8 @@ class AppConfig {
     bool? enableTable,
     bool? forceDarkMode,
     AppThemeMode? themeMode,
+    String? themeVariant,
+    bool? amoledMode,
     double? fontSize,
     int? batchSize,
     int? logRetentionDays,
@@ -57,6 +66,8 @@ class AppConfig {
       enableTable: enableTable ?? this.enableTable,
       forceDarkMode: forceDarkMode ?? this.forceDarkMode,
       themeMode: themeMode ?? this.themeMode,
+      themeVariant: themeVariant ?? this.themeVariant,
+      amoledMode: amoledMode ?? this.amoledMode,
       fontSize: fontSize ?? this.fontSize,
       batchSize: batchSize ?? this.batchSize,
       logRetentionDays: logRetentionDays ?? this.logRetentionDays,

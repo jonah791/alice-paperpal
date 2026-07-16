@@ -412,12 +412,20 @@ class _SearchPageState extends State<SearchPage> {
   Widget _buildResultCard(SearchResult result, ThemeData theme) {
     final imported = _isImported(result);
     final existing = _importedPaper(result);
+    final colors = theme.colorScheme;
 
     return Card(
       margin: padOnly(b: DesignTokens.spGap),
-      color: imported ? theme.colorScheme.secondaryContainer.withValues(alpha: 0.15) : null,
+      elevation: imported ? 0 : 1,
+      color: imported ? colors.secondaryContainer.withValues(alpha: 0.2) : colors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: imported
+            ? BorderSide(color: colors.secondary.withValues(alpha: 0.3))
+            : BorderSide.none,
+      ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
+        borderRadius: BorderRadius.circular(12),
         onTap: () async {
           if (imported && existing != null) {
             Navigator.push(context, MaterialPageRoute(builder: (_) => ReadPage(paper: existing)));
@@ -443,36 +451,105 @@ class _SearchPageState extends State<SearchPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Title row
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: Text(result.title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600))),
-                  if (imported) Padding(
-                    padding: padOnly(l: Spacing.sm),
-                    child: Chip(
-                      label: const Text('已导入', style: TextStyle(fontSize: DesignTokens.fsXxs)),
-                      backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.15),
-                      side: BorderSide.none, visualDensity: VisualDensity.compact, padding: EdgeInsets.zero,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  Expanded(
+                    child: Text(
+                      result.title,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (imported)
+                    Padding(
+                      padding: padOnly(l: Spacing.sm),
+                      child: Container(
+                        padding: padSym(h: 8, v: 2),
+                        decoration: BoxDecoration(
+                          color: colors.primaryContainer,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '已导入',
+                          style: TextStyle(
+                            fontSize: DesignTokens.fsXs,
+                            color: colors.onPrimaryContainer,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
-              const SizedBox(height: DesignTokens.sp1),
-              Text(result.authors.join(', '), style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
-              const SizedBox(height: DesignTokens.sp1),
-              Row(children: [
-                Chip(label: Text(result.year.toString(), style: const TextStyle(fontSize: DesignTokens.fsXs))),
-                const SizedBox(width: Spacing.gap),
-                Chip(label: Text(result.source, style: const TextStyle(fontSize: DesignTokens.fsXs))),
-                if (result.citationCount > 0) ...[const SizedBox(width: Spacing.gap), Text('☆ ${result.citationCount}', style: theme.textTheme.bodySmall)],
-              ]),
-              if (result.abstract.isNotEmpty) ...[
-                const SizedBox(height: Spacing.gap),
-                Text(result.abstract, style: theme.textTheme.bodySmall, maxLines: 3, overflow: TextOverflow.ellipsis),
-              ],
+              const SizedBox(height: 6),
+
+              // Authors
+              if (result.authors.isNotEmpty)
+                Padding(
+                  padding: padOnly(b: 6),
+                  child: Text(
+                    result.authors.join(', '),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+
+              // Abstract preview (Kori-style content preview)
+              if (result.abstract.isNotEmpty)
+                Padding(
+                  padding: padOnly(b: 8),
+                  child: Text(
+                    result.abstract,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant.withValues(alpha: 0.8),
+                      height: 1.4,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+
+              // Bottom row: meta info
+              Row(
+                children: [
+                  _metaChip(result.year.toString(), colors),
+                  const SizedBox(width: 6),
+                  _metaChip(result.source, colors),
+                  if (result.citationCount > 0) ...[
+                    const SizedBox(width: 6),
+                    _metaChip('☆ ${result.citationCount}', colors),
+                  ],
+                ],
+              ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _metaChip(String text, ColorScheme colors) {
+    return Container(
+      padding: padSym(h: 8, v: 3),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: DesignTokens.fsXs,
+          color: colors.onSurfaceVariant,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );

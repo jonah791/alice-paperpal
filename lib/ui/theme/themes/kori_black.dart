@@ -1,0 +1,56 @@
+/// Kori Black 主题 — 单色极简
+library;
+
+import 'package:flutter/material.dart';
+
+const LightBlackColors = ColorScheme.light(
+  primary: Color(0xFF212121), onPrimary: Color(0xFFFFFFFF),
+  primaryContainer: Color(0xFFE0E0E0), onPrimaryContainer: Color(0xFF212121),
+  secondary: Color(0xFF616161), onSecondary: Color(0xFFFFFFFF),
+  secondaryContainer: Color(0xFFF5F5F5), onSecondaryContainer: Color(0xFF424242),
+  tertiary: Color(0xFF705575), onTertiary: Color(0xFFFFFFFF),
+  tertiaryContainer: Color(0xFFFAD8FD), onTertiaryContainer: Color(0xFF573E5C),
+  error: Color(0xFFBA1A1A), onError: Color(0xFFFFFFFF),
+  errorContainer: Color(0xFFFFDAD6), onErrorContainer: Color(0xFF93000A),
+  background: Color(0xFFFFFFFF), onBackground: Color(0xFF1C1C1C),
+  surface: Color(0xFFFFFFFF), onSurface: Color(0xFF1C1C1C),
+  surfaceVariant: Color(0xFFEEEEEE), onSurfaceVariant: Color(0xFF424242),
+  outline: Color(0xFF757575), outlineVariant: Color(0xFFBDBDBD),
+  scrim: Color(0xFF000000), inverseSurface: Color(0xFF313131),
+  surfaceDim: Color(0xFFE0E0E0), surfaceBright: Color(0xFFFFFFFF),
+  surfaceContainerLowest: Color(0xFFFFFFFF), surfaceContainerLow: Color(0xFFF2F3F5),
+  surfaceContainer: Color(0xFFEEEEEE), surfaceContainerHigh: Color(0xFFE0E0E0),
+  surfaceContainerHighest: Color(0xFFD6D6D6),
+  primaryFixed: Color(0xFFE0E0E0), primaryFixedDim: Color(0xFFC2C2C2),
+  onPrimaryFixed: Color(0xFF1C1C1C), onPrimaryFixedVariant: Color(0xFF424242),
+  secondaryFixed: Color(0xFFF5F5F5), secondaryFixedDim: Color(0xFFD6D6D6),
+  onSecondaryFixed: Color(0xFF1C1C1C), onSecondaryFixedVariant: Color(0xFF424242),
+  tertiaryFixed: Color(0xFFFAD8FD), tertiaryFixedDim: Color(0xFFDDBCE0),
+  onTertiaryFixed: Color(0xFF28132F), onTertiaryFixedVariant: Color(0xFF573E5C),
+);
+
+const DarkBlackColors = ColorScheme.dark(
+  primary: Color(0xFFFFFFFF), onPrimary: Color(0xFF121212),
+  primaryContainer: Color(0xFF333333), onPrimaryContainer: Color(0xFFF5F5F5),
+  secondary: Color(0xFFBDBDBD), onSecondary: Color(0xFF212121),
+  secondaryContainer: Color(0xFF424242), onSecondaryContainer: Color(0xFFE0E0E0),
+  tertiary: Color(0xFFDDBCE0), onTertiary: Color(0xFF3F2844),
+  tertiaryContainer: Color(0xFF573E5C), onTertiaryContainer: Color(0xFFFAD8FD),
+  error: Color(0xFFFFB4AB), onError: Color(0xFF690005),
+  errorContainer: Color(0xFF93000A), onErrorContainer: Color(0xFFFFDAD6),
+  background: Color(0xFF121212), onBackground: Color(0xFFE0E0E0),
+  surface: Color(0xFF121212), onSurface: Color(0xFFE0E0E0),
+  surfaceVariant: Color(0xFF424242), onSurfaceVariant: Color(0xFFBDBDBD),
+  outline: Color(0xFF9E9E9E), outlineVariant: Color(0xFF424242),
+  scrim: Color(0xFF000000), inverseSurface: Color(0xFFE0E0E0),
+  surfaceDim: Color(0xFF121212), surfaceBright: Color(0xFF393939),
+  surfaceContainerLowest: Color(0xFF0D0D0D), surfaceContainerLow: Color(0xFF1A1A1A),
+  surfaceContainer: Color(0xFF1F1F1F), surfaceContainerHigh: Color(0xFF292929),
+  surfaceContainerHighest: Color(0xFF333333),
+  primaryFixed: Color(0xFFE0E0E0), primaryFixedDim: Color(0xFFC2C2C2),
+  onPrimaryFixed: Color(0xFF1C1C1C), onPrimaryFixedVariant: Color(0xFF424242),
+  secondaryFixed: Color(0xFFF5F5F5), secondaryFixedDim: Color(0xFFD6D6D6),
+  onSecondaryFixed: Color(0xFF1C1C1C), onSecondaryFixedVariant: Color(0xFF424242),
+  tertiaryFixed: Color(0xFFFAD8FD), tertiaryFixedDim: Color(0xFFDDBCE0),
+  onTertiaryFixed: Color(0xFF28132F), onTertiaryFixedVariant: Color(0xFF573E5C),
+);

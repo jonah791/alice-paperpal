@@ -16,8 +16,11 @@ import 'ui/pages/read_page.dart';
 import 'ui/pages/settings_page.dart';
 import 'ui/pages/welcome_page.dart';
 import 'ui/theme/app_theme.dart';
+import 'ui/theme/themes/theme_variant.dart';
 import 'ui/widgets/avatar_helpers.dart';
-import 'ui/widgets/animated_background.dart';
+import 'ui/widgets/app_sidebar.dart';
+
+final _log = Logger('PaperPalApp');
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -88,10 +91,10 @@ class PaperPalApp extends StatefulWidget {
   State<PaperPalApp> createState() => _PaperPalAppState();
 }
 
-final _log = Logger('PaperPalApp');
-
 class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
   ThemeMode _themeMode = ThemeMode.system;
+  late ThemeVariant _themeVariant;
+  bool _amoled = false;
   bool _welcomeShown = false;
 
   @override
@@ -99,6 +102,11 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
     super.initState();
     final configService = widget.locator.get<IConfigService>();
     _themeMode = configService.config.themeMode.toFlutterThemeMode();
+    _themeVariant = ThemeVariant.values.firstWhere(
+      (t) => t.name == configService.config.themeVariant,
+      orElse: () => ThemeVariant.alice,
+    );
+    _amoled = configService.config.amoledMode;
     _welcomeShown = !widget.showWelcome;
     if (!configService.platform.isAndroid) {
       trayManager.addListener(this);
@@ -152,7 +160,7 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
     final greeting = await llmProvider.chat([
       {'role': 'system', 'content': '根据最近记忆和时间生成一句自然的问候。简短亲切，不要说"早上好/下午好"。'},
       {'role': 'user', 'content': '最近记忆：${memories.first.summary}'},
-    ], maxTokens: 80);
+    ], maxTokens: 100);
     if (greeting.isNotEmpty && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -182,20 +190,10 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
   @override
   void onTrayMenuItemClick(MenuItem menuItem) {
     switch (menuItem.key) {
-      case 'show':
-        windowManager.show();
-        windowManager.focus();
-      case 'search':
-        windowManager.show();
-        windowManager.focus();
-        searchPageAction.value = SearchPageAction.search;
-      case 'import':
-        windowManager.show();
-        windowManager.focus();
-        searchPageAction.value = SearchPageAction.importUrl;
-      case 'quit':
-        windowManager.close();
-        break;
+      case 'show': windowManager.show(); windowManager.focus();
+      case 'search': windowManager.show(); windowManager.focus(); searchPageAction.value = SearchPageAction.search;
+      case 'import': windowManager.show(); windowManager.focus(); searchPageAction.value = SearchPageAction.importUrl;
+      case 'quit': windowManager.close(); break;
     }
   }
 
@@ -205,9 +203,7 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
     windowManager.focus();
   }
 
-  void _dismissWelcome() {
-    setState(() => _welcomeShown = true);
-  }
+  void _dismissWelcome() => setState(() => _welcomeShown = true);
 
   @override
   Widget build(BuildContext context) {
@@ -217,12 +213,17 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
         title: 'PaperPal',
         debugShowCheckedModeBanner: false,
         themeMode: _themeMode,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
+        theme: AppTheme.fromVariant(_themeVariant, Brightness.light, amoled: _amoled),
+        darkTheme: AppTheme.fromVariant(_themeVariant, Brightness.dark, amoled: _amoled),
         home: _welcomeShown
             ? _AppShell(
                 locator: widget.locator,
                 onThemeChanged: (mode) => setState(() => _themeMode = mode),
+                onVariantChanged: (v) {
+                  setState(() => _themeVariant = v);
+                  widget.locator.get<IConfigService>().updateConfig(
+                    widget.locator.get<IConfigService>().config.copyWith(themeVariant: v.name));
+                },
               )
             : WelcomePage(onComplete: _dismissWelcome),
       ),
@@ -230,23 +231,24 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
   }
 }
 
+/// Kori 风格应用外壳 — 自适应侧边栏 + 内容区
 class _AppShell extends StatefulWidget {
   final ServiceLocator locator;
   final void Function(ThemeMode) onThemeChanged;
-  const _AppShell({required this.locator, required this.onThemeChanged});
+  final void Function(ThemeVariant) onVariantChanged;
+
+  const _AppShell({
+    required this.locator,
+    required this.onThemeChanged,
+    required this.onVariantChanged,
+  });
 
   @override
   State<_AppShell> createState() => _AppShellState();
 }
 
 class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
-  int _currentIndex = 0;
-
-  final _pages = <Widget>[
-    const SearchPage(),
-    const LibraryPage(),
-    const SettingsPage(),
-  ];
+  NavItem _selectedNav = NavItem.search;
 
   final _focusNode = FocusNode();
 
@@ -260,8 +262,7 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
 
   void _onSearchPageAction() {
     final action = searchPageAction.value;
-    if (action == null) return;
-    if (_currentIndex != 0) setState(() => _currentIndex = 0);
+    if (action != null) setState(() => _selectedNav = NavItem.search);
   }
 
   void _onPaperToView() {
@@ -286,8 +287,7 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      final platform = widget.locator.get<IConfigService>().platform;
-      if (!platform.isAndroid) {
+      if (!widget.locator.get<IConfigService>().platform.isAndroid) {
         windowManager.show();
       }
     }
@@ -300,94 +300,67 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final network = widget.locator.get<INetworkService>();
-    final platform = widget.locator.get<IConfigService>().platform;
     final isMobile = _isMobile;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final ps = widget.locator.get<IPaperService>();
+
+    final sidebar = AppSidebar(
+      selectedItem: _selectedNav,
+      paperCount: ps.papers.length,
+      starredCount: ps.papers.where((p) => p.starred).length,
+      onItemSelected: (item) => setState(() => _selectedNav = item),
+      onThemeToggle: () {
+        final next = isDark ? ThemeMode.light : ThemeMode.dark;
+        widget.onThemeChanged(next);
+      },
+      isDark: isDark,
+    );
+
+    Widget pageContent;
+    switch (_selectedNav) {
+      case NavItem.search:
+        pageContent = const SearchPage();
+      case NavItem.library:
+        pageContent = const LibraryPage();
+      case NavItem.templates:
+        pageContent = const SettingsPage(); // placeholder - template page TBD
+      case NavItem.settings:
+        pageContent = const SettingsPage();
+    }
 
     if (isMobile) {
       return Scaffold(
-        body: AnimatedBackground(
-          child: IndexedStack(
-            index: _currentIndex,
-            children: _pages,
-          ),
-        ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _currentIndex,
-          onDestinationSelected: (i) => setState(() => _currentIndex = i),
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.search), label: '搜索'),
-            NavigationDestination(icon: Icon(Icons.library_books), label: '论文库'),
-            NavigationDestination(icon: Icon(Icons.settings), label: '设置'),
-          ],
-        ),
+        appBar: AppBar(title: Text(_selectedNav.label)),
+        drawer: Drawer(child: SafeArea(child: sidebar)),
+        body: pageContent,
       );
     }
 
-    return Scaffold(
-      body: AnimatedBackground(
-        child: CallbackShortcuts(
-        bindings: {
-          const SingleActivator(LogicalKeyboardKey.keyS, control: true): () => setState(() => _currentIndex = 0),
-          const SingleActivator(LogicalKeyboardKey.keyL, control: true): () => setState(() => _currentIndex = 1),
-          const SingleActivator(LogicalKeyboardKey.keyP, control: true): () => setState(() => _currentIndex = 2),
-          if (!platform.isAndroid)
-            const SingleActivator(LogicalKeyboardKey.keyQ, control: true): () => windowManager.close(),
-        },
-        child: Focus(
-          focusNode: _focusNode,
-          autofocus: !isMobile,
-          child: Row(
-            children: [
-              Column(
-                children: [
-                  Expanded(
-                    child: NavigationRail(
-                      selectedIndex: _currentIndex,
-                      onDestinationSelected: (i) => setState(() => _currentIndex = i),
-                      labelType: NavigationRailLabelType.all,
-                      destinations: const [
-                        NavigationRailDestination(icon: Icon(Icons.search), label: Text('搜索')),
-                        NavigationRailDestination(icon: Icon(Icons.library_books), label: Text('论文库')),
-                        NavigationRailDestination(icon: Icon(Icons.settings), label: Text('设置')),
-                      ],
-                    ),
-                  ),
-                  StreamBuilder<bool>(
-                    stream: network.statusStream,
-                    initialData: network.isOnline,
-                    builder: (context, snapshot) {
-                      final online = snapshot.data ?? true;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Icon(
-                          online ? Icons.cloud_done : Icons.cloud_off,
-                          size: 14,
-                          color: online ? Colors.green : Colors.red,
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 4),
-                  IconButton(
-                    icon: Icon(
-                      Theme.of(context).brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
-                      size: 20,
-                    ),
-                    tooltip: Theme.of(context).brightness == Brightness.dark ? '切换到浅色模式' : '切换到深色模式',
-                    onPressed: () {
-                      final next = Theme.of(context).brightness == Brightness.dark ? ThemeMode.light : ThemeMode.dark;
-                      widget.onThemeChanged(next);
-                    },
-                  ),
-                ],
+    // Desktop: Kori 风格 permanent drawer
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyS, control: true): () => setState(() => _selectedNav = NavItem.search),
+        const SingleActivator(LogicalKeyboardKey.keyL, control: true): () => setState(() => _selectedNav = NavItem.library),
+        const SingleActivator(LogicalKeyboardKey.keyP, control: true): () => setState(() => _selectedNav = NavItem.settings),
+        if (!widget.locator.get<IConfigService>().platform.isAndroid)
+          const SingleActivator(LogicalKeyboardKey.keyQ, control: true): () => windowManager.close(),
+      },
+      child: Focus(
+        focusNode: _focusNode,
+        autofocus: true,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 280,
+              child: Material(
+                color: Theme.of(context).colorScheme.surfaceContainer,
+                child: SafeArea(child: sidebar),
               ),
-              const VerticalDivider(width: 1),
-              Expanded(child: _pages[_currentIndex]),
-            ],
-          ),
+            ),
+            const VerticalDivider(width: 1),
+            Expanded(child: pageContent),
+          ],
         ),
-      ),
       ),
     );
   }

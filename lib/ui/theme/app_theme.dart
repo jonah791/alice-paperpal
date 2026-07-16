@@ -1,8 +1,22 @@
+/// PaperPal 主题系统 — 融合 Kori 配色 + Alice 奇幻主题
+///
+/// 7 个主题变体: Blue / Cyan / Green / Orange / Red / Black / Alice
+/// 每个变体有完整 light/dark ColorScheme（含 M3 所有 surface 层级）
+library;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/models/config.dart';
 import '../../core/tokens/design_tokens.dart';
 import '../widgets/page_transition.dart';
+import 'themes/theme_variant.dart';
+import 'themes/kori_blue.dart';
+import 'themes/kori_cyan.dart';
+import 'themes/kori_green.dart';
+import 'themes/kori_orange.dart';
+import 'themes/kori_red.dart';
+import 'themes/kori_black.dart';
+import 'themes/alice.dart';
 
 extension AppThemeModeX on AppThemeMode {
   ThemeMode toFlutterThemeMode() {
@@ -14,40 +28,53 @@ extension AppThemeModeX on AppThemeMode {
   }
 }
 
+/// All 7 theme variants with their light/dark ColorScheme pairs.
+(ColorScheme light, ColorScheme dark) colorSchemeForVariant(ThemeVariant variant) {
+  return switch (variant) {
+    ThemeVariant.blue => (LightBlueColors, DarkBlueColors),
+    ThemeVariant.cyan => (LightCyanColors, DarkCyanColors),
+    ThemeVariant.green => (LightGreenColors, DarkGreenColors),
+    ThemeVariant.orange => (LightOrangeColors, DarkOrangeColors),
+    ThemeVariant.red => (LightRedColors, DarkRedColors),
+    ThemeVariant.black => (LightBlackColors, DarkBlackColors),
+    ThemeVariant.alice => (LightAliceColors, DarkAliceColors),
+  };
+}
+
 class AppTheme {
   AppTheme._();
 
-  static ColorScheme _darkColors() {
-    return const ColorScheme.dark(
-      primary: Color(0xFFE8B84B),
-      onPrimary: Color(0xFF1A1025),
-      secondary: Color(0xFF9B6DF7),
-      onSecondary: Color(0xFFFFFFFF),
-      surface: Color(0xFF120C1F),
-      onSurface: Color(0xFFEDE4D8),
-    );
-  }
+  /// Build complete ThemeData from a variant + brightness.
+  static ThemeData fromVariant(ThemeVariant variant, Brightness brightness, {bool amoled = false}) {
+    final (light, dark) = colorSchemeForVariant(variant);
+    final isDark = brightness == Brightness.dark;
+    var colors = isDark ? dark : light;
 
-  static ColorScheme _lightColors() {
-    return const ColorScheme.light(
-      primary: Color(0xFFC28A2C),
-      onPrimary: Color(0xFFFFFFFF),
-      secondary: Color(0xFF6D28D9),
-      onSecondary: Color(0xFFFFFFFF),
-      surface: Color(0xFFFFFFFF),
-      onSurface: Color(0xFF1A1025),
-    );
-  }
+    // AMOLED mode: push background/surface to pure black
+    if (isDark && amoled) {
+      colors = colors.copyWith(
+        background: const Color(0xFF000000),
+        surface: const Color(0xFF000000),
+        surfaceDim: const Color(0xFF000000),
+        surfaceBright: const Color(0xFF0D0D0D),
+        surfaceContainerLowest: const Color(0xFF000000),
+        surfaceContainerLow: const Color(0xFF0A0A0A),
+        surfaceContainer: const Color(0xFF121212),
+        surfaceContainerHigh: const Color(0xFF1A1A1A),
+        surfaceContainerHighest: const Color(0xFF222222),
+      );
+    }
 
-  static Color _textColor(Brightness b) =>
-      b == Brightness.dark ? const Color(0xFFEDE4D8) : const Color(0xFF1A1025);
+    final scaffoldBg = isDark
+        ? (amoled ? const Color(0xFF000000) : colors.background)
+        : colors.background;
 
-  static TextTheme _textTheme(Brightness brightness) {
-    final Color tc = _textColor(brightness);
+    final Color tc = isDark ? colors.onSurface : colors.onSurface;
+
     const sans = GoogleFonts.inter;
     const serif = GoogleFonts.playfairDisplay;
 
-    return TextTheme(
+    final textTheme = TextTheme(
       displayLarge: serif(fontSize: DesignTokens.fs9xl, fontWeight: FontWeight.w700, color: tc),
       displayMedium: serif(fontSize: DesignTokens.fs8xl, fontWeight: FontWeight.w700, color: tc),
       displaySmall: serif(fontSize: DesignTokens.fs7xl, fontWeight: FontWeight.w600, color: tc),
@@ -64,83 +91,58 @@ class AppTheme {
       labelMedium: sans(fontSize: DesignTokens.fsSm, fontWeight: FontWeight.w500, color: tc),
       labelSmall: sans(fontSize: DesignTokens.fsXs, fontWeight: FontWeight.w500, color: tc),
     );
-  }
 
-  static CardThemeData _cardTheme(Brightness brightness) {
-    final Color gold = brightness == Brightness.dark
-        ? const Color(0xFFE8B84B)
-        : const Color(0xFFC28A2C);
-
-    return CardThemeData(
+    final cardTheme = CardThemeData(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
-        side: BorderSide(color: gold.withValues(alpha: DesignTokens.opacityFaint)),
+        side: BorderSide(color: colors.primary.withValues(alpha: DesignTokens.opacityFaint)),
       ),
       elevation: DesignTokens.borderNone,
       margin: const EdgeInsets.only(bottom: DesignTokens.spGap),
+      color: isDark ? colors.surfaceContainerLow : colors.surface,
     );
-  }
 
-  static InputDecorationTheme _inputTheme(Brightness brightness) {
-    final bool isDark = brightness == Brightness.dark;
-    final Color fill = isDark ? const Color(0xFF120C1F) : const Color(0xFFF5F0EB);
-    final Color gold = isDark ? const Color(0xFFE8B84B) : const Color(0xFFC28A2C);
-
-    return InputDecorationTheme(
+    final inputTheme = InputDecorationTheme(
       filled: true,
-      fillColor: fill,
+      fillColor: isDark ? colors.surfaceContainerLow : colors.surfaceContainerLowest,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
-        borderSide: BorderSide(color: gold.withValues(alpha: DesignTokens.opacityMedium)),
+        borderSide: BorderSide(color: colors.outline.withValues(alpha: DesignTokens.opacityMedium)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
-        borderSide: BorderSide(color: gold.withValues(alpha: DesignTokens.opacityMedium)),
+        borderSide: BorderSide(color: colors.outline.withValues(alpha: DesignTokens.opacityMedium)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
-        borderSide: BorderSide(color: gold, width: DesignTokens.borderLg),
+        borderSide: BorderSide(color: colors.primary, width: DesignTokens.borderLg),
       ),
       contentPadding: padSym(h: DesignTokens.sp4, v: DesignTokens.sp2),
     );
-  }
-
-  static ElevatedButtonThemeData _buttonTheme(Brightness brightness) {
-    final bool isDark = brightness == Brightness.dark;
-    final Color gold = isDark ? const Color(0xFFE8B84B) : const Color(0xFFC28A2C);
-    final Color onGold = isDark ? const Color(0xFF1A1025) : const Color(0xFFFFFFFF);
-
-    return ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: gold,
-        foregroundColor: onGold,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(DesignTokens.radiusFull),
-        ),
-        textStyle: GoogleFonts.inter(
-          fontSize: DesignTokens.fsLg,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  static ThemeData _base(Brightness brightness) {
-    final bool isDark = brightness == Brightness.dark;
-    final ColorScheme colors = isDark ? _darkColors() : _lightColors();
-    final Color scaffoldBg = isDark ? const Color(0xFF07050D) : const Color(0xFFFFFBF3);
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: colors,
       scaffoldBackgroundColor: scaffoldBg,
-      textTheme: _textTheme(brightness),
-      cardTheme: _cardTheme(brightness),
-      inputDecorationTheme: _inputTheme(brightness),
-      elevatedButtonTheme: _buttonTheme(brightness),
+      textTheme: textTheme,
+      cardTheme: cardTheme,
+      inputDecorationTheme: inputTheme,
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: colors.primary,
+          foregroundColor: colors.onPrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(DesignTokens.radiusFull),
+          ),
+          textStyle: GoogleFonts.inter(
+            fontSize: DesignTokens.fsLg,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
       dividerTheme: DividerThemeData(
-        color: colors.onSurface.withValues(alpha: DesignTokens.opacityFaint),
+        color: colors.outlineVariant,
       ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
@@ -150,6 +152,10 @@ class AppTheme {
       ),
       navigationRailTheme: const NavigationRailThemeData(
         labelType: NavigationRailLabelType.all,
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: isDark ? colors.surfaceContainerLow : colors.surface,
+        indicatorColor: colors.secondaryContainer,
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -161,6 +167,7 @@ class AppTheme {
     );
   }
 
-  static ThemeData get light => _base(Brightness.light);
-  static ThemeData get dark => _base(Brightness.dark);
+  // Shortcuts for the default Alice theme (backward compatibility)
+  static ThemeData get light => fromVariant(ThemeVariant.alice, Brightness.light);
+  static ThemeData get dark => fromVariant(ThemeVariant.alice, Brightness.dark);
 }
