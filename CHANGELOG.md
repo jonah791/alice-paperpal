@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.5.0] - 2026-07-16
+
+### Added — Kori UI 全面移植
+
+- **Kori 风格侧边栏** — 280px 永久抽屉，带圆形头像 + 灵魂名称 + 4 导航项（搜索/文库/模板/设置）
+- **Kori 风格论文库** — 圆角 12px 卡片、状态 badge、时间戳、选择模式、删除/对比
+- **Kori 风格设置页** — 卡片分组布局、7 色主题选择器（Blue/Cyan/Green/Orange/Red/Black/Alice）、AMOLED 深黑开关
+- **笔记模板页** — 5 预设模板（论文总结/阅读笔记/审稿意见/会议记录/灵感笔记）+ 预览 + 自定义删除
+- **Kori 风格阅读页** — 内容居中约束 maxWidth 800、行高 1.8、代码块 header 栏 + 圆角 12px
+
+### Changed — 主题系统
+
+- **7 套完整 ColorScheme** — Blue/Cyan/Green/Orange/Red/Black/Alice，每套含全部 M3 surface 层级
+- **AMOLED 模式** — 深色下 surface 使用纯黑 `#000000`
+- **主题配置持久化** — `config.themeVariant` 字符串存储，settings 页实时切换
+
+### Fixed — 前后端耦合
+
+- **PaperService → IMineruApi 接口注入** — 消除 `new MineruApi()` 直调，通过 DI 注入（`init.dart` 注册 `IMineruApi`）
+- **MineruApi 实现 IMineruApi** — 接口定义移至 `mineru_api.dart`，消除与 `services.dart` 的循环引用
+- **ParseService 使用 IMineruApi** — 不再依赖具体类
+- **ZoteroApi 封装为 IZoteroService** — 创建 `zotero_service.dart`，search_page 改为 `context.zoteroService`，消除 UI 直调 API
+- **MermaidRenderer 添加 IMermaidRenderer 接口** — 注册到 DI
+- **ReadPage 缓存路径封装** — `IPaperService.getPdfFile()` 方法，消除 UI 直接访问文件系统
+- **SearchService 构造注入** — ArxivApi/S2Api 已通过构造参数提供（维持默认值 fallback）
+- **0 errors 静态分析**
+
+### Added — 便携包
+
+- **PaperPal-Portable.zip** — 14MB 解压即用，含所有 DLL + data + tool 脚本
+- **PaperPal.bat 启动器** — 支持 `PAPERPAL_DATA` 自定义数据目录
+
 ## [0.4.3] - 2026-07-15
 
 ### Added

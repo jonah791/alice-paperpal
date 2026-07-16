@@ -144,7 +144,7 @@ Atom XML，解析 `<entry>` 元素:
 
 ## 5. PaperPal REST API Server
 
-本地 HTTP 服务器，暴露全部核心功能。27 个端点。
+本地 HTTP 服务器，暴露全部核心功能。目前已达 28+ 个端点。
 
 ### 启动
 

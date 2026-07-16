@@ -8,8 +8,7 @@
 [![Platform](https://img.shields.io/badge/Windows-0078D6?logo=windows&logoColor=white)]()
 [![Platform](https://img.shields.io/badge/Android-34D058?logo=android&logoColor=white)]()
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
-[![GitHub release](https://img.shields.io/github/v/release/jonah791/alice-paperpal?label=v0.4.3)](https://github.com/jonah791/alice-paperpal/releases)
-[![Tests](https://img.shields.io/badge/tests-366+-brightgreen)]()
+[![GitHub release](https://img.shields.io/github/v/release/jonah791/alice-paperpal?label=v0.5.0)](https://github.com/jonah791/alice-paperpal/releases)
 [![Analyze](https://img.shields.io/badge/analyze-0%20issues-success)]()
 
 **基于 MinerU + DeepSeek V4 的 AI 论文阅读伴侣。**
@@ -205,15 +204,17 @@ Search:     Ctrl+F 页面搜索
 ```
 paperpal/
 ├── lib/
-│   ├── main.dart           # Entry + DI + AnimatedBackground
+│   ├── main.dart           # Entry + DI + AnimatedBackground + Kori 侧边栏
 │   ├── server_main.dart    # REST API 服务器 (Flutter entry point)
 │   ├── core/                # Pure Dart, no Flutter dependency
-│   │   ├── api/             # 7 API clients (arXiv, S2, MinerU, LLM, Zotero, Dio, MarkItDown)
-│   │   ├── models/          # 9 data models (+ Document)
-│   │   ├── services/        # 17 services (+ DocConversion, Template, Mermaid)
+│   │   ├── api/             # 8 API clients (arXiv, S2, MinerU, LLM, Zotero, Dio, MarkItDown)
+│   │   ├── models/          # 10 data models (+ Document)
+│   │   ├── services/        # 18 services (+ DocConversion, Template, Mermaid, Zotero)
 │   │   └── utils/           # 4 utilities
 │   └── ui/
-│       ├── pages/           # 7 pages
+│       ├── pages/           # 8 pages (+ TemplatePage)
+│       ├── widgets/         # 18 reusable widgets (+ Mermaid, FindBar, TemplatePicker, AppSidebar, AdaptiveDrawer)
+│       └── theme/           # 7 Kori 风格 ColorScheme + AMOLED
 │       ├── widgets/         # 15 reusable widgets (+ Mermaid, FindBar, TemplatePicker)
 │       └── theme/           # Dual Alice-in-Wonderland theme
 ├── android/                 # Android project + signing template
