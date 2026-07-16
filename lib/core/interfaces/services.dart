@@ -73,6 +73,7 @@ abstract class IPaperService {
   Future<String> askQuestion(String paperId, String question);
   Stream<String> askQuestionStream(String paperId, String question);
   Future<String> summarize(String paperId);
+  Future<File?> getPdfFile(String paperId);
   Future<void> deletePaper(String paperId);
   Future<void> updatePaper(Paper paper);
   Future<void> touchPaper(String paperId);

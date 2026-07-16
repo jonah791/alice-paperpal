@@ -58,7 +58,6 @@ Future<void> importCommand(List<String> args) async {
 }
 
 Future<Map<String, dynamic>?> _fetchArxivMetadata(String url, String title) async {
-  // Extract arXiv ID from URL
   final arxivMatch = RegExp(r'arxiv\.org/(?:abs|pdf)/(\d+\.\d+)').firstMatch(url);
   if (arxivMatch == null) return null;
 
@@ -97,7 +96,6 @@ Future<void> _importFromSearch(int index, String apiKey, Map<String, dynamic> cf
   }
 
   try {
-    // Download PDF
     final searchService = SearchService();
     final tempDir = Directory.systemTemp.createTempSync('paperpal_import_');
     final pdf = await searchService.downloadPdf(result, tempDir.path);
@@ -109,7 +107,6 @@ Future<void> _importFromSearch(int index, String apiKey, Map<String, dynamic> cf
 
     println('${cyan("Downloaded PDF")}: ${pdf.path} (${pdf.statSync().size} bytes)');
 
-    // Parse via MinerU
     final mineru = MineruApi(apiKey: apiKey);
     final parseService = ParseService(api: mineru);
     final pageCount = (pdf.statSync().size ~/ 50000).clamp(1, 500);
@@ -135,7 +132,6 @@ Future<void> _importFromSearch(int index, String apiKey, Map<String, dynamic> cf
     savePapersIndex(papers);
     savePaperMarkdown(paperId, parseResult.markdown);
 
-    // Cleanup temp
     pdf.deleteSync();
 
     printSuccess('Import complete: id=$paperId');
@@ -169,7 +165,6 @@ Future<void> _importPdf(String pdfPath, String apiKey, {String? title}) async {
     final result = await parseService.parsePdf(file, pageCount);
     final paperId = DateTime.now().millisecondsSinceEpoch.toString();
 
-    // Try to extract title from markdown
     var finalTitle = resolvedTitle;
     final firstLine = result.markdown.split('\n').firstWhere(
       (l) => l.startsWith('# ') && l.length > 2,
@@ -216,7 +211,6 @@ Future<void> _importUrl(String url, String apiKey, {String? title}) async {
     final resolvedTitle = title ?? url.split('/').last.replaceAll('.pdf', '').replaceAll(RegExp(r'%20|_'), ' ');
     final paperId = DateTime.now().millisecondsSinceEpoch.toString();
 
-    // Try to fetch arXiv metadata
     var authors = <String>[];
     var year = 0;
     var doi = '';

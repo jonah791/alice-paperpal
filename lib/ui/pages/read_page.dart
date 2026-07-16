@@ -719,10 +719,9 @@ class _ReadPageState extends State<ReadPage> {
     if (confirmed != true || !mounted) return;
 
     final messenger = ScaffoldMessenger.of(context);
-    final cache = context.cacheService;
-    final ps2 = context.paperService;
-    final pdfPath = cache.pdfPath(widget.paper.id);
-    if (!await File(pdfPath).exists()) {
+    final ps = context.paperService;
+    final pdfFile = await ps.getPdfFile(widget.paper.id);
+    if (pdfFile == null) {
       if (mounted) {
         messenger.showSnackBar(
           const SnackBar(content: Text('原始 PDF 文件不存在，无法重新解析')),
@@ -735,7 +734,7 @@ class _ReadPageState extends State<ReadPage> {
       messenger.showSnackBar(
         const SnackBar(content: Text('正在重新解析...')),
       );
-      final paper = await ps2.importPdf(File(pdfPath));
+      final paper = await ps.importPdf(pdfFile);
       if (!mounted) return;
       if (paper == null) {
         messenger.showSnackBar(
@@ -835,10 +834,9 @@ class _ReadPageState extends State<ReadPage> {
 
   Future<void> _openOriginalPdf() async {
     final messenger = ScaffoldMessenger.of(context);
-    final cache = context.cacheService;
     final platform = context.configService.platform;
-    final pdfPath = cache.pdfPath(widget.paper.id);
-    if (!await File(pdfPath).exists()) {
+    final pdfFile = await context.paperService.getPdfFile(widget.paper.id);
+    if (pdfFile == null) {
       if (mounted) {
         messenger.showSnackBar(
           const SnackBar(content: Text('原始 PDF 文件不存在')),
@@ -847,7 +845,7 @@ class _ReadPageState extends State<ReadPage> {
       return;
     }
     try {
-      await platform.openFile(pdfPath);
+      await platform.openFile(pdfFile.path);
     } catch (e) {
       _log.warning('open PDF failed: $e');
       if (mounted) {

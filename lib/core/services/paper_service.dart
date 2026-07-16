@@ -239,6 +239,14 @@ class PaperService implements IPaperService {
   Future<String?> getTranslation(String paperId) => _cache.readTranslation(paperId);
 
   @override
+  Future<File?> getPdfFile(String paperId) async {
+    final path = _cache.pdfPath(paperId);
+    final file = File(path);
+    if (await file.exists()) return file;
+    return null;
+  }
+
+  @override
   Future<void> touchPaper(String paperId) async {
     try {
       final paper = _papers.firstWhere((p) => p.id == paperId);
