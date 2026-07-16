@@ -26,9 +26,9 @@ class PaperService implements IPaperService {
   final ISoulService _soul;
   final IMemoryService _memory;
   final IPortraitService _portrait;
-  late final ParseService _parse;
+  late ParseService _parse;
   final _fallback = PdfFallbackService();
-  late final TranslationService _translation;
+  late TranslationService _translation;
 
   final INoteService _noteService;
   final _papers = <Paper>{};

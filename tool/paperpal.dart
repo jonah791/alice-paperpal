@@ -20,6 +20,7 @@ import 'commands/soul_command.dart' show soulCommand;
 import 'commands/note_command.dart' show noteCommand;
 import 'commands/memory_command.dart' show memoryCommand;
 import 'commands/portrait_command.dart' show portraitCommand;
+import 'commands/convert_command.dart' show convertCommand;
 
 Future<void> main(List<String> args) async {
   if (args.isEmpty) {
@@ -58,6 +59,8 @@ Future<void> main(List<String> args) async {
         memoryCommand(rest);
       case 'portrait':
         portraitCommand(rest);
+      case 'convert':
+        await convertCommand(rest);
       case 'help':
         _printHelp();
       default:
@@ -81,6 +84,9 @@ void _printHelp() {
   println('  import search <index>             Import paper from search result index');
   println('  import pdf <path> [--title T]     Import and parse a local PDF');
   println('  import url <url> [--title T]      Import and parse PDF from URL\n');
+  println('${bold("Document Conversion")}:');
+  println('  convert <path> [--output F]       Convert any document to Markdown');
+  println('  convert <path> --json             Convert and output as JSON\n');
   println('${bold("Papers")}:');
   println('  papers list [--status S] [--json]  List imported papers');
   println('  papers show <id> [--translated]    Show paper content');

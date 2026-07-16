@@ -144,3 +144,84 @@ abstract class ITranslationService {
   Future<String> translate(String markdown, {String target});
   String validateLatex(String text);
 }
+
+// ─── Unified Document Conversion (MarkItDown integration) ─────
+
+abstract class IDocConversionService {
+  Future<bool> get isPythonAvailable;
+  Future<ConversionResult> convertToMarkdown(File file);
+  List<String> get supportedExtensions;
+  String get filterLabel;
+}
+
+class ConversionResult {
+  final bool success;
+  final String markdown;
+  final String title;
+  final String sourceFormat;
+  final String sourceType;
+  final String? error;
+
+  const ConversionResult({
+    required this.success,
+    required this.markdown,
+    required this.title,
+    this.sourceFormat = 'unknown',
+    this.sourceType = 'markitdown',
+    this.error,
+  });
+}
+
+// ─── Note Template System (Kori integration) ──────────────────
+
+abstract class ITemplateService {
+  List<NoteTemplate> get all;
+  List<NoteTemplate> get custom;
+  Future<void> init();
+  Future<void> addTemplate(NoteTemplate template);
+  Future<void> deleteTemplate(String id);
+  NoteTemplate? getTemplate(String id);
+}
+
+class NoteTemplate {
+  final String id;
+  final String name;
+  final String description;
+  final String markdown;
+  final bool isBuiltin;
+
+  const NoteTemplate({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.markdown,
+    this.isBuiltin = false,
+  });
+
+  String render({String? paperTitle, String? dateStr}) {
+    final now = dateStr ?? _formatDate(DateTime.now());
+    return markdown
+        .replaceAll('{{date}}', now)
+        .replaceAll('{{title}}', paperTitle ?? '')
+        .replaceAll('{{time}}', _formatTime(DateTime.now()));
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id, 'name': name, 'description': description,
+    'markdown': markdown, 'isBuiltin': isBuiltin,
+  };
+
+  factory NoteTemplate.fromJson(Map<String, dynamic> json) => NoteTemplate(
+    id: json['id'] as String? ?? '',
+    name: json['name'] as String? ?? '',
+    description: json['description'] as String? ?? '',
+    markdown: json['markdown'] as String? ?? '',
+    isBuiltin: json['isBuiltin'] as bool? ?? false,
+  );
+
+  static String _formatDate(DateTime dt) =>
+      '${dt.year}-${_pad(dt.month)}-${_pad(dt.day)}';
+  static String _formatTime(DateTime dt) =>
+      '${_pad(dt.hour)}:${_pad(dt.minute)}';
+  static String _pad(int n) => n.toString().padLeft(2, '0');
+}

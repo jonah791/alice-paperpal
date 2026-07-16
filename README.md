@@ -13,7 +13,7 @@
 [![Analyze](https://img.shields.io/badge/analyze-0%20issues-success)]()
 
 **基于 MinerU + DeepSeek V4 的 AI 论文阅读伴侣。**
-**搜索论文 → 导入 PDF → 自动解析 → 自动翻译 → AI 问答与摘要。**
+**搜索论文 → 导入 PDF/Office/EPUB → 自动解析 → 自动翻译 → AI 问答与摘要。**
 **一位有灵魂、有记忆、有性格的 AI 伙伴，陪你读懂每一篇论文。**
 
 [⬇ 下载](https://github.com/jonah791/alice-paperpal/releases/latest)
@@ -30,27 +30,32 @@
 
 | 它能做什么 | 你获得什么 |
 |---|---|
-| 自动解析 PDF（MinerU + 轻量 Fallback） | 无需自建服务也能用 |
+| 自动解析 PDF/Office/EPUB（MinerU + MarkItDown） | 多格式文档统一导入 |
 | 非中文论文自动翻译 | 母语阅读，速度翻倍 |
 | AI 问答基于全论文上下文 | 像教授一样随时答疑 |
 | 记住你讨论过的一切 | 伙伴了解你的研究轨迹 |
-| 4 种灵魂人格任选 | 找到最合拍的学术搭档 |
+| 5 种笔记模板 + 自定义 | 结构化记录你的思考 |
+| 4 种灵魂人格任选 + 自定义人格 | 找到最合拍的学术搭档 |
 
 ## ✨ 亮点
 
-- **🎭 AI 灵魂系统** — 4 个预置角色（学术导师 / 代码专家 / 审稿人 / 科普达人），也可用自然语言创造专属于你的 AI 伙伴
+- **🎭 AI 灵魂系统** — 4 个预置角色（学术导师 / 代码专家 / 审稿人 / 科普达人），也可用自然语言创造专属于你的 AI 伙伴；支持 REST API 切换人格
 - **🧠 永不遗忘的记忆** — 每次对话自动摘要，跨 session 注入。你的 AI 伙伴记得两天前你问过什么
+- **📄 多格式文档导入** — PDF / DOCX / PPTX / XLSX / EPUB / HTML / Markdown / 图片，统一 Markdown 管道
 - **📖 从搜索到理解，全流程覆盖**
 
   ```
-  搜索论文 → 导入(单篇/批量/URL/arXiv/Zotero) → 自动解析(MinerU → Agent免Key → poppler → flutter_pdf → 元数据) → 自动翻译 → AI 问答(划词即问) + 高亮 + 笔记 + 摘要 + 导出
+  搜索/文库 → 导入(单篇/批量/URL/arXiv/Zotero) → 自动解析(MinerU → MarkItDown → 降级链) → 自动翻译 → AI 问答(划词即问) + 高亮 + 笔记 + 摘要 + 导出
   ```
 
 - **⭐ 收藏与断点续读** — 星标标记重要论文，阅读位置自动保存，下次打开回到上次位置
 - **🔍 划词问答 + 高亮** — 选中文本 → 浮动菜单 → 提问或添加高亮标记
 - **🔗 Deep link** — 点击 `paperpal://arxiv/XXXX.XXXX` 链接自动导入论文
-- **🌐 REST API** — 16 端点 HTTP 服务，支持远程调用和 SSE 流式问答
+- **🌐 REST API** — 27 端点 HTTP 服务，支持论文/笔记/灵魂/记忆/配置/转换/导出，SSE 流式问答
 - **📚 Zotero 集成** — 从 Zotero 文库一键导入论文
+- **📝 笔记模板系统** — 5 个预置模板（论文总结/阅读笔记/审稿意见/会议记录/灵感笔记）+ 自定义模板
+- **📐 Mermaid 图表** — Markdown 内嵌 Mermaid 图表渲染
+- **🔎 页面内搜索** — Ctrl+F 搜索阅读页面内容，匹配计数 + 导航
 - **🎨 Alice in Wonderland 主题** — 深紫+暖金暗色 / 暖白+金日间双主题 + 导航栏一键切换，动感渐变背景
 - **📱 桌面 & 移动端** — Windows 安装包 + Android APK，数据互通，体验一致
 - **🔒 隐私优先** — 无后端服务器，API Key 加密存储（DPAPI / Android Keystore），日志脱敏
@@ -87,7 +92,7 @@ dart run tool/paperpal.dart import search 0
 dart run tool/paperpal.dart ask <id> "核心贡献是什么？"
 ```
 
-完整的 12 个子命令覆盖搜索、导入、解析、问答、摘要、翻译、导出、灵魂管理、笔记、记忆、画像。
+完整的 13 个子命令覆盖搜索、导入、解析、问答、摘要、翻译、导出、灵魂管理、笔记、记忆、画像、文档转换。
 
 ```bash
 dart run tool/paperpal.dart help
@@ -106,7 +111,7 @@ flutter build windows --release -t lib/server_main.dart
 ./build/windows/x64/runner/Release/paperpal.exe --port 4090
 ```
 
-所有核心功能通过 REST API 暴露，包括流式问答（SSE）。
+所有核心功能通过 27 个 REST API 端点暴露。
 
 ### 从源码构建
 
@@ -189,7 +194,10 @@ UI Theme:    Custom dual ColorScheme (deep purple + gold / warm cream + gold)
 UI Fonts:    Playfair Display / Inter / Noto Serif SC
 Packaging:   Inno Setup (Windows) / APK (Android)
 CI/CD:       GitHub Actions (analyze → test → build → release)
-API Server:  shelf + shelf_router + shelf_cors_headers (16 endpoints, SSE)
+API Server:  shelf + shelf_router + shelf_cors_headers (27 endpoints, SSE)
+Doc Conv:   MarkItDown (Python) — DOCX/PPTX/XLSX/EPUB/HTML/图片/音频 → Markdown
+Diagrams:   Mermaid.js (WebView)
+Search:     Ctrl+F 页面搜索
 ```
 
 ## 项目结构
@@ -200,17 +208,17 @@ paperpal/
 │   ├── main.dart           # Entry + DI + AnimatedBackground
 │   ├── server_main.dart    # REST API 服务器 (Flutter entry point)
 │   ├── core/                # Pure Dart, no Flutter dependency
-│   │   ├── api/             # 6 API clients (arXiv, S2, MinerU, LLM, Zotero, Dio)
-│   │   ├── models/          # 8 data models
-│   │   ├── services/        # 14 services (incl. platform abstraction)
+│   │   ├── api/             # 7 API clients (arXiv, S2, MinerU, LLM, Zotero, Dio, MarkItDown)
+│   │   ├── models/          # 9 data models (+ Document)
+│   │   ├── services/        # 17 services (+ DocConversion, Template, Mermaid)
 │   │   └── utils/           # 4 utilities
 │   └── ui/
 │       ├── pages/           # 7 pages
-│       ├── widgets/         # 12 reusable widgets
+│       ├── widgets/         # 15 reusable widgets (+ Mermaid, FindBar, TemplatePicker)
 │       └── theme/           # Dual Alice-in-Wonderland theme
 ├── android/                 # Android project + signing template
-├── test/                    # 366 unit & widget tests
-├── tool/                    # CLI (12 commands)
+├── test/                    # 366+ unit & widget tests
+├── tool/                    # CLI (13 commands) ← convert 命令
 └── windows/                 # Windows project + installer script
 ```
 

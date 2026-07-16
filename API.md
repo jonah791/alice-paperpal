@@ -139,3 +139,88 @@ Atom XML，解析 `<entry>` 元素:
   }]
 }
 ```
+
+---
+
+## 5. PaperPal REST API Server
+
+本地 HTTP 服务器，暴露全部核心功能。27 个端点。
+
+### 启动
+
+```bash
+flutter build windows --release -t lib/server_main.dart
+./build/windows/x64/runner/Release/paperpal.exe --port 4090
+```
+
+### 端点点表
+
+#### 健康 & 统计
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/health` | 服务健康检查 |
+| GET | `/stats` | 综合统计（论文/笔记/记忆数） |
+
+#### 论文管理
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/papers` | 论文列表，支持 `?status=`, `?starred=true`, `?q=`, `?sort=recent` |
+| GET | `/papers/:id` | 单篇论文元数据 |
+| DELETE | `/papers/:id` | 删除论文 |
+| PUT | `/papers/:id/star` | 切换收藏 |
+| PUT | `/papers/:id/status` | 更新状态 |
+| GET | `/papers/:id/content` | 论文 Markdown 内容 |
+| GET | `/papers/:id/translation` | 论文翻译 |
+
+#### 搜索 & 导入
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/search` | 搜索论文（arXiv + Semantic Scholar）|
+| POST | `/import/search` | 从搜索结果导入 |
+| POST | `/convert` | 转换文档为 Markdown（MarkItDown）`{"path":"..."}` |
+
+#### AI 问答
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/ask/:id` | SSE 流式问答 |
+| POST | `/ask/:id/sync` | 非流式问答 |
+| POST | `/summarize/:id` | 生成摘要 |
+
+#### 笔记
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/notes/:paperId` | 笔记列表 |
+| POST | `/notes/:paperId` | 添加笔记 `{"text":"...", "type":"note"}` |
+| DELETE | `/notes/:noteId` | 删除笔记 |
+
+#### 灵魂系统
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/souls` | 灵魂列表（预设+自定义）|
+| GET | `/souls/active` | 当前活跃灵魂 |
+| PUT | `/souls/active` | 切换灵魂 `{"id":"code_expert"}` |
+| POST | `/souls` | 创建自定义灵魂 `{"name":"...","description":"..."}` |
+| DELETE | `/souls/:id` | 删除自定义灵魂 |
+
+#### 记忆 & 画像
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/memories?limit=10` | 对话记忆 |
+| POST | `/memories/prune` | 清理旧记忆 |
+| GET | `/portrait` | 用户画像 |
+
+#### 模板 & 配置 & 导出
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/templates` | 笔记模板列表 |
+| GET | `/config` | 查看配置（脱敏，无 API Key）|
+| POST | `/export/markdown/:id` | 导出 Markdown |
+| POST | `/export/bibtex/:id` | 导出 BibTeX |

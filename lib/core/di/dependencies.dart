@@ -38,4 +38,6 @@ extension ServiceX on BuildContext {
   IPortraitService get portraitService => Dependencies.of(this).get<IPortraitService>();
   IAvatarService get avatarService => Dependencies.of(this).get<IAvatarService>();
   ILLMProvider get llmProvider => Dependencies.of(this).get<ILLMProvider>();
+  IDocConversionService get docConversion => Dependencies.of(this).get<IDocConversionService>();
+  ITemplateService get templateService => Dependencies.of(this).get<ITemplateService>();
 }

@@ -4,11 +4,15 @@
 // Adding a new service? Register it in [createLocator] in one place.
 // Both apps automatically pick it up.
 
+import 'dart:io' show File;
+
 import 'api/llm_provider.dart';
+import 'api/markitdown_bridge.dart';
 import 'interfaces/services.dart';
 import 'di/service_locator.dart';
 import 'services/cache_service.dart';
 import 'services/config_service.dart';
+import 'services/doc_conversion_service.dart';
 import 'services/memory_service.dart';
 import 'services/network_service.dart';
 import 'services/note_service.dart';
@@ -17,13 +21,12 @@ import 'services/portrait_service.dart';
 import 'services/search_service.dart';
 import 'services/soul_service.dart';
 import 'services/avatar_service.dart';
+import 'services/template_service.dart';
+import 'services/mermaid_renderer.dart';
 import 'services/platform_service.dart';
 import 'utils/logger.dart';
 
 /// Creates and wires all application services.
-/// Call once at startup, then pass [locator] to [Dependencies] (Flutter)
-/// or use [locator.get] directly (CLI/server).
-/// Pass [platform] to override the platform service (e.g. for headless server).
 Future<ServiceLocator> createLocator({PlatformService? platform}) async {
   final locator = ServiceLocator();
   final platformService = platform ?? createPlatformService();
@@ -85,5 +88,34 @@ Future<ServiceLocator> createLocator({PlatformService? platform}) async {
   await paperService.init();
   locator.registerInstance<IPaperService>(paperService);
 
+  // ── Unified Document Conversion (MarkItDown) ──────────────────
+  final bridgeScript = _findBridgeScript();
+  final bridge = MarkitdownBridge(bridgeScript);
+  final docConversion = DocConversionService(bridge);
+  locator.registerInstance<IDocConversionService>(docConversion);
+
+  // ── Note Templates (Kori) ────────────────────────────────────
+  final templateService = TemplateService();
+  await templateService.init();
+  locator.registerInstance<ITemplateService>(templateService);
+
+  // ── Mermaid Renderer (MD Preview) ────────────────────────────
+  final mermaidRenderer = MermaidRenderer();
+  // Registered as concrete class (no interface needed)
+  locator.registerInstance(mermaidRenderer);
+
   return locator;
+}
+
+/// Locate the MarkItDown Python bridge script.
+String _findBridgeScript() {
+  final candidates = [
+    'tool/markitdown_bridge.py',
+    '../tool/markitdown_bridge.py',
+    'packages/paperpal/tool/markitdown_bridge.py',
+  ];
+  for (final path in candidates) {
+    if (File(path).existsSync()) return path;
+  }
+  return 'tool/markitdown_bridge.py';
 }
