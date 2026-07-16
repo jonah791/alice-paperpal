@@ -14,6 +14,7 @@ import 'ui/pages/search_page.dart';
 import 'ui/pages/library_page.dart';
 import 'ui/pages/read_page.dart';
 import 'ui/pages/settings_page.dart';
+import 'ui/pages/template_page.dart';
 import 'ui/pages/welcome_page.dart';
 import 'ui/theme/app_theme.dart';
 import 'ui/theme/themes/theme_variant.dart';
@@ -323,7 +324,7 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
       case NavItem.library:
         pageContent = const LibraryPage();
       case NavItem.templates:
-        pageContent = const SettingsPage(); // placeholder - template page TBD
+        pageContent = const TemplatePage();
       case NavItem.settings:
         pageContent = const SettingsPage();
     }

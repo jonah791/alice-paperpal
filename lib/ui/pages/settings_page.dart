@@ -1,9 +1,16 @@
+/// Kori 风格设置页 — 卡片分组 + 主题选择器
+library;
+
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import '../../core/di/dependencies.dart';
 import '../../core/tokens/design_tokens.dart';
+import '../../core/interfaces/services.dart';
+import '../../core/models/config.dart';
 import '../widgets/soul_selector.dart';
 import '../widgets/avatar_picker.dart';
+import '../widgets/theme_selector.dart';
+import '../theme/themes/theme_variant.dart';
 
 final _log = Logger('SettingsPage');
 
@@ -15,16 +22,19 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  final _llmKeyController = TextEditingController();
-  final _llmBaseController = TextEditingController();
-  final _llmModelController = TextEditingController();
-  final _mineruKeyController = TextEditingController();
+  final _llmKeyCtrl = TextEditingController();
+  final _llmBaseCtrl = TextEditingController();
+  final _llmModelCtrl = TextEditingController();
+  final _mineruKeyCtrl = TextEditingController();
   bool _loading = true;
   bool _saving = false;
   bool _loaded = false;
   String _mineruModelVersion = 'vlm';
   bool _enableFormula = true;
   bool _enableTable = true;
+  bool _autoTranslate = true;
+  ThemeVariant _themeVariant = ThemeVariant.alice;
+  bool _amoled = false;
   bool _llmKeyVisible = false;
   bool _mineruKeyVisible = false;
 
@@ -34,11 +44,6 @@ class _SettingsPageState extends State<SettingsPage> {
     'pipeline': 'Pipeline',
     'MinerU-HTML': 'MinerU-HTML',
   };
-
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   void didChangeDependencies() {
@@ -53,17 +58,19 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       final cs = context.configService;
       final cfg = cs.config;
-      final llmKey = await cs.readLlmApiKey();
-      final mineruKey = await cs.readMineruApiKey();
-
-      _llmKeyController.text = llmKey ?? '';
-      _llmBaseController.text = cfg.llmApiBase;
-      _llmModelController.text = cfg.llmModel;
-      _mineruKeyController.text = mineruKey ?? '';
+      _llmKeyCtrl.text = (await cs.readLlmApiKey()) ?? '';
+      _llmBaseCtrl.text = cfg.llmApiBase;
+      _llmModelCtrl.text = cfg.llmModel;
+      _mineruKeyCtrl.text = (await cs.readMineruApiKey()) ?? '';
       _mineruModelVersion = cfg.mineruModelVersion;
       _enableFormula = cfg.enableFormula;
       _enableTable = cfg.enableTable;
-
+      _autoTranslate = cfg.autoTranslate;
+      _themeVariant = ThemeVariant.values.firstWhere(
+        (t) => t.name == cfg.themeVariant,
+        orElse: () => ThemeVariant.alice,
+      );
+      _amoled = cfg.amoledMode;
       if (mounted) setState(() => _loading = false);
     } catch (e) {
       _log.warning('loadSettings failed: $e');
@@ -73,111 +80,182 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   void dispose() {
-    _llmKeyController.dispose();
-    _llmBaseController.dispose();
-    _llmModelController.dispose();
-    _mineruKeyController.dispose();
+    _llmKeyCtrl.dispose();
+    _llmBaseCtrl.dispose();
+    _llmModelCtrl.dispose();
+    _mineruKeyCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
 
     return ListView(
-      padding: const EdgeInsets.all(Spacing.xl),
+      padding: const EdgeInsets.all(24),
       children: [
-        Text('设置', style: theme.textTheme.titleLarge),
-        const SizedBox(height: Spacing.xl),
-
-        _sectionLabel(context, 'LLM 配置'),
-        const SizedBox(height: Spacing.gap),
+        // ── 外观 ──────────────────────────────────────────────
+        _sectionLabel(context, '外观'),
+        const SizedBox(height: 12),
         Card(
+          elevation: 0,
+          color: colors.surfaceContainerLow,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
-            padding: const EdgeInsets.all(Spacing.lg),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('默认使用 DeepSeek V4 Flash。支持 OpenAI 兼容 API。',
-                    style: theme.textTheme.bodySmall),
-                const SizedBox(height: Spacing.lg),
+                ThemeSelector(
+                  current: _themeVariant,
+                  onChanged: (v) => setState(() => _themeVariant = v),
+                ),
+                const Divider(height: 24),
+                SwitchListTile(
+                  title: const Text('AMOLED 深黑模式', style: TextStyle(fontSize: 14)),
+                  subtitle: const Text('深色模式下使用纯黑背景', style: TextStyle(fontSize: 12)),
+                  value: _amoled,
+                  onChanged: (v) => setState(() => _amoled = v),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // ── LLM 配置 ──────────────────────────────────────────
+        _sectionLabel(context, 'LLM 配置'),
+        const SizedBox(height: 12),
+        Card(
+          elevation: 0,
+          color: colors.surfaceContainerLow,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('支持 OpenAI 兼容 API，默认 DeepSeek V4',
+                    style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
+                const SizedBox(height: 16),
                 TextField(
-                  controller: _llmKeyController,
+                  controller: _llmKeyCtrl,
                   obscureText: !_llmKeyVisible,
                   decoration: InputDecoration(
                     labelText: 'API Key',
-                    border: const OutlineInputBorder(),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true, fillColor: colors.surface,
                     suffixIcon: IconButton(
                       icon: Icon(_llmKeyVisible ? Icons.visibility_off : Icons.visibility, size: 18),
                       onPressed: () => setState(() => _llmKeyVisible = !_llmKeyVisible),
                     ),
                   ),
                 ),
-                const SizedBox(height: Spacing.md),
+                const SizedBox(height: 12),
                 TextField(
-                  controller: _llmBaseController,
-                  decoration: const InputDecoration(
+                  controller: _llmBaseCtrl,
+                  decoration: InputDecoration(
                     labelText: 'API Base',
                     hintText: 'https://api.deepseek.com',
-                    border: OutlineInputBorder(),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true, fillColor: colors.surface,
                   ),
                 ),
-                const SizedBox(height: Spacing.md),
+                const SizedBox(height: 12),
                 TextField(
-                  controller: _llmModelController,
-                  decoration: const InputDecoration(
+                  controller: _llmModelCtrl,
+                  decoration: InputDecoration(
                     labelText: '模型',
                     hintText: 'deepseek-v4-flash',
-                    border: OutlineInputBorder(),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true, fillColor: colors.surface,
                   ),
+                ),
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  title: const Text('自动翻译', style: TextStyle(fontSize: 14)),
+                  subtitle: const Text('非中文论文导入后自动翻译', style: TextStyle(fontSize: 12)),
+                  value: _autoTranslate,
+                  onChanged: (v) => setState(() => _autoTranslate = v),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
                 ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: Spacing.lg),
-        _sectionLabel(context, '灵魂'),
-        const SizedBox(height: Spacing.gap),
-        const SoulSelector(),
-        const SizedBox(height: Spacing.lg),
-        _sectionLabel(context, '头像'),
-        const SizedBox(height: Spacing.gap),
-        const AvatarPicker(),
-        const SizedBox(height: Spacing.lg),
+        const SizedBox(height: 24),
 
-        _sectionLabel(context, '解析引擎'),
-        const SizedBox(height: Spacing.gap),
+        // ── AI 灵魂 ───────────────────────────────────────────
+        _sectionLabel(context, 'AI 灵魂'),
+        const SizedBox(height: 12),
         Card(
+          elevation: 0,
+          color: colors.surfaceContainerLow,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: const Padding(
+            padding: EdgeInsets.all(20),
+            child: SoulSelector(),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // ── 头像 ──────────────────────────────────────────────
+        _sectionLabel(context, '头像'),
+        const SizedBox(height: 12),
+        Card(
+          elevation: 0,
+          color: colors.surfaceContainerLow,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: const Padding(
+            padding: EdgeInsets.all(20),
+            child: AvatarPicker(),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // ── 解析引擎 ─────────────────────────────────────────
+        _sectionLabel(context, '解析引擎'),
+        const SizedBox(height: 12),
+        Card(
+          elevation: 0,
+          color: colors.surfaceContainerLow,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
-            padding: const EdgeInsets.all(Spacing.lg),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('论文 PDF 将上传至 MinerU 云端进行解析（v4 API）。',
-                    style: theme.textTheme.bodySmall),
-                const SizedBox(height: Spacing.lg),
+                Text('PDF 上传至 MinerU 云端解析（v4 API）',
+                    style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
+                const SizedBox(height: 16),
                 TextField(
-                  controller: _mineruKeyController,
+                  controller: _mineruKeyCtrl,
                   obscureText: !_mineruKeyVisible,
                   decoration: InputDecoration(
                     labelText: 'API Key',
-                    border: const OutlineInputBorder(),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true, fillColor: colors.surface,
                     suffixIcon: IconButton(
                       icon: Icon(_mineruKeyVisible ? Icons.visibility_off : Icons.visibility, size: 18),
                       onPressed: () => setState(() => _mineruKeyVisible = !_mineruKeyVisible),
                     ),
                   ),
                 ),
-                const SizedBox(height: Spacing.md),
+                const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  initialValue: _mineruModelVersion,
-                  decoration: const InputDecoration(
+                  value: _mineruModelVersion,
+                  decoration: InputDecoration(
                     labelText: '模型版本',
-                    border: OutlineInputBorder(),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true, fillColor: colors.surface,
                   ),
                   items: _modelVersions.map((v) => DropdownMenuItem(
                     value: v,
@@ -187,39 +265,48 @@ class _SettingsPageState extends State<SettingsPage> {
                     if (v != null) setState(() => _mineruModelVersion = v);
                   },
                 ),
-                const SizedBox(height: Spacing.md),
+                const SizedBox(height: 8),
                 CheckboxListTile(
-                  title: const Text('公式识别'),
-                  subtitle: const Text('识别并提取数学公式'),
+                  title: const Text('公式识别', style: TextStyle(fontSize: 14)),
+                  subtitle: const Text('识别并提取数学公式', style: TextStyle(fontSize: 12)),
                   value: _enableFormula,
                   onChanged: (v) => setState(() => _enableFormula = v ?? true),
                   contentPadding: EdgeInsets.zero,
+                  dense: true,
                 ),
                 CheckboxListTile(
-                  title: const Text('表格识别'),
-                  subtitle: const Text('识别并提取表格结构'),
+                  title: const Text('表格识别', style: TextStyle(fontSize: 14)),
+                  subtitle: const Text('识别并提取表格结构', style: TextStyle(fontSize: 12)),
                   value: _enableTable,
                   onChanged: (v) => setState(() => _enableTable = v ?? true),
                   contentPadding: EdgeInsets.zero,
+                  dense: true,
                 ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: Spacing.lg),
+        const SizedBox(height: 28),
 
-        // Save
-        FilledButton.icon(
-          onPressed: _saving ? null : _saveSettings,
-          icon: _saving
-              ? const SizedBox(
-                  width: DesignTokens.iconMd,
-                  height: DesignTokens.iconMd,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.save),
-          label: Text(_saving ? '保存中...' : '保存'),
+        // ── 保存按钮 ─────────────────────────────────────────
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: _saving ? null : _saveSettings,
+            icon: _saving
+                ? const SizedBox(
+                    width: 18, height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : const Icon(Icons.save),
+            label: Text(_saving ? '保存中...' : '保存设置'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+          ),
         ),
+        const SizedBox(height: 40),
       ],
     );
   }
@@ -232,41 +319,38 @@ class _SettingsPageState extends State<SettingsPage> {
       final ps = context.paperService;
       final messenger = ScaffoldMessenger.of(context);
 
-      if (_llmKeyController.text.isNotEmpty) {
-        await cs.saveLlmApiKey(_llmKeyController.text);
+      if (_llmKeyCtrl.text.isNotEmpty) {
+        await cs.saveLlmApiKey(_llmKeyCtrl.text);
       }
-      if (_mineruKeyController.text.isNotEmpty) {
-        await cs.saveMineruApiKey(_mineruKeyController.text);
+      if (_mineruKeyCtrl.text.isNotEmpty) {
+        await cs.saveMineruApiKey(_mineruKeyCtrl.text);
       }
 
-      final currentCfg = cs.config;
-      final updatedConfig = currentCfg.copyWith(
-        llmModel: _llmModelController.text.isNotEmpty
-            ? _llmModelController.text
-            : currentCfg.llmModel,
-        llmApiBase: _llmBaseController.text.isNotEmpty
-            ? _llmBaseController.text
-            : currentCfg.llmApiBase,
+      final cfg = cs.config;
+      await cs.updateConfig(cfg.copyWith(
+        llmModel: _llmModelCtrl.text.isNotEmpty ? _llmModelCtrl.text : cfg.llmModel,
+        llmApiBase: _llmBaseCtrl.text.isNotEmpty ? _llmBaseCtrl.text : cfg.llmApiBase,
         mineruModelVersion: _mineruModelVersion,
         enableFormula: _enableFormula,
         enableTable: _enableTable,
-      );
-      await cs.updateConfig(updatedConfig);
+        autoTranslate: _autoTranslate,
+        themeVariant: _themeVariant.name,
+        amoledMode: _amoled,
+      ));
 
       await ps.reconfigureMineru();
       await ps.reconfigureLlm();
 
       if (mounted) {
-        _log.info('settings saved: modelVersion=$_mineruModelVersion');
-        messenger.showSnackBar(
-          const SnackBar(content: Text('设置已保存'), duration: Duration(seconds: 3)),
-        );
+        messenger.showSnackBar(const SnackBar(
+          content: Text('设置已保存'), duration: Duration(seconds: 2),
+        ));
       }
     } catch (e) {
       _log.warning('saveSettings failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('保存失败，请检查输入后重试')),
+          const SnackBar(content: Text('保存失败，请重试')),
         );
       }
     } finally {
@@ -278,10 +362,10 @@ class _SettingsPageState extends State<SettingsPage> {
     return Text(
       title,
       style: TextStyle(
-        fontSize: DesignTokens.fsXxs,
-        color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.4),
-        letterSpacing: 2,
-        fontWeight: FontWeight.w500,
+        fontSize: DesignTokens.fsXs,
+        color: Theme.of(context).colorScheme.primary,
+        letterSpacing: 1.5,
+        fontWeight: FontWeight.w600,
       ),
     );
   }

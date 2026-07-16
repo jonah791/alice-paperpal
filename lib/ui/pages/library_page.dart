@@ -1,7 +1,9 @@
+/// Kori 风格论文库
+library;
+
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'search_page.dart' show searchPageAction, SearchPageAction;
-
 import '../../core/models/paper.dart';
 import '../../core/di/dependencies.dart';
 import '../../core/tokens/design_tokens.dart';
@@ -45,13 +47,11 @@ class _LibraryPageState extends State<LibraryPage> {
     result = result.toList()..sort((a, b) {
       switch (_sortMode) {
         case _SortMode.lastRead:
-          final ra = a.lastReadAt ?? a.importedAt ?? DateTime(2000);
-          final rb = b.lastReadAt ?? b.importedAt ?? DateTime(2000);
-          return rb.compareTo(ra);
+          return (b.lastReadAt ?? b.importedAt ?? DateTime(2000))
+              .compareTo(a.lastReadAt ?? a.importedAt ?? DateTime(2000));
         case _SortMode.imported:
-          final ia = a.importedAt ?? DateTime(2000);
-          final ib = b.importedAt ?? DateTime(2000);
-          return ib.compareTo(ia);
+          return (b.importedAt ?? DateTime(2000))
+              .compareTo(a.importedAt ?? DateTime(2000));
         case _SortMode.title:
           return a.title.compareTo(b.title);
       }
@@ -62,11 +62,13 @@ class _LibraryPageState extends State<LibraryPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
     return Column(
       children: [
         _buildSelectionBar(theme),
-        _buildFilterBar(context, theme),
+        _buildFilterBar(theme),
+        // Search field
         Padding(
           padding: padSym(h: Spacing.lg, v: Spacing.sm),
           child: TextField(
@@ -74,9 +76,9 @@ class _LibraryPageState extends State<LibraryPage> {
             decoration: InputDecoration(
               hintText: '在文库中搜索...',
               prefixIcon: const Icon(Icons.search, size: DesignTokens.iconSm),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(DesignTokens.radiusLg)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               filled: true,
-              fillColor: theme.colorScheme.surfaceContainerHighest,
+              fillColor: colors.surfaceContainerHighest,
               isDense: true,
               contentPadding: padSym(v: Spacing.sm, h: Spacing.md),
               suffixIcon: _searchQuery.isNotEmpty
@@ -107,12 +109,12 @@ class _LibraryPageState extends State<LibraryPage> {
 
               if (allPapers.isEmpty) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Padding(
-                      padding: const EdgeInsets.all(Spacing.lg),
-                      child: ListView(
-                        children: List.generate(5, (i) => const Padding(
-                          padding: EdgeInsets.only(bottom: Spacing.gap),
-                          child: SkeletonLoader(height: 80, borderRadius: RadiusTokens.lg),
+                  return Padding(
+                    padding: const EdgeInsets.all(Spacing.lg),
+                    child: ListView(
+                      children: List.generate(5, (i) => const Padding(
+                        padding: EdgeInsets.only(bottom: Spacing.gap),
+                        child: SkeletonLoader(height: 80, borderRadius: RadiusTokens.lg),
                       )),
                     ),
                   );
@@ -121,16 +123,15 @@ class _LibraryPageState extends State<LibraryPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.library_books_outlined, size: 64,
-                          color: theme.colorScheme.onSurfaceVariant),
-                      const SizedBox(height: Spacing.lg),
+                      Icon(Icons.library_books_outlined, size: 64, color: colors.onSurfaceVariant),
+                      const SizedBox(height: 16),
                       Text('还没有论文', style: theme.textTheme.titleMedium),
-                      const SizedBox(height: Spacing.gap),
+                      const SizedBox(height: 8),
                       Text('搜索论文或直接上传 PDF', style: theme.textTheme.bodySmall),
-                      const SizedBox(height: Spacing.lg),
+                      const SizedBox(height: 20),
                       FilledButton.icon(
                         onPressed: () => searchPageAction.value = SearchPageAction.search,
-                        icon: const Icon(Icons.search, size: DesignTokens.iconMd),
+                        icon: const Icon(Icons.search, size: 18),
                         label: const Text('去搜索'),
                       ),
                     ],
@@ -143,12 +144,10 @@ class _LibraryPageState extends State<LibraryPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.filter_alt_off, size: 48,
-                          color: theme.colorScheme.onSurfaceVariant),
-                      const SizedBox(height: Spacing.lg),
+                      Icon(Icons.filter_alt_off, size: 48, color: colors.onSurfaceVariant),
+                      const SizedBox(height: 16),
                       Text(_filterStatus != 0 || _searchQuery.isNotEmpty
-                          ? '当前筛选条件下没有论文'
-                          : '没有匹配的论文',
+                          ? '当前筛选条件下没有论文' : '没有匹配的论文',
                         style: theme.textTheme.bodyMedium),
                     ],
                   ),
@@ -160,17 +159,20 @@ class _LibraryPageState extends State<LibraryPage> {
                   _buildSortBar(theme, papers.length),
                   Expanded(
                     child: ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 0),
+                      padding: EdgeInsets.only(
+                        left: 16, right: 16,
+                        bottom: _selected.isEmpty ? 4 : 0,
+                      ),
                       itemCount: papers.length,
                       itemBuilder: (context, index) =>
-                          _buildPaperCard(context, papers[index], theme),
+                          _buildPaperCard(papers[index], theme, colors),
                     ),
                   ),
-                  if (_selected.isEmpty)
+                  if (_selected.isEmpty && papers.isNotEmpty)
                     Padding(
-                      padding: padSym(h: Spacing.lg, v: DesignTokens.sp1),
-                      child: Text('长按卡片可多选对比或批量删除',
-                        style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4))),
+                      padding: padSym(h: Spacing.lg, v: 4),
+                      child: Text('长按卡片可多选对比或删除',
+                        style: TextStyle(fontSize: 10, color: colors.onSurfaceVariant.withValues(alpha: 0.4))),
                     ),
                 ],
               );
@@ -181,13 +183,146 @@ class _LibraryPageState extends State<LibraryPage> {
     );
   }
 
+  Widget _buildPaperCard(Paper paper, ThemeData theme, ColorScheme colors) {
+    final isSelected = _selected.contains(paper.id);
+    final isReadable = paper.status == PaperStatus.parsed || paper.status == PaperStatus.translated;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 400),
+        builder: (context, value, child) => Opacity(
+          opacity: value,
+          child: Transform.translate(offset: Offset(0, 8 * (1 - value)), child: child),
+        ),
+        child: Card(
+          elevation: isSelected ? 0 : 1,
+          color: isSelected ? colors.primaryContainer : colors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: isSelected
+                ? BorderSide(color: colors.primary.withValues(alpha: 0.4))
+                : BorderSide.none,
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              if (_selected.isNotEmpty) {
+                _toggleSelection(paper.id);
+              } else if (isReadable) {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => ReadPage(paper: paper)));
+              }
+            },
+            onLongPress: () => _toggleSelection(paper.id),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Selection checkbox
+                  if (_selected.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 12, top: 2),
+                      child: Icon(
+                        isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                        size: 20,
+                        color: isSelected ? colors.primary : colors.onSurfaceVariant,
+                      ),
+                    ),
+                  // Content
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                paper.title,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.3,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (paper.starred)
+                              const Padding(
+                                padding: EdgeInsets.only(left: 4),
+                                child: Icon(Icons.star, size: 14, color: Colors.amber),
+                              ),
+                          ],
+                        ),
+                        if (paper.authors.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            paper.authors.join(', '),
+                            style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            // Status badge
+                            Container(
+                              padding: padSym(h: 8, v: 3),
+                              decoration: BoxDecoration(
+                                color: paper.status.color(context).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                paper.status.label,
+                                style: TextStyle(
+                                  fontSize: DesignTokens.fsXs,
+                                  color: paper.status.color(context),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (paper.lastReadAt != null)
+                              Text(
+                                _timeAgo(paper.lastReadAt!),
+                                style: TextStyle(
+                                  fontSize: DesignTokens.fsXs,
+                                  color: colors.onSurfaceVariant.withValues(alpha: 0.6),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Menu
+                  if (_selected.isEmpty)
+                    PopupMenuButton<String>(
+                      onSelected: (v) {
+                        if (v == 'delete') _confirmDelete(paper);
+                      },
+                      itemBuilder: (ctx) => [
+                        const PopupMenuItem(value: 'delete', child: Text('删除')),
+                      ],
+                      icon: Icon(Icons.more_vert, size: 18, color: colors.onSurfaceVariant),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSortBar(ThemeData theme, int count) {
     return Padding(
-      padding: padSym(h: Spacing.lg, v: Spacing.sm),
+      padding: padSym(h: Spacing.lg, v: 4),
       child: Row(
         children: [
-          Text('$count 篇',
-            style: theme.textTheme.bodySmall),
+          Text('$count 篇', style: theme.textTheme.bodySmall),
           const Spacer(),
           DropdownButton<_SortMode>(
             value: _sortMode,
@@ -212,10 +347,7 @@ class _LibraryPageState extends State<LibraryPage> {
     if (_selected.length < 2) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.gap),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer,
-        border: Border(bottom: BorderSide(color: theme.dividerColor)),
-      ),
+      color: theme.colorScheme.primaryContainer,
       child: Row(
         children: [
           Text('已选 ${_selected.length} 篇', style: theme.textTheme.bodySmall),
@@ -223,13 +355,13 @@ class _LibraryPageState extends State<LibraryPage> {
           if (_selected.length >= 2)
             FilledButton.tonalIcon(
               onPressed: _compareSelected,
-              icon: const Icon(Icons.compare_arrows, size: DesignTokens.sp4),
+              icon: const Icon(Icons.compare_arrows, size: 16),
               label: const Text('对比'),
             ),
           const SizedBox(width: Spacing.gap),
           FilledButton.tonalIcon(
             onPressed: _deleteSelected,
-            icon: const Icon(Icons.delete_outline, size: DesignTokens.sp4),
+            icon: const Icon(Icons.delete_outline, size: 16),
             label: const Text('删除'),
             style: FilledButton.styleFrom(
               backgroundColor: theme.colorScheme.errorContainer,
@@ -237,32 +369,21 @@ class _LibraryPageState extends State<LibraryPage> {
             ),
           ),
           const SizedBox(width: Spacing.gap),
-          TextButton(
-            onPressed: () => setState(() => _selected.clear()),
-            child: const Text('取消'),
-          ),
+          TextButton(onPressed: () => setState(() => _selected.clear()), child: const Text('取消')),
         ],
       ),
     );
   }
 
-  Widget _buildFilterBar(BuildContext context, ThemeData theme) {
+  Widget _buildFilterBar(ThemeData theme) {
     final filterLabels = [
-      '全部',
-      '⭐ 星标',
-      PaperStatus.importing.label,
-      PaperStatus.parsing.label,
-      PaperStatus.parsed.label,
-      PaperStatus.translating.label,
-      PaperStatus.translated.label,
-      PaperStatus.error.label,
+      '全部', '⭐ 星标',
+      '导入中', '解析中', '已解析', '翻译中', '已翻译', '错误',
     ];
 
     return Container(
       padding: padSym(h: Spacing.lg, v: Spacing.sm),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: theme.dividerColor)),
-      ),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: theme.dividerColor))),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -274,131 +395,12 @@ class _LibraryPageState extends State<LibraryPage> {
               child: FilterChip(
                 label: Text(filterLabels[i], style: const TextStyle(fontSize: DesignTokens.fsSm)),
                 selected: selected,
-                selectedColor: status?.color(context).withValues(alpha: 0.2),
+                selectedColor: status?.color(context).withValues(alpha: 0.15),
                 checkmarkColor: status?.color(context),
                 onSelected: (_) => setState(() => _filterStatus = i),
-            ));
+              ),
+            );
           }),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPaperCard(BuildContext context, Paper paper, ThemeData theme) {
-    final isSelected = _selected.contains(paper.id);
-    final isReadable = paper.status == PaperStatus.parsed || paper.status == PaperStatus.translated;
-    final suits = ['\u2660', '\u2665', '\u2666', '\u2663'];
-    final suit = suits[(paper.id.hashCode) % 4];
-
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 500),
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.translate(
-            offset: Offset(0, 10 * (1 - value)),
-            child: child,
-          ),
-        );
-      },
-      child: Card(
-        margin: const EdgeInsets.only(bottom: Spacing.gap),
-        color: isSelected ? theme.colorScheme.primaryContainer : null,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(RadiusTokens.lg),
-          onTap: () {
-            if (_selected.isNotEmpty) {
-              _toggleSelection(paper.id);
-            } else if (isReadable) {
-              _log.info('open: ${paper.title}');
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => ReadPage(paper: paper)),
-              );
-            }
-          },
-          onLongPress: () => _toggleSelection(paper.id),
-          child: Padding(
-            padding: const EdgeInsets.all(Spacing.lg),
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  left: BorderSide(
-                    color: theme.colorScheme.secondary.withValues(alpha: 0.3),
-                    width: 3,
-                  ),
-                ),
-              ),
-              child: Row(
-                children: [
-                  if (_selected.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(right: Spacing.md),
-                      child: Icon(
-                        isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                        size: 20,
-                        color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(suit, style: theme.textTheme.titleSmall),
-                            if (paper.starred) const Icon(Icons.star, size: 14, color: Colors.amber),
-                            const SizedBox(width: Spacing.gap),
-                            Expanded(
-                              child: Text(paper.title,
-                                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-                            ),
-                          ],
-                        ),
-                        if (paper.authors.isNotEmpty) ...[
-                          const SizedBox(height: DesignTokens.sp1),
-                          Text(paper.authors.join(', '),
-                              style: theme.textTheme.bodySmall,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: Spacing.md),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Chip(
-                        label: Text(paper.status.label, style: const TextStyle(fontSize: DesignTokens.fsXs)),
-                        backgroundColor: paper.status.color(context).withValues(alpha: 0.1),
-                        side: BorderSide(color: paper.status.color(context).withValues(alpha: 0.3)),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      if (paper.lastReadAt != null) ...[
-                        const SizedBox(height: DesignTokens.sp1),
-                        Text(_timeAgo(paper.lastReadAt!),
-                          style: TextStyle(fontSize: DesignTokens.fsXs, color: theme.colorScheme.onSurfaceVariant)),
-                      ],
-                      if (paper.sourceType != 'mineru')
-                        Text(paper.sourceType == 'fallback_text' ? '文本' : '页提取',
-                          style: TextStyle(fontSize: DesignTokens.fsXxs, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5))),
-                    ],
-                  ),
-                  if (_selected.isEmpty)
-                    PopupMenuButton<String>(
-                      onSelected: (v) {
-                        if (v == 'delete') _confirmDelete(paper);
-                      },
-                      itemBuilder: (ctx) => [
-                        const PopupMenuItem(value: 'delete', child: Text('删除')),
-                      ],
-                    ),
-                ],
-              ),
-            ),
-          ),
         ),
       ),
     );
@@ -406,23 +408,16 @@ class _LibraryPageState extends State<LibraryPage> {
 
   void _toggleSelection(String id) {
     setState(() {
-      if (_selected.contains(id)) {
-        _selected.remove(id);
-      } else {
-        _selected.add(id);
-      }
+      if (_selected.contains(id)) _selected.remove(id);
+      else _selected.add(id);
     });
   }
 
   void _compareSelected() {
     if (_selected.length < 2) return;
-
     final papers = context.paperService.papers.where((p) => _selected.contains(p.id)).toList();
     _selected.clear();
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => ComparisonPage(papers: papers)),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (_) => ComparisonPage(papers: papers)));
   }
 
   Future<void> _deleteSelected() async {
@@ -430,29 +425,21 @@ class _LibraryPageState extends State<LibraryPage> {
     setState(() => _selected.clear());
     var deleted = 0;
     try {
-  
       for (final id in ids) {
         await context.paperService.deletePaper(id);
         deleted++;
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已删除 $deleted 篇论文')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('已删除 $deleted 篇论文')));
       }
     } catch (e) {
-      _log.warning('deleteSelected failed: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('删除失败，请重试')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('删除失败，请重试')));
       }
     }
   }
 
   Future<void> _confirmDelete(Paper paper) async {
-    final ps = context.paperService;
-    final messenger = ScaffoldMessenger.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -465,20 +452,14 @@ class _LibraryPageState extends State<LibraryPage> {
       ),
     );
     if (confirmed != true) return;
-
     try {
-      await ps.deletePaper(paper.id);
+      await context.paperService.deletePaper(paper.id);
       if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(content: Text('已删除: ${paper.title}')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('已删除: ${paper.title}')));
       }
     } catch (e) {
-      _log.warning('deletePaper failed: $e');
       if (mounted) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('删除失败，请重试')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('删除失败')));
       }
     }
   }
@@ -493,16 +474,15 @@ class _LibraryPageState extends State<LibraryPage> {
   }
 }
 
-extension on PaperStatus {
+extension _StatusX on PaperStatus {
   Color color(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return switch (this) {
-      PaperStatus.importing => cs.tertiary,
-      PaperStatus.downloading => cs.tertiary,
+      PaperStatus.importing || PaperStatus.downloading => cs.tertiary,
       PaperStatus.parsing => cs.primary,
       PaperStatus.parsed => cs.secondary,
       PaperStatus.translating => cs.primary,
-      PaperStatus.translated => cs.primary,
+      PaperStatus.translated => Colors.green,
       PaperStatus.error => cs.error,
     };
   }
