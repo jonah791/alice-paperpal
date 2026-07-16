@@ -350,10 +350,16 @@ class _ReadPageState extends State<ReadPage> {
 
   Widget _buildContent(ThemeData theme, String text,
       {ScrollController? controller}) {
-    return SingleChildScrollView(
-      controller: controller,
-      padding: const EdgeInsets.all(Spacing.xl),
-      child: _buildArticle(text, theme),
+    return Container(
+      color: theme.colorScheme.surface,
+      child: SingleChildScrollView(
+        controller: controller,
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: _buildArticle(text, theme),
+        ),
+      ),
     );
   }
 
@@ -413,23 +419,29 @@ class _ReadPageState extends State<ReadPage> {
     final isDark = theme.brightness == Brightness.dark;
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(vertical: Spacing.sm),
-      padding: const EdgeInsets.all(Spacing.md),
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: isDark
             ? const Color(0xFF1E1E2E)
-            : const Color(0xFFF5F5F0),
-        borderRadius: BorderRadius.circular(RadiusTokens.md),
+            : const Color(0xFFF8F8F8),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (seg.language.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF2A2A3E)
+                    : const Color(0xFFEEEEEE),
+              ),
               child: Text(
                 seg.language,
                 style: TextStyle(
@@ -445,7 +457,7 @@ class _ReadPageState extends State<ReadPage> {
             style: TextStyle(
               fontFamily: 'monospace',
               fontSize: DesignTokens.fsSm,
-              height: DesignTokens.lhNormal,
+              height: 1.6,
               color: isDark
                   ? const Color(0xFFCDD6F4)
                   : const Color(0xFF1E1E2E),
@@ -457,11 +469,15 @@ class _ReadPageState extends State<ReadPage> {
   }
 
   Widget _buildText(_TextSegment seg, ThemeData theme) {
-    return SelectableText(
-      seg.text,
-      style: theme.textTheme.bodyMedium?.copyWith(
-        height: DesignTokens.lhRelaxed,
-        fontSize: _fontSize,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: SelectableText(
+        seg.text,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          height: 1.8,
+          fontSize: _fontSize,
+          color: theme.colorScheme.onSurface,
+        ),
       ),
     );
   }
