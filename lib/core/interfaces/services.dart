@@ -7,7 +7,6 @@ import '../models/parse_result.dart';
 import '../models/search_result.dart';
 import '../models/soul.dart';
 import '../services/memory_service.dart';
-import '../api/mineru_api.dart';
 import '../services/platform_service.dart';
 
 // ─── API Clients ────────────────────────────────────────────────

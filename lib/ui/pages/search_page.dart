@@ -1,14 +1,14 @@
+/// PaperPal Search — Kori 风格搜索页
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:logging/logging.dart';
-import '../../core/api/zotero_api.dart';
 import '../../core/models/search_result.dart';
 import '../../core/models/paper.dart';
 import '../../core/di/dependencies.dart';
-import '../../core/tokens/design_tokens.dart';
 import '../widgets/card_spinner.dart';
+import '../widgets/skeleton_loader.dart';
 import 'read_page.dart';
 
 final _log = Logger('SearchPage');
@@ -47,489 +47,297 @@ class _SearchPageState extends State<SearchPage> {
     super.dispose();
   }
 
-  String _errorDetail(Object e) {
-    final s = e.toString();
-    if (s.contains('SocketException') || s.contains('Connection refused') || s.contains('连接')) return '网络连接失败';
-    if (s.contains('TimeoutException') || s.contains('timed out')) return '请求超时';
-    if (s.contains('401') || s.contains('Unauthorized') || s.contains('401')) return 'API Key 无效或过期';
-    if (s.contains('429') || s.contains('Rate limit')) return '请求过于频繁，请稍后重试';
-    if (s.contains('500') || s.contains('Internal Server')) return '服务端错误，请稍后重试';
-    if (s.contains('FileSystemException') || s.contains('No such file')) return '文件不存在或无法访问';
-    final clean = s.replaceAll(RegExp(r'(Exception|Error|Instance of|DioException|\[\w+\])'), '').trim();
-    if (clean.length > 80) return '${clean.substring(0, 80)}...';
-    return clean.isNotEmpty ? clean : '未知错误';
-  }
-
   void _onTrayAction() {
     final action = searchPageAction.value;
-    if (action == null || !mounted) return;
+    if (action == null) return;
     searchPageAction.value = null;
-    setState(() {
-      _showUrlInput = action == SearchPageAction.importUrl;
-    });
-  }
-
-  bool _isImported(SearchResult r) {
-    final papers = context.paperService.papers;
-    return papers.any((p) => p.title == r.title);
-  }
-
-  Paper? _importedPaper(SearchResult r) {
-    try {
-      return context.paperService.papers.firstWhere((p) => p.title == r.title);
-    } catch (_) {
-      return null;
+    if (action == SearchPageAction.search) {
+      setState(() => _showUrlInput = false);
+    } else if (action == SearchPageAction.importUrl) {
+      setState(() => _showUrlInput = true);
     }
   }
 
-  Future<void> _search() async {
-    final query = _queryController.text.trim();
-    if (query.isEmpty) return;
-
-    setState(() {
-      _loading = true;
-      _statusMessage = '';
-      _results = [];
-    });
-
-    try {
-      if (!context.networkService.isOnline) {
-        if (mounted) {
-          setState(() {
-            _loading = false;
-            _statusMessage = '网络不可用，请检查网络连接后重试';
-          });
-        }
-        return;
-      }
-
-      final (results, error) = await context.searchService.search(query);
-      if (!mounted) return;
-
-      if (error != null) {
-        setState(() { _loading = false; _statusMessage = error; });
-        return;
-      }
-
-      setState(() {
-        _loading = false;
-        _results = results;
-        if (results.isEmpty) _statusMessage = '未找到相关论文，试试其他关键词';
-      });
-    } catch (e) {
-      if (!mounted) return;
-      _log.warning('search failed: $e');
-      setState(() { _loading = false; _statusMessage = '搜索出错: ${_errorDetail(e)}'; });
-    }
-  }
-
-  Future<void> _importUrl() async {
-    final url = _urlController.text.trim();
-    if (url.isEmpty) return;
-
-    setState(() { _loading = true; _statusMessage = '正在导入...'; });
-
-    String? pdfUrl = url;
-    String? title;
-    final arxivMatch = RegExp(r'arxiv\.org/abs/(\d+\.\d+)').firstMatch(url);
-    if (arxivMatch != null) {
-      pdfUrl = 'https://arxiv.org/pdf/${arxivMatch.group(1)}.pdf';
-      title = 'arXiv ${arxivMatch.group(1)}';
-    }
-
-    try {
-      final ss = context.searchService;
-      final ps3 = context.paperService;
-      final tempDir = await Directory.systemTemp.createTemp('paperwise_');
-      final result = SearchResult(title: title ?? url, authors: [], pdfUrl: pdfUrl, source: 'url');
-      final file = await ss.downloadPdf(result, tempDir.path,
-        onProgress: (received, total) {
-          if (total > 0) { final pct = (received / total * 100).toInt(); _statusMessage = '下载中... $pct%'; if (mounted) setState(() {}); }
-        },
-      );
-      if (file == null) { setState(() { _statusMessage = '下载失败'; _loading = false; }); return; }
-
-      final paper = await ps3.importPdf(file, title: title);
-      if (paper == null || paper.status == PaperStatus.error) {
-        setState(() { _statusMessage = '解析失败: ${paper?.errorMessage ?? "请检查 MinerU API Key"}'; _loading = false; });
-      } else {
-        setState(() { _statusMessage = '导入成功: ${paper.title}'; _loading = false; _urlController.clear(); _showUrlInput = false; _lastImportedPaper = paper; });
-      }
-    } catch (e) {
-      _log.warning('importUrl failed: $e');
-      setState(() { _statusMessage = '导入失败: ${_errorDetail(e)}'; _loading = false; });
-    }
-  }
-
-  Future<void> _uploadPdf() async {
-    try {
-      final result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['pdf']);
-      if (!mounted || result == null || result.files.isEmpty) return;
-      final file = result.files.first;
-      if (file.path == null) return;
-      setState(() => _statusMessage = '正在导入...');
-      final paper = await context.paperService.importPdf(File(file.path!), title: file.name.replaceAll('.pdf', ''));
-      if (!mounted) return;
-      if (paper == null || paper.status == PaperStatus.error) {
-        setState(() => _statusMessage = '解析失败: ${paper?.errorMessage ?? "请检查 MinerU API Key"}');
-      } else {
-        setState(() { _statusMessage = '导入成功: ${paper.title}'; _lastImportedPaper = paper; });
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _statusMessage = '导入失败: ${_errorDetail(e)}');
-    }
-  }
-
-  /// Import any supported file format via MarkItDown bridge.
-  Future<void> _importAnyFile() async {
-    try {
-      final result = await FilePicker.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: [
-          'pdf', 'docx', 'pptx', 'xlsx', 'xls',
-          'epub', 'html', 'htm', 'md', 'txt',
-          'csv', 'json', 'xml',
-          'png', 'jpg', 'jpeg', 'gif', 'webp',
-        ],
-      );
-      if (!mounted || result == null || result.files.isEmpty) return;
-      final file = result.files.first;
-      if (file.path == null) return;
-
-      setState(() => _statusMessage = '正在转换 ${file.name}...');
-      final converter = context.docConversion;
-      final conversion = await converter.convertToMarkdown(File(file.path!));
-
-      if (!conversion.success) {
-        setState(() { _statusMessage = '转换失败: ${conversion.error ?? "未知错误"}'; _loading = false; });
-        return;
-      }
-
-      final ps = context.paperService;
-      final paper = await ps.importPdf(File(file.path!), title: conversion.title);
-      if (!mounted) return;
-      if (paper == null || paper.status == PaperStatus.error) {
-        setState(() => _statusMessage = '导入失败: ${paper?.errorMessage ?? "请检查 API Key"}');
-      } else {
-        setState(() { _statusMessage = '导入成功: ${conversion.title}'; _lastImportedPaper = paper; });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('已导入: ${conversion.title}')));
-      }
-    } catch (e) {
-      if (mounted) setState(() => _statusMessage = '导入失败: ${_errorDetail(e)}');
-    }
-  }
-
-  String _fileLocalName(File f) => f.path.split(Platform.pathSeparator).last;
-
-  Future<void> _importFolder() async {
-    try {
-      final result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['pdf'], allowMultiple: true);
-      if (!mounted || result == null || result.files.isEmpty) return;
-      final pdfs = result.files.where((f) => f.path != null).map((f) => File(f.path!)).toList();
-      if (pdfs.isEmpty) { setState(() => _statusMessage = '未选择 PDF 文件'); return; }
-      setState(() => _statusMessage = '正在导入 ${pdfs.length} 篇论文...');
-      var success = 0, failed = 0;
-      for (var i = 0; i < pdfs.length; i++) {
-        final file = pdfs[i];
-        final fileName = _fileLocalName(file);
-        setState(() => _statusMessage = '导入中 (${i + 1}/${pdfs.length}): $fileName');
-        try {
-          final paper = await context.paperService.importPdf(file, title: fileName.replaceAll('.pdf', ''));
-          if (paper != null && paper.status != PaperStatus.error) { success++; }
-          else { failed++; }
-        } catch (e) { failed++; }
-      }
-      if (mounted) {
-        setState(() => _statusMessage = '导入完成: $success 成功, $failed 失败');
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('批量导入完成: $success 篇成功, $failed 篇失败')));
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _statusMessage = '批量导入失败: ${_errorDetail(e)}');
-    }
+  String _errorDetail(Object e) {
+    final s = e.toString();
+    if (s.contains('401')) return 'API Key 无效或已过期';
+    if (s.contains('429')) return '请求太频繁，请稍后重试';
+    if (s.contains('Connection refused') || s.contains('SocketException')) return '网络连接失败';
+    if (s.contains('timeout') || s.contains('Timed out')) return '请求超时';
+    return '搜索失败，请重试';
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSearchBar(theme),
-        Expanded(child: _buildBody(theme)),
-        if (_statusMessage.isNotEmpty)
-          Container(
-            padding: padSym(h: Spacing.lg, v: Spacing.sm),
-            color: _lastImportedPaper != null ? theme.colorScheme.primaryContainer.withValues(alpha: 0.15) : null,
+        // Kori 风格搜索标题栏
+        Container(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+          child: Text('搜索论文', style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          )),
+        ),
+        // Kori 风格搜索栏
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: TextField(
+            controller: _queryController,
+            decoration: InputDecoration(
+              hintText: '搜索 arXiv + Semantic Scholar...',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: _loading
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                    )
+                  : _queryController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            _queryController.clear();
+                            setState(() => _results = []);
+                          },
+                        )
+                      : null,
+              filled: true,
+              fillColor: colors.surfaceContainerHighest,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            ),
+            onSubmitted: (v) => _search(v.trim()),
+          ),
+        ),
+        // 操作按钮行
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          child: Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: _loading ? null : () => _search(_queryController.text.trim()),
+                icon: const Icon(Icons.search, size: 16),
+                label: const Text('搜索'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: _loading ? null : _uploadPdf,
+                icon: const Icon(Icons.upload_file, size: 16),
+                label: const Text('上传 PDF'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.tonalIcon(
+                onPressed: _loading ? null : _importAnyFile,
+                icon: const Icon(Icons.insert_drive_file, size: 16),
+                label: const Text('导入文件'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: _loading ? null : _importFromZotero,
+                icon: const Icon(Icons.bookmark, size: 16),
+                label: const Text('Zotero'),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: () => setState(() => _showUrlInput = !_showUrlInput),
+                icon: Icon(_showUrlInput ? Icons.close : Icons.link, size: 16),
+                label: Text(_showUrlInput ? '关闭' : 'URL'),
+              ),
+            ],
+          ),
+        ),
+        // URL 输入行
+        if (_showUrlInput)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
               children: [
-                Expanded(child: Text(_statusMessage, style: theme.textTheme.bodySmall)),
-                if (_lastImportedPaper != null && _lastImportedPaper!.status != PaperStatus.error)
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => ReadPage(paper: _lastImportedPaper!)))
-                        .then((_) { _lastImportedPaper = null; if (mounted) setState(() {}); });
-                    },
-                    child: const Text('查看'),
+                Expanded(
+                  child: TextField(
+                    controller: _urlController,
+                    decoration: InputDecoration(
+                      hintText: 'arXiv 链接或 PDF 直链...',
+                      prefixIcon: const Icon(Icons.link, size: 18),
+                      filled: true,
+                      fillColor: colors.surfaceContainerHighest,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                    ),
                   ),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(onPressed: _importUrl, child: const Text('导入')),
               ],
+            ),
+          ),
+        // 导入进度
+        if (_loading && _results.isEmpty)
+          const Expanded(
+            child: Center(child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CardSpinner(),
+                SizedBox(height: 12),
+                Text('搜索中...', style: TextStyle(fontSize: 13)),
+              ],
+            )),
+          ),
+        // 状态消息
+        if (_statusMessage.isNotEmpty && _results.isEmpty)
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.info_outline, size: 40, color: colors.onSurfaceVariant),
+                    const SizedBox(height: 12),
+                    Text(_statusMessage, style: theme.textTheme.bodyMedium),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        // 结果列表 — Kori 风格卡片
+        if (_results.isNotEmpty)
+          Expanded(
+            child: Column(
+              children: [
+                // 结果计数
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                  child: Row(
+                    children: [
+                      Text('${_results.length} 篇', style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      )),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _results.length,
+                    itemBuilder: (ctx, i) => _buildResultCard(_results[i], theme, colors),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (_lastImportedPaper != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 4, 24, 12),
+            child: Card(
+              elevation: 0,
+              color: colors.primaryContainer,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text('已导入: ${_lastImportedPaper!.title}', style: const TextStyle(fontSize: 13)),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => ReadPage(paper: _lastImportedPaper!),
+                      )),
+                      child: const Text('查看'),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
       ],
     );
   }
 
-  Widget _buildSearchBar(ThemeData theme) {
-    return Padding(
-      padding: padOnly(l: Spacing.lg, t: Spacing.lg, r: Spacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 520;
-              final searchField = TextField(
-                controller: _queryController,
-                decoration: InputDecoration(
-                  hintText: '搜索论文标题或关键词...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(DesignTokens.radiusLg)),
-                  filled: true, fillColor: theme.colorScheme.surfaceContainerHighest,
-                  contentPadding: padSym(h: DesignTokens.sp4, v: DesignTokens.sp3),
-                ),
-                onSubmitted: (_) => _search(),
-              );
-              if (isWide) {
-                return Row(
-                  children: [
-                    Expanded(child: searchField),
-                    const SizedBox(width: Spacing.gap),
-                    _searchButton(),
-                    const SizedBox(width: Spacing.gap),
-                    _uploadButton(),
-                    const SizedBox(width: Spacing.gap),
-                    _importAnyButton(),
-                    const SizedBox(width: Spacing.gap),
-                    _folderButton(),
-                    const SizedBox(width: Spacing.gap),
-                    _linkButton(),
-                  ],
-                );
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  searchField,
-                  const SizedBox(height: Spacing.gap),
-                  Wrap(
-                    spacing: Spacing.gap,
-                    runSpacing: Spacing.sm,
-                    children: [
-                      _searchButton(),
-                      _uploadButton(),
-                      _importAnyButton(),
-                      _linkButton(),
-                      _zoteroButton(),
-                    ],
-                  ),
-                ],
-              );
-            },
-          ),
-          if (_showUrlInput) ...[
-            const SizedBox(height: Spacing.gap),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _urlController,
-                    decoration: InputDecoration(
-                      hintText: '粘贴 arXiv 链接或 PDF 直链...',
-                      prefixIcon: const Icon(Icons.link),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(DesignTokens.radiusLg)),
-                      filled: true, fillColor: theme.colorScheme.surfaceContainerHighest,
-                    ),
-                    onSubmitted: (_) => _importUrl(),
-                  ),
-                ),
-                const SizedBox(width: Spacing.gap),
-                FilledButton.tonalIcon(
-                  onPressed: _importUrl,
-                  icon: const Icon(Icons.download, size: DesignTokens.iconMd),
-                  label: const Text('导入'),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  static final _fadeTween = Tween<double>(begin: 0.0, end: 1.0);
-
-  Widget _buildBody(ThemeData theme) {
-    if (_loading) return const Center(child: CardSpinner());
-
-    if (_results.isEmpty) {
-      return Center(
-        child: TweenAnimationBuilder<double>(
-          tween: _fadeTween,
-          duration: const Duration(milliseconds: 500),
-          builder: (context, value, child) => Opacity(
-            opacity: value,
-            child: Transform.translate(offset: Offset(0, DesignTokens.sp10 * (1 - value)), child: child),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.search_off, size: DesignTokens.sp12, color: theme.colorScheme.onSurfaceVariant),
-              const SizedBox(height: Spacing.lg),
-              Text('输入关键词搜索论文', style: theme.textTheme.bodyLarge),
-              const SizedBox(height: Spacing.sm),
-              Text('或点击"导入文件"支持 PDF / DOCX / PPTX / EPUB / HTML / Markdown...', style: theme.textTheme.bodySmall),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: padSym(h: Spacing.lg),
-      itemCount: _results.length,
-      itemBuilder: (context, index) => TweenAnimationBuilder<double>(
-        tween: _fadeTween,
-        duration: const Duration(milliseconds: 500),
-        builder: (context, value, child) => Opacity(
-          opacity: value,
-          child: Transform.translate(offset: Offset(0, DesignTokens.sp10 * (1 - value)), child: child),
-        ),
-        child: _buildResultCard(_results[index], theme),
-      ),
-    );
-  }
-
-  Widget _buildResultCard(SearchResult result, ThemeData theme) {
-    final imported = _isImported(result);
-    final existing = _importedPaper(result);
-    final colors = theme.colorScheme;
+  Widget _buildResultCard(SearchResult result, ThemeData theme, ColorScheme colors) {
+    final existingPaper = context.paperService.papers.where((p) =>
+      p.doi.isNotEmpty && p.doi == result.doi ||
+      p.title == result.title
+    ).isNotEmpty;
 
     return Card(
-      margin: padOnly(b: DesignTokens.spGap),
-      elevation: imported ? 0 : 1,
-      color: imported ? colors.secondaryContainer.withValues(alpha: 0.2) : colors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: imported
-            ? BorderSide(color: colors.secondary.withValues(alpha: 0.3))
-            : BorderSide.none,
-      ),
+      elevation: 0,
+      color: colors.surfaceContainerLow,
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () async {
-          if (imported && existing != null) {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => ReadPage(paper: existing)));
-            return;
-          }
-          if (result.pdfUrl.isEmpty) { setState(() => _statusMessage = '该论文无开放获取 PDF 链接'); return; }
-          setState(() => _statusMessage = '正在下载: ${result.title}');
-          try {
-            final paper = await context.paperService.importFromSearch(result,
-              onProgress: (received, total) {
-                if (total > 0 && mounted) setState(() => _statusMessage = '下载中... ${(received / total * 100).toInt()}%');
-              },
-            );
-            if (paper == null) { setState(() => _statusMessage = '下载失败，请检查网络或重试'); }
-            else if (paper.status == PaperStatus.error) { setState(() => _statusMessage = '解析失败: ${paper.errorMessage ?? "请检查 MinerU API Key"}'); }
-            else { setState(() { _statusMessage = '导入成功: ${paper.title}'; _lastImportedPaper = paper; }); }
-          } catch (e) {
-            if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('操作失败: ${_errorDetail(e)}')));
-          }
-        },
+        onTap: () => existingPaper ? _openPaper(result) : _showImportDialog(result),
         child: Padding(
-          padding: padAll(Spacing.lg),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title row
+              // 标题 + 状态
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Text(
-                      result.title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        height: 1.3,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    child: Text(result.title, style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
+                    )),
                   ),
-                  if (imported)
-                    Padding(
-                      padding: padOnly(l: Spacing.sm),
-                      child: Container(
-                        padding: padSym(h: 8, v: 2),
-                        decoration: BoxDecoration(
-                          color: colors.primaryContainer,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '已导入',
-                          style: TextStyle(
-                            fontSize: DesignTokens.fsXs,
-                            color: colors.onPrimaryContainer,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                  if (existingPaper)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: colors.secondary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
                       ),
+                      child: Text('已导入', style: TextStyle(
+                        fontSize: 11, color: colors.secondary, fontWeight: FontWeight.w500,
+                      )),
                     ),
                 ],
               ),
-              const SizedBox(height: 6),
-
-              // Authors
-              if (result.authors.isNotEmpty)
-                Padding(
-                  padding: padOnly(b: 6),
-                  child: Text(
-                    result.authors.join(', '),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant,
+              // 作者
+              if (result.authors.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(result.authors.join(', '), style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ), maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+              // 年份 + 来源 + 引用数
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Row(
+                  children: [
+                    if (result.year > 0) ...[
+                      Text('${result.year}', style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant)),
+                      Text('  ·  ', style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant.withValues(alpha: 0.3))),
+                    ],
+                    Chip(
+                      label: Text(result.source, style: const TextStyle(fontSize: 10)),
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+                      backgroundColor: colors.tertiary.withValues(alpha: 0.1),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-
-              // Abstract preview (Kori-style content preview)
-              if (result.abstract.isNotEmpty)
-                Padding(
-                  padding: padOnly(b: 8),
-                  child: Text(
-                    result.abstract,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant.withValues(alpha: 0.8),
-                      height: 1.4,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-
-              // Bottom row: meta info
-              Row(
-                children: [
-                  _metaChip(result.year.toString(), colors),
-                  const SizedBox(width: 6),
-                  _metaChip(result.source, colors),
-                  if (result.citationCount > 0) ...[
-                    const SizedBox(width: 6),
-                    _metaChip('☆ ${result.citationCount}', colors),
+                    if (result.citationCount > 0) ...[
+                      const SizedBox(width: 8),
+                      Text('${result.citationCount} 引用', style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant)),
+                    ],
                   ],
-                ],
+                ),
               ),
+              // 摘要预览
+              if (result.abstract.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(result.abstract, style: theme.textTheme.bodySmall?.copyWith(
+                  height: 1.5,
+                  color: colors.onSurfaceVariant.withValues(alpha: 0.7),
+                ), maxLines: 3, overflow: TextOverflow.ellipsis),
+              ],
             ],
           ),
         ),
@@ -537,120 +345,167 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  Widget _metaChip(String text, ColorScheme colors) {
-    return Container(
-      padding: padSym(h: 8, v: 3),
-      decoration: BoxDecoration(
-        color: colors.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: DesignTokens.fsXs,
-          color: colors.onSurfaceVariant,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
+  // ── 搜索 ──────────────────────────────────────────────────────
+
+  Future<void> _search(String query) async {
+    if (query.isEmpty) return;
+    setState(() { _loading = true; _statusMessage = ''; _results = []; });
+    try {
+      final (results, error) = await context.paperService.search(query);
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _results = results;
+        _statusMessage = error ?? (results.isEmpty ? '没有找到匹配的论文' : '');
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _loading = false; _statusMessage = _errorDetail(e); });
+    }
   }
 
-  Widget _searchButton() {
-    return FilledButton.icon(
-      onPressed: _loading ? null : _search,
-      icon: _loading
-          ? const SizedBox(width: DesignTokens.iconMd, height: DesignTokens.iconMd, child: CircularProgressIndicator(strokeWidth: DesignTokens.borderXl))
-          : const Icon(Icons.search),
-      label: const Text('搜索'),
+  // ── 导入 ──────────────────────────────────────────────────────
+
+  Future<void> _uploadPdf() async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
     );
+    if (result == null || result.files.isEmpty) return;
+    await _importFile(File(result.files.first.path!));
   }
 
-  Widget _uploadButton() {
-    return OutlinedButton.icon(
-      onPressed: _uploadPdf,
-      icon: const Icon(Icons.upload_file),
-      label: const Text('上传 PDF'),
+  Future<void> _importAnyFile() async {
+    final svc = context.docConversion;
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: svc.supportedExtensions,
     );
+    if (result == null || result.files.isEmpty) return;
+    final file = File(result.files.first.path!);
+    final ext = file.path.split('.').last.toLowerCase();
+    if (ext == 'pdf') {
+      await _importFile(file);
+      return;
+    }
+    // 非 PDF → 走 MarkItDown 转换
+    setState(() => _loading = true);
+    try {
+      final conv = await svc.convertToMarkdown(file);
+      if (!mounted) return;
+      if (!conv.success) {
+        _showSnackBar('转换失败: ${conv.error ?? "未知错误"}');
+        return;
+      }
+      final paper = await context.paperService.importPdf(file, title: conv.title);
+      if (mounted) _onImported(paper);
+    } catch (e) {
+      if (mounted) _showSnackBar('导入失败: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
-  Widget _importAnyButton() {
-    return FilledButton.tonalIcon(
-      onPressed: _importAnyFile,
-      icon: const Icon(Icons.insert_drive_file, size: DesignTokens.iconMd),
-      label: const Text('导入文件'),
-      style: FilledButton.styleFrom(visualDensity: VisualDensity.compact),
-    );
-  }
-
-  Widget _folderButton() {
-    return OutlinedButton.icon(
-      onPressed: _importFolder,
-      icon: const Icon(Icons.folder_open),
-      label: const Text('批量 PDF'),
-    );
-  }
-
-  Widget _zoteroButton() {
-    return OutlinedButton.icon(
-      onPressed: _importFromZotero,
-      icon: const Icon(Icons.bookmark, size: DesignTokens.iconMd),
-      label: const Text('Zotero'),
-    );
-  }
-
-  Widget _linkButton() {
-    return OutlinedButton.icon(
-      onPressed: () => setState(() => _showUrlInput = !_showUrlInput),
-      icon: Icon(_showUrlInput ? Icons.expand_less : Icons.link),
-      label: const Text('贴链接'),
-    );
+  Future<void> _importFile(File file) async {
+    setState(() => _loading = true);
+    try {
+      final paper = await context.paperService.importPdf(file);
+      if (mounted) _onImported(paper);
+    } catch (e) {
+      if (mounted) _showSnackBar('导入失败: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Future<void> _importFromZotero() async {
     try {
       final zotero = context.zoteroService;
       if (!zotero.isConfigured) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('请设置环境变量 ZOTERO_API_KEY 和 ZOTERO_USER_ID')),
-          );
-        }
+        _showSnackBar('请设置环境变量 ZOTERO_API_KEY 和 ZOTERO_USER_ID');
         return;
       }
+      setState(() => _loading = true);
       final items = await zotero.importFromZotero();
       if (!mounted) return;
-      if (items.isEmpty) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Zotero 文库为空'))); return; }
-
-      await showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('从 Zotero 导入'),
-          content: SizedBox(width: 400, child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: items.length,
-            itemBuilder: (_, i) {
-              final item = items[i];
-              return ListTile(
-                dense: true,
-                title: Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis),
-                subtitle: Text(item.authors.join(', '), maxLines: 1, overflow: TextOverflow.ellipsis),
-                trailing: FilledButton.tonal(
-                  onPressed: () async {
-                    final ps = context.paperService;
-                    final result = SearchResult(title: item.title, authors: item.authors, year: item.year, abstract: item.abstract, pdfUrl: item.pdfUrl, doi: item.doi, source: 'zotero');
-                    await ps.importFromSearch(result);
-                    if (ctx.mounted) Navigator.pop(ctx);
-                  },
-                  child: const Text('导入'),
-                ),
-              );
-            },
-          )),
-          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('关闭'))],
-        ),
-      );
+      if (items.isEmpty) { _showSnackBar('Zotero 文库为空'); return; }
+      setState(() {
+        _loading = false;
+        _results = items;
+        _statusMessage = '';
+      });
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Zotero 导入失败: ${_errorDetail(e)}')));
+      if (mounted) _showSnackBar('Zotero 导入失败: $e');
     }
+  }
+
+  Future<void> _importUrl() async {
+    final url = _urlController.text.trim();
+    if (url.isEmpty) return;
+    setState(() => _loading = true);
+    try {
+      final result = await context.paperService.importFromSearch(SearchResult(
+        title: url.split('/').last.replaceAll('.pdf', ''),
+        pdfUrl: url,
+      ));
+      if (mounted) _onImported(result);
+    } catch (e) {
+      if (mounted) _showSnackBar('导入失败: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _onImported(Paper? paper) {
+    if (paper == null || paper.status == PaperStatus.error) {
+      _showSnackBar('导入失败: ${paper?.errorMessage ?? "未知错误"}');
+      return;
+    }
+    setState(() => _lastImportedPaper = paper);
+    _showSnackBar('导入成功: ${paper.title}');
+  }
+
+  void _openPaper(SearchResult result) {
+    final paper = context.paperService.papers.where((p) =>
+      p.doi.isNotEmpty && p.doi == result.doi ||
+      p.title == result.title
+    ).firstOrNull;
+    if (paper != null) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => ReadPage(paper: paper)));
+    }
+  }
+
+  void _showImportDialog(SearchResult result) {
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('确认导入'),
+      content: SingleChildScrollView(child: Text(result.title, maxLines: 3, overflow: TextOverflow.ellipsis)),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+        FilledButton(onPressed: () {
+          Navigator.pop(ctx);
+          _importFromSearch(result);
+        }, child: const Text('导入')),
+      ],
+    ));
+  }
+
+  Future<void> _importFromSearch(SearchResult result) async {
+    setState(() => _loading = true);
+    try {
+      final paper = await context.paperService.importFromSearch(result);
+      if (mounted) _onImported(paper);
+    } catch (e) {
+      if (mounted) _showSnackBar('导入失败: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _showSnackBar(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg, style: const TextStyle(fontSize: 13)),
+      behavior: SnackBarBehavior.floating,
+    ));
   }
 }
