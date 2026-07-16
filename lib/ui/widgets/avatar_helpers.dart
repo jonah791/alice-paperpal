@@ -1,4 +1,4 @@
-/// 头像工具 — 基于名字生成色块头像
+/// 头像工具
 import 'package:flutter/material.dart';
 
 Widget buildDefaultAvatar(String name, double size, int colorValue) {
@@ -7,10 +7,6 @@ Widget buildDefaultAvatar(String name, double size, int colorValue) {
   return CircleAvatar(
     radius: size / 2,
     backgroundColor: color.withValues(alpha: 0.2),
-    child: Text(initial, style: TextStyle(
-      fontSize: size * 0.5,
-      fontWeight: FontWeight.w600,
-      color: color,
-    )),
+    child: Text(initial, style: TextStyle(fontSize: size * 0.5, fontWeight: FontWeight.w600, color: color)),
   );
 }

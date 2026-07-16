@@ -9,6 +9,7 @@ import 'core/init.dart';
 import 'core/di/service_locator.dart';
 import 'core/di/dependencies.dart';
 import 'core/interfaces/services.dart';
+import 'core/models/config.dart';
 
 import 'ui/pages/search_page.dart';
 import 'ui/pages/library_page.dart';
@@ -213,9 +214,6 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
 
   void _dismissWelcome() => setState(() => _welcomeShown = true);
 
-  /// 配置变更通知 — settings 页保存后调用
-  static final configNotifier = ChangeNotifier();
-
   @override
   Widget build(BuildContext context) {
     // 每次 build 从 config 读取最新值，确保 settings 页保存后生效
@@ -225,13 +223,14 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
       orElse: () => _themeVariant,
     );
     final effectiveAmoled = cfg.amoledMode;
+    final effectiveThemeMode = cfg.themeMode.toFlutterThemeMode();
 
     return Dependencies(
       locator: widget.locator,
       child: MaterialApp(
         title: 'PaperPal',
         debugShowCheckedModeBanner: false,
-        themeMode: _themeMode,
+        themeMode: effectiveThemeMode,
         theme: AppTheme.fromVariant(effectiveVariant, Brightness.light, amoled: effectiveAmoled),
         darkTheme: AppTheme.fromVariant(effectiveVariant, Brightness.dark, amoled: effectiveAmoled),
         home: _welcomeShown
@@ -326,11 +325,16 @@ class _AppShellState extends State<_AppShell> with WidgetsBindingObserver {
     final sidebar = AppSidebar(
       selectedItem: _selectedNav,
       paperCount: ps.papers.length,
-      starredCount: ps.papers.where((p) => p.starred).length,
       onItemSelected: (item) => setState(() => _selectedNav = item),
       onThemeToggle: () {
         final next = isDark ? ThemeMode.light : ThemeMode.dark;
         widget.onThemeChanged(next);
+        // 保存到 config 确保 settings 页和下次启动记住
+        final cs = widget.locator.get<IConfigService>();
+        final cfg = cs.config;
+        cs.updateConfig(cfg.copyWith(
+          themeMode: AppThemeMode.values.firstWhere((m) => m.name == next.name),
+        ));
       },
       isDark: isDark,
     );

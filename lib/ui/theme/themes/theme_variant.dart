@@ -1,18 +1,14 @@
-/// PaperPal 主题变体 — 融合 Kori + Alice
-///
-/// 前 6 个来自 Kori，Alice 是 PaperPal 原有的奇幻主题
-library;
-
+/// 主题变体枚举
 enum ThemeVariant {
-  blue('Blue', '沉稳蓝'),
-  cyan('Cyan', '清新青'),
-  green('Green', '自然绿'),
-  orange('Orange', '温暖橙'),
-  red('Red', '赤陶红'),
-  black('Black', '极简黑'),
-  alice('Alice', 'Alice 奇幻');
+  blue('蓝色', 'Blue'),
+  cyan('青色', 'Cyan'),
+  green('绿色', 'Green'),
+  orange('橙色', 'Orange'),
+  red('红色', 'Red'),
+  black('黑色', 'Black'),
+  alice('爱丽丝', 'Alice');
 
-  final String label;
   final String labelCn;
-  const ThemeVariant(this.label, this.labelCn);
+  final String labelEn;
+  const ThemeVariant(this.labelCn, this.labelEn);
 }

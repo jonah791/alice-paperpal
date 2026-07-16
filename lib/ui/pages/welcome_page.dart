@@ -1,6 +1,5 @@
-/// Kori 风格欢迎页
+/// PaperPal 欢迎页
 import 'package:flutter/material.dart';
-import '../../core/tokens/design_tokens.dart';
 
 class WelcomePage extends StatelessWidget {
   final VoidCallback onComplete;
@@ -18,26 +17,16 @@ class WelcomePage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Logo
               Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: colors.primaryContainer,
-                  borderRadius: BorderRadius.circular(20),
-                ),
+                width: 72, height: 72,
+                decoration: BoxDecoration(color: colors.primaryContainer, borderRadius: BorderRadius.circular(20)),
                 child: Icon(Icons.auto_stories, size: 36, color: colors.onPrimaryContainer),
               ),
               const SizedBox(height: 24),
-              Text('PaperPal', style: theme.textTheme.headlineLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              )),
+              Text('PaperPal', style: theme.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
-              Text(
-                '一个入口，万种文档，有灵魂的 AI 伙伴',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colors.onSurfaceVariant,
-                ),
+              Text('一个入口，万种文档，有灵魂的 AI 伙伴',
+                style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 40),

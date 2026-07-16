@@ -1,164 +1,166 @@
-/// Kori 风格侧边栏 — 导航 + 论文分类
-library;
-
+/// Kori 风格侧边栏 — 从 NavigationDrawerContent.kt 移植
+/// 项高度 52dp、间距 4dp、选中用 NavigationDrawerItem
 import 'package:flutter/material.dart';
 import '../../core/tokens/design_tokens.dart';
+import '../../core/di/dependencies.dart';
+import '../../core/interfaces/services.dart';
 
-/// 侧边栏菜单项
 enum NavItem {
-  search('搜索', Icons.search, 'search'),
-  library('论文库', Icons.library_books, 'library'),
-  templates('笔记模板', Icons.description_outlined, 'templates'),
-  settings('设置', Icons.settings, 'settings');
+  library('文库', Icons.library_books_outlined),
+  search('搜索', Icons.search),
+  templates('模板', Icons.auto_stories),
+  settings('设置', Icons.settings_outlined);
 
   final String label;
   final IconData icon;
-  final String id;
-  const NavItem(this.label, this.icon, this.id);
+  const NavItem(this.label, this.icon);
 }
 
-/// Kori 风格侧边栏
 class AppSidebar extends StatelessWidget {
   final NavItem selectedItem;
-  final int paperCount;
-  final int starredCount;
-  final int templateCount;
   final void Function(NavItem) onItemSelected;
-  final VoidCallback? onThemeToggle;
+  final VoidCallback onThemeToggle;
+  final int paperCount;
   final bool isDark;
 
   const AppSidebar({
     super.key,
     required this.selectedItem,
-    this.paperCount = 0,
-    this.starredCount = 0,
-    this.templateCount = 0,
     required this.onItemSelected,
-    this.onThemeToggle,
-    this.isDark = false,
+    required this.onThemeToggle,
+    required this.paperCount,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final ss = context.soulService;
+    final soul = ss.activeSoul ?? ss.getActiveOrDefault();
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // App logo area
+        // 顶部：头像 + 灵魂名 — Kori style 56dp header
         Container(
           height: 56,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          alignment: Alignment.centerLeft,
           child: Row(
             children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: colors.primaryContainer,
+                child: Text(
+                  soul.name.isNotEmpty ? soul.name[0].toUpperCase() : '?',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: colors.onPrimaryContainer),
+                ),
+              ),
               const SizedBox(width: 12),
-              Text(
-                'PaperPal',
-                style: theme.textTheme.titleLarge?.copyWith(
+              Expanded(
+                child: Text(soul.name, style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w600,
-                  fontFamily: 'Playfair Display',
+                )),
+              ),
+              // 切换主题按钮
+              IconButton(
+                icon: Icon(
+                  isDark ? Icons.light_mode : Icons.dark_mode,
+                  size: 20,
+                ),
+                onPressed: onThemeToggle,
+                style: IconButton.styleFrom(
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 8),
-
-        // Nav items
-        ...NavItem.values.map((item) => _NavItemTile(
-          item: item,
-          isSelected: item == selectedItem,
-          badge: item == NavItem.search
-              ? null
-              : item == NavItem.library ? '$paperCount'
-              : item == NavItem.templates ? '$templateCount'
-              : null,
-          onTap: () => onItemSelected(item),
-        )),
-
-        const Spacer(),
-
-        // Theme toggle at bottom
-        if (onThemeToggle != null)
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: IconButton(
-              icon: Icon(
-                isDark ? Icons.light_mode : Icons.dark_mode,
-                size: DesignTokens.iconMd,
-              ),
-              tooltip: isDark ? '浅色模式' : '深色模式',
-              onPressed: onThemeToggle,
-            ),
+        // 导航项 — Kori: 52dp height, 4dp spacing
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Column(
+            children: NavItem.values.map((item) {
+              final isSelected = item == selectedItem;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: SizedBox(
+                  height: 52,
+                  child: NavigationDrawerDestination(
+                    icon: Icon(item.icon, size: 20),
+                    selectedIcon: Icon(item.icon, size: 20, color: colors.primary),
+                    label: Row(
+                      children: [
+                        Text(item.label, style: TextStyle(
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                        )),
+                        if (item == NavItem.library && paperCount > 0) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: colors.primaryContainer,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '$paperCount',
+                              style: TextStyle(fontSize: 10, color: colors.onPrimaryContainer),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
+        ),
+        const Spacer(),
+        // 版本号
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text('PaperPal v0.5.0', style: TextStyle(
+            fontSize: 10, color: colors.onSurfaceVariant.withValues(alpha: 0.4),
+          )),
+        ),
       ],
     );
   }
 }
 
-class _NavItemTile extends StatelessWidget {
-  final NavItem item;
-  final bool isSelected;
-  final String? badge;
-  final VoidCallback onTap;
+/// NavigationDrawerDestination 的 Material3 通配
+class NavigationDrawerDestination extends StatelessWidget {
+  final Widget icon;
+  final Widget selectedIcon;
+  final Widget label;
+  final bool selected;
 
-  const _NavItemTile({
-    required this.item,
-    required this.isSelected,
-    this.badge,
-    required this.onTap,
+  const NavigationDrawerDestination({
+    super.key,
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    this.selected = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      child: Material(
-        color: isSelected ? colors.secondaryContainer : Colors.transparent,
+    return Material(
+      color: selected ? colors.secondaryContainer : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: SizedBox(
-            height: 48,
-            child: Row(
-              children: [
-                const SizedBox(width: 12),
-                Icon(item.icon, size: 20,
-                    color: isSelected ? colors.onSecondaryContainer : colors.onSurfaceVariant),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    item.label,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                      color: isSelected ? colors.onSecondaryContainer : colors.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                if (badge != null)
-                  Container(
-                    margin: const EdgeInsets.only(right: 12),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      badge!,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+        onTap: () {},
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              selected ? selectedIcon : icon,
+              const SizedBox(width: 12),
+              Expanded(child: label),
+            ],
           ),
         ),
       ),
