@@ -32,7 +32,8 @@ class ThemeSelector extends StatelessWidget {
             spacing: 12,
             runSpacing: 12,
             children: ThemeVariant.values.map((v) {
-              final scheme = colorSchemeForVariant(v);
+              final lightScheme = colorSchemeForVariant(v, Brightness.light);
+              final darkScheme = colorSchemeForVariant(v, Brightness.dark);
               final isSelected = v == current;
               return GestureDetector(
                 onTap: () => onChanged(v),
@@ -56,10 +57,10 @@ class ThemeSelector extends StatelessWidget {
                         child: Column(
                           children: [
                             Expanded(
-                              child: Container(color: scheme.$1.primary),
+                              child: Container(color: lightScheme.primary),
                             ),
                             Expanded(
-                              child: Container(color: scheme.$2.primary),
+                              child: Container(color: darkScheme.primary),
                             ),
                           ],
                         ),
