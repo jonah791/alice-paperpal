@@ -39,7 +39,7 @@ void main(List<String> args) async {
   _registerRoutes(router, locator);
 
   // 静态文件服务 (Web UI)
-  final webDir = Directory('web');
+  final webDir = Directory('web-dist');
   final staticHandler = (shelf.Request req) async {
     var path = req.url.path;
     if (path.isEmpty || path == '/') path = 'index.html';
@@ -79,7 +79,7 @@ void main(List<String> args) async {
   await shelf_io.serve(handler, InternetAddress.anyIPv4, port);
   _log.info('PaperPal API server v$_version running on http://localhost:$port');
   // 自动打开浏览器
-  if (await File('web/index.html').exists()) {
+  if (await File('web-dist/index.html').exists()) {
     _log.info('Web UI: http://localhost:$port');
   }
 }
