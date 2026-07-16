@@ -1,17 +1,9 @@
 /// Mermaid diagram renderer service.
 library;
 
+import '../interfaces/services.dart';
 
-/// A detected Mermaid diagram block.
-class MermaidBlock {
-  final String code;
-  final int start;
-  final int end;
-  const MermaidBlock({required this.code, required this.start, required this.end});
-}
-
-/// Mermaid rendering service.
-class MermaidRenderer {
+class MermaidRenderer implements IMermaidRenderer {
   static const _mermaidCdn = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js';
   final String? localMermaidPath;
 

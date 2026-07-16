@@ -20,11 +20,6 @@ abstract class IS2Api {
   Future<List<SearchResult>> search(String query, {int limit});
 }
 
-abstract class IMineruApi {
-  Future<MineruResult> parseUrl(String pdfUrl, {String? pageRanges, Duration pollTimeout});
-  Future<MineruResult> parseFile(File pdfFile, {String? pageRanges, Duration pollTimeout});
-}
-
 abstract class ILLMProvider {
   Future<String> chat(List<Map<String, String>> messages, {int? maxTokens});
   Stream<String> chatStream(List<Map<String, String>> messages, {int? maxTokens});
@@ -136,6 +131,27 @@ abstract class INetworkService {
   Stream<bool> get statusStream;
   void init();
   void dispose();
+}
+
+// ─── Zotero Integration (was UI → API direct) ──────────────────
+
+abstract class IZoteroService {
+  Future<List<SearchResult>> importFromZotero({int limit = 50});
+  bool get isConfigured;
+}
+
+// ─── Mermaid Renderer (was no interface) ───────────────────────
+
+abstract class IMermaidRenderer {
+  List<MermaidBlock> extractBlocks(String markdown);
+  String buildHtml(String diagramCode, {bool dark});
+}
+
+class MermaidBlock {
+  final String code;
+  final int start;
+  final int end;
+  const MermaidBlock({required this.code, required this.start, required this.end});
 }
 
 abstract class ITranslationService {

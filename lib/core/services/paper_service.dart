@@ -26,6 +26,7 @@ class PaperService implements IPaperService {
   final ISoulService _soul;
   final IMemoryService _memory;
   final IPortraitService _portrait;
+  IMineruApi _mineruApi;
   late ParseService _parse;
   final _fallback = PdfFallbackService();
   late TranslationService _translation;
@@ -41,11 +42,13 @@ class PaperService implements IPaperService {
     required ISearchService search,
     required IConfigService config,
     required ILLMProvider llmProvider,
+    required IMineruApi mineruApi,
     required INoteService noteService,
     required ISoulService soulService,
     required IMemoryService memoryService,
     required IPortraitService portraitService,
-  })  : _noteService = noteService,
+  })  : _mineruApi = mineruApi,
+        _noteService = noteService,
         _cache = cache,
         _search = search,
         _config = config,
@@ -66,18 +69,22 @@ class PaperService implements IPaperService {
   }
 
   Future<void> _rebuildParseService() async {
+    _mineruApi = await _createOrReconfigureMineru();
+    _parse = ParseService(api: _mineruApi);
+  }
+
+  Future<IMineruApi> _createOrReconfigureMineru() async {
     final cfg = _config.config;
     final apiKey = await _config.readMineruApiKey() ?? '';
     if (apiKey.isEmpty) {
       _log.warning('MinerU API key not configured, parse service will not work');
     }
-    final mineruApi = MineruApi(
+    return MineruApi(
       apiKey: apiKey,
       modelVersion: cfg.mineruModelVersion,
       enableFormula: cfg.enableFormula,
       enableTable: cfg.enableTable,
     );
-    _parse = ParseService(api: mineruApi);
   }
 
   @override

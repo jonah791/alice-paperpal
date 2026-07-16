@@ -40,4 +40,6 @@ extension ServiceX on BuildContext {
   ILLMProvider get llmProvider => Dependencies.of(this).get<ILLMProvider>();
   IDocConversionService get docConversion => Dependencies.of(this).get<IDocConversionService>();
   ITemplateService get templateService => Dependencies.of(this).get<ITemplateService>();
+  IZoteroService get zoteroService => Dependencies.of(this).get<IZoteroService>();
+  IMermaidRenderer get mermaidRenderer => Dependencies.of(this).get<IMermaidRenderer>();
 }

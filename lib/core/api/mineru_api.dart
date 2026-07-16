@@ -8,6 +8,12 @@ import 'dio_client.dart';
 
 final _log = Logger('MineruApi');
 
+// ─── IMineruApi interface (defined here to avoid circular imports) ─
+abstract class IMineruApi {
+  Future<MineruResult> parseUrl(String pdfUrl, {String? pageRanges, Duration pollTimeout});
+  Future<MineruResult> parseFile(File pdfFile, {String? pageRanges, Duration pollTimeout});
+}
+
 class MineruResult {
   final String markdown;
   final List<String> imagePaths;
@@ -43,7 +49,7 @@ class MineruTask {
       state == MineruTaskState.done || state == MineruTaskState.failed;
 }
 
-class MineruApi {
+class MineruApi implements IMineruApi {
   final String apiKey;
   final String modelVersion;
   final bool enableFormula;

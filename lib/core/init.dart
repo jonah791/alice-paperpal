@@ -8,6 +8,7 @@ import 'dart:io' show File;
 
 import 'api/llm_provider.dart';
 import 'api/markitdown_bridge.dart';
+import 'api/mineru_api.dart';
 import 'interfaces/services.dart';
 import 'di/service_locator.dart';
 import 'services/cache_service.dart';
@@ -23,6 +24,7 @@ import 'services/soul_service.dart';
 import 'services/avatar_service.dart';
 import 'services/template_service.dart';
 import 'services/mermaid_renderer.dart';
+import 'services/zotero_service.dart';
 import 'services/platform_service.dart';
 import 'utils/logger.dart';
 
@@ -75,11 +77,22 @@ Future<ServiceLocator> createLocator({PlatformService? platform}) async {
   await noteService.init();
   locator.registerInstance<INoteService>(noteService);
 
+  // ── MinerU API (used by PaperService for parsing) ──────────
+  final mineruApiKey = await configService.readMineruApiKey();
+  final mineruApi = MineruApi(
+    apiKey: mineruApiKey ?? '',
+    modelVersion: configService.config.mineruModelVersion,
+    enableFormula: configService.config.enableFormula,
+    enableTable: configService.config.enableTable,
+  );
+  locator.registerInstance<IMineruApi>(mineruApi);
+
   final paperService = PaperService(
     cache: cacheService,
     search: locator.get<ISearchService>(),
     config: configService,
     llmProvider: llmProvider,
+    mineruApi: mineruApi,
     noteService: noteService,
     soulService: soulService,
     memoryService: memoryService,
@@ -101,8 +114,11 @@ Future<ServiceLocator> createLocator({PlatformService? platform}) async {
 
   // ── Mermaid Renderer (MD Preview) ────────────────────────────
   final mermaidRenderer = MermaidRenderer();
-  // Registered as concrete class (no interface needed)
-  locator.registerInstance(mermaidRenderer);
+  locator.registerInstance<IMermaidRenderer>(mermaidRenderer);
+
+  // ── Zotero Integration ───────────────────────────────────────
+  final zoteroService = ZoteroService();
+  locator.registerInstance<IZoteroService>(zoteroService);
 
   return locator;
 }

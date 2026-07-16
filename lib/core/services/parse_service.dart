@@ -4,13 +4,14 @@ import 'dart:io';
 import 'package:logging/logging.dart';
 import '../api/mineru_api.dart';
 import '../models/parse_result.dart';
+import '../interfaces/services.dart';
 
 final _log = Logger('ParseService');
 
 class ParseService {
-  final MineruApi _api;
+  final IMineruApi _api;
 
-  ParseService({required MineruApi api}) : _api = api;
+  ParseService({required IMineruApi api}) : _api = api;
 
   final _progressController = StreamController<ParseProgress>.broadcast();
   Stream<ParseProgress> get progressStream => _progressController.stream;

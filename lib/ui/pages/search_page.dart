@@ -608,14 +608,16 @@ class _SearchPageState extends State<SearchPage> {
 
   Future<void> _importFromZotero() async {
     try {
-      final key = Platform.environment['ZOTERO_API_KEY'] ?? '';
-      final uid = Platform.environment['ZOTERO_USER_ID'] ?? '';
-      if (key.isEmpty || uid.isEmpty) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请设置环境变量 ZOTERO_API_KEY 和 ZOTERO_USER_ID')));
+      final zotero = context.zoteroService;
+      if (!zotero.isConfigured) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('请设置环境变量 ZOTERO_API_KEY 和 ZOTERO_USER_ID')),
+          );
+        }
         return;
       }
-      final zotero = ZoteroApi(apiKey: key, userId: uid);
-      final items = await zotero.listItems();
+      final items = await zotero.importFromZotero();
       if (!mounted) return;
       if (items.isEmpty) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Zotero 文库为空'))); return; }
 
