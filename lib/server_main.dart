@@ -38,6 +38,29 @@ void main(List<String> args) async {
   final router = Router();
   _registerRoutes(router, locator);
 
+  // 静态文件服务 (Web UI)
+  final webDir = Directory('web');
+  final staticHandler = (shelf.Request req) async {
+    var path = req.url.path;
+    if (path.isEmpty || path == '/') path = 'index.html';
+    final file = File('${webDir.path}/$path');
+    if (await file.exists()) {
+      final ext = path.split('.').last;
+      final mime = _mimeTypes[ext] ?? 'application/octet-stream';
+      return shelf.Response.ok(await file.readAsBytes(),
+          headers: {'content-type': mime, 'cache-control': 'no-cache'});
+    }
+    // SPA fallback: 为所有非 API 路径返回 index.html
+    if (!path.startsWith('api/')) {
+      final index = File('${webDir.path}/index.html');
+      if (await index.exists()) {
+        return shelf.Response.ok(await index.readAsString(),
+            headers: {'content-type': 'text/html; charset=utf-8'});
+      }
+    }
+    return shelf.Response.notFound('Not found');
+  };
+
   final handler = shelf.Pipeline()
       .addMiddleware(_requestLogger())
       .addMiddleware(corsHeaders(headers: {
@@ -45,10 +68,20 @@ void main(List<String> args) async {
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
       }))
-      .addHandler(router.call);
+      .addHandler((req) async {
+        // API 路由优先
+        final response = await router.call(req);
+        if (response.statusCode != 404) return response;
+        // 404 → 尝试静态文件
+        return staticHandler(req);
+      });
 
   await shelf_io.serve(handler, InternetAddress.anyIPv4, port);
   _log.info('PaperPal API server v$_version running on http://localhost:$port');
+  // 自动打开浏览器
+  if (await File('web/index.html').exists()) {
+    _log.info('Web UI: http://localhost:$port');
+  }
 }
 
 int _parsePort(List<String> args) {
@@ -402,6 +435,19 @@ shelf.Response _sseStream(Stream<String> data) {
 }
 
 // ─── Response Helpers ───────────────────────────────────────────
+
+const _mimeTypes = <String, String>{
+  'html': 'text/html; charset=utf-8',
+  'css': 'text/css; charset=utf-8',
+  'js': 'application/javascript; charset=utf-8',
+  'json': 'application/json',
+  'png': 'image/png',
+  'jpg': 'image/jpeg',
+  'svg': 'image/svg+xml',
+  'ico': 'image/x-icon',
+  'woff2': 'font/woff2',
+  'ttf': 'font/ttf',
+};
 
 const hdrJson = {'content-type': 'application/json'};
 

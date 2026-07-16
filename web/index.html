@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PaperPal</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="avatar" id="avatar-placeholder">P</div>
+      <span class="soul-name" id="soul-name">学术导师</span>
+      <button class="theme-btn" id="theme-toggle" title="切换深色/浅色">🌙</button>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active" data-page="search" href="#search">
+        <span class="nav-icon">🔍</span> 搜索
+      </a>
+      <a class="nav-item" data-page="library" href="#library">
+        <span class="nav-icon">📚</span> 文库
+        <span class="badge" id="paper-count">0</span>
+      </a>
+      <a class="nav-item" data-page="templates" href="#templates">
+        <span class="nav-icon">📝</span> 模板
+      </a>
+      <a class="nav-item" data-page="settings" href="#settings">
+        <span class="nav-icon">⚙️</span> 设置
+      </a>
+    </nav>
+    <div class="sidebar-footer">PaperPal v0.5.0</div>
+  </aside>
+
+  <!-- Main Content -->
+  <main id="content">
+    <!-- Search Page -->
+    <section id="page-search" class="page active">
+      <h1>搜索论文</h1>
+      <div class="search-bar">
+        <input type="text" id="search-input" placeholder="搜索 arXiv + Semantic Scholar..." autofocus>
+        <button id="search-btn" class="btn btn-primary">搜索</button>
+      </div>
+      <div class="action-row">
+        <button id="upload-btn" class="btn btn-outline">📄 上传 PDF</button>
+        <button id="import-btn" class="btn btn-outline">📁 导入文件</button>
+        <button id="zotero-btn" class="btn btn-text">📑 Zotero</button>
+      </div>
+      <div id="search-status"></div>
+      <div id="search-results"></div>
+    </section>
+
+    <!-- Library Page -->
+    <section id="page-library" class="page">
+      <div class="page-header">
+        <h1>论文库</h1>
+        <div class="selection-bar" id="selection-bar" style="display:none">
+          <span id="sel-count">已选 0 篇</span>
+          <button id="compare-btn" class="btn btn-tonal">对比</button>
+          <button id="delete-sel-btn" class="btn btn-danger">删除</button>
+          <button id="cancel-sel-btn" class="btn btn-text">取消</button>
+        </div>
+      </div>
+      <div class="filter-bar" id="filter-bar">
+        <button class="filter-chip active" data-filter="all">全部</button>
+        <button class="filter-chip" data-filter="starred">⭐ 星标</button>
+        <button class="filter-chip" data-filter="parsed">已解析</button>
+        <button class="filter-chip" data-filter="translated">已翻译</button>
+      </div>
+      <div id="paper-grid"></div>
+    </section>
+
+    <!-- Read Page -->
+    <section id="page-read" class="page" style="display:none">
+      <button id="back-btn" class="btn btn-text">← 返回文库</button>
+      <div id="read-toolbar">
+        <h2 id="read-title"></h2>
+        <div class="read-actions">
+          <button id="read-star" class="btn btn-icon" title="收藏">☆</button>
+          <button id="read-translate" class="btn btn-icon" title="切换原文/译文" style="display:none">🌐</button>
+          <button id="read-summary" class="btn btn-icon" title="摘要">📋</button>
+        </div>
+      </div>
+      <div id="read-content"></div>
+    </section>
+
+    <!-- Templates Page -->
+    <section id="page-templates" class="page">
+      <h1>笔记模板</h1>
+      <div id="template-list"></div>
+    </section>
+
+    <!-- Settings Page -->
+    <section id="page-settings" class="page">
+      <h1>设置</h1>
+      <div id="settings-content"></div>
+    </section>
+  </main>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
