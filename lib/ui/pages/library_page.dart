@@ -113,8 +113,8 @@ class _LibraryPageState extends State<LibraryPage> {
                     padding: const EdgeInsets.all(Spacing.lg),
                     child: ListView(
                       children: List.generate(5, (i) => const Padding(
-                        padding: EdgeInsets.only(bottom: Spacing.gap),
-                        child: SkeletonLoader(height: 80, borderRadius: RadiusTokens.lg),
+                        padding: EdgeInsets.only(bottom: 8),
+                        child: SkeletonLoader(height: 80, borderRadius: BorderRadius.all(Radius.circular(12))),
                       )),
                     ),
                   );

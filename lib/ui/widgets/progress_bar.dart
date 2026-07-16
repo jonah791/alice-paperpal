@@ -1,3 +1,5 @@
+/// Kori 风格滚动进度条 — 使用 Stream 监听
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 class ScrollProgressBar extends StatefulWidget {
@@ -17,13 +19,11 @@ class _ScrollProgressBarState extends State<ScrollProgressBar> {
     widget.controller.addListener(_onScroll);
   }
 
-  @override
-  void didUpdateWidget(ScrollProgressBar old) {
-    if (old.controller != widget.controller) {
-      old.controller.removeListener(_onScroll);
-      widget.controller.addListener(_onScroll);
-    }
-    super.didUpdateWidget(old);
+  void _onScroll() {
+    if (!widget.controller.hasClients) return;
+    final p = widget.controller.position;
+    final value = p.maxScrollExtent > 0 ? (p.pixels / p.maxScrollExtent).clamp(0.0, 1.0) : 0.0;
+    if (value != _progress) setState(() => _progress = value);
   }
 
   @override
@@ -32,42 +32,13 @@ class _ScrollProgressBarState extends State<ScrollProgressBar> {
     super.dispose();
   }
 
-  void _onScroll() {
-    final maxScroll = widget.controller.position.maxScrollExtent;
-    final currentScroll = widget.controller.position.pixels;
-    final progress = maxScroll > 0 ? currentScroll / maxScroll : 0.0;
-    if ((progress - _progress).abs() > 0.001) {
-      setState(() => _progress = progress);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      height: 3,
-      child: FractionallySizedBox(
-        widthFactor: _progress,
-        alignment: Alignment.centerLeft,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Theme.of(context).colorScheme.secondary,
-                Theme.of(context).colorScheme.secondary.withValues(alpha: 0.7),
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.15),
-                blurRadius: 8,
-              ),
-            ],
-          ),
-        ),
-      ),
+    return LinearProgressIndicator(
+      value: _progress,
+      minHeight: 2,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+      valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
     );
   }
 }

@@ -543,12 +543,7 @@ class _ReadPageState extends State<ReadPage> {
   }
 
   Future<void> _explainFormula(String latex, String sectionContext) async {
-    await ExplainDialog.showFormula(
-      context,
-      paperId: widget.paper.id,
-      latex: latex,
-      sectionContext: sectionContext,
-    );
+    showExplainDialog(context, latex, sectionContext);
   }
 
   // ── Actions ───────────────────────────────────────────────────
@@ -613,7 +608,7 @@ class _ReadPageState extends State<ReadPage> {
                 onSubmitted: (q) {
                   if (q.trim().isEmpty) return;
                   Navigator.of(sheetContext).pop();
-                  _qaKey.currentState?.askQuestion(
+                  _qaKey.currentState?.askWithText(
                       '关于以下段落的提问：\n\n$selected\n\n---\n\n我的问题：$q');
                 },
               ),
@@ -647,7 +642,7 @@ class _ReadPageState extends State<ReadPage> {
                         final q = controller.text.trim();
                         if (q.isEmpty) return;
                         Navigator.of(sheetContext).pop();
-                        _qaKey.currentState?.askQuestion(
+                        _qaKey.currentState?.askWithText(
                             '关于以下段落的提问：\n\n$selected\n\n---\n\n我的问题：$q');
                       },
                       icon: const Icon(Icons.smart_toy_outlined,

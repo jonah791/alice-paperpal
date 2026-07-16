@@ -1,12 +1,9 @@
+/// Kori 风格问答面板
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:logging/logging.dart';
 import '../../core/di/dependencies.dart';
-import '../../core/tokens/design_tokens.dart';
-
-final _log = Logger('QAPanel');
+import '../../core/interfaces/services.dart';
+import 'avatar_helpers.dart';
 
 class QAPanel extends StatefulWidget {
   final String paperId;
@@ -17,133 +14,169 @@ class QAPanel extends StatefulWidget {
 }
 
 class QAPanelState extends State<QAPanel> {
-  final _qaController = TextEditingController();
-  final _qaMessages = <Map<String, String>>[];
-  var _qaLoading = false;
-  var _qaExpanded = false;
-  static const _panelMin = 80.0;
-  static const _panelMax = 0.4;
+  final _inputCtrl = TextEditingController();
+  final _messages = <_Message>[];
+  final _scrollCtrl = ScrollController();
+  bool _loading = false;
+  StreamSubscription? _streamSub;
 
   @override
   void dispose() {
-    _qaController.dispose();
+    _inputCtrl.dispose();
+    _scrollCtrl.dispose();
+    _streamSub?.cancel();
     super.dispose();
+  }
+
+  void askWithText(String text) {
+    _inputCtrl.text = text;
+    _send();
+  }
+
+  Future<void> _send() async {
+    final question = _inputCtrl.text.trim();
+    if (question.isEmpty) return;
+    _inputCtrl.clear();
+
+    setState(() {
+      _messages.add(_Message(role: 'user', text: question));
+      _loading = true;
+    });
+    _scrollToBottom();
+
+    try {
+      final buffer = StringBuffer();
+      final msg = _Message(role: 'ai', text: '');
+      setState(() => _messages.add(msg));
+
+      await for (final chunk in context.paperService.askQuestionStream(widget.paperId, question)) {
+        buffer.write(chunk);
+        setState(() => _messages.last = _Message(role: 'ai', text: buffer.toString()));
+        _scrollToBottom();
+      }
+    } catch (e) {
+      setState(() {
+        if (_messages.last.role == 'ai') {
+          _messages.last = _Message(role: 'ai', text: '回答失败，请稍后重试');
+        } else {
+          _messages.add(_Message(role: 'ai', text: '回答失败，请稍后重试'));
+        }
+      });
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollCtrl.hasClients) _scrollCtrl.jumpTo(_scrollCtrl.position.maxScrollExtent);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final qaHeight = _qaMessages.isEmpty
-        ? _panelMin
-        : _qaExpanded
-            ? MediaQuery.of(context).size.height * _panelMax
-            : (_qaMessages.length * 48 + _panelMin).clamp(_panelMin, 200.0);
+    final colors = theme.colorScheme;
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
+        color: colors.surface,
         border: Border(top: BorderSide(color: theme.dividerColor)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (_qaMessages.isNotEmpty)
-            GestureDetector(
-              onTap: () => setState(() => _qaExpanded = !_qaExpanded),
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Text('AI 问答', style: theme.textTheme.titleSmall),
+                const Spacer(),
+                if (_messages.isNotEmpty)
+                  TextButton.icon(
+                    onPressed: () => setState(() => _messages.clear()),
+                    icon: const Icon(Icons.delete_sweep, size: 16),
+                    label: const Text('清除', style: TextStyle(fontSize: 12)),
+                  ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // Messages
+          if (_messages.isNotEmpty)
+            Flexible(
               child: Container(
-                padding: padSym(h: Spacing.md, v: DesignTokens.sp1),
-                child: Row(
-                  children: [
-                    Text('问答 (${_qaMessages.length})', style: TextStyle(fontSize: DesignTokens.fsXs, color: theme.colorScheme.onSurfaceVariant)),
-                    const Spacer(),
-                    Icon(_qaExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up, size: DesignTokens.iconSm, color: theme.colorScheme.onSurfaceVariant),
-                  ],
+                constraints: const BoxConstraints(maxHeight: 240),
+                child: ListView.builder(
+                  controller: _scrollCtrl,
+                  padding: const EdgeInsets.all(12),
+                  itemCount: _messages.length,
+                  itemBuilder: (ctx, i) {
+                    final msg = _messages[i];
+                    final isUser = msg.role == 'user';
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (!isUser) ...[
+                            buildDefaultAvatar('AI', 24, colors.primary.value),
+                            const SizedBox(width: 8),
+                          ],
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: isUser ? colors.primaryContainer : colors.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                msg.text,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  height: 1.5,
+                                  color: isUser ? colors.onPrimaryContainer : colors.onSurface,
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (isUser) const SizedBox(width: 8),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
-          if (_qaMessages.isNotEmpty)
-            SizedBox(
-              height: qaHeight,
-              child: ListView.builder(
-                padding: padSym(h: Spacing.gap, v: Spacing.sm),
-                itemCount: _qaMessages.length,
-                itemBuilder: (context, index) {
-                  final msg = _qaMessages[index];
-                  final isUser = msg['role'] == 'user';
-                  return Padding(
-                    padding: padOnly(b: DesignTokens.sp1),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (!isUser)
-                          Padding(
-                            padding: padOnly(r: DesignTokens.sp1, t: DesignTokens.sp1),
-                            child: CircleAvatar(
-                              radius: 10,
-                              backgroundColor: theme.colorScheme.secondary,
-                              child: Text('A', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSecondary, fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                        Flexible(
-                          child: Container(
-                            padding: padAll(Spacing.sm),
-                            decoration: BoxDecoration(
-                              color: isUser ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
-                            ),
-                            child: Text(
-                              msg['content'] ?? '',
-                              style: TextStyle(fontSize: DesignTokens.fsSm, color: theme.colorScheme.onSurface),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          Padding(
-            padding: padAll(Spacing.gap),
+          // Input
+          Container(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
             child: Row(
               children: [
                 Expanded(
-                  child: Focus(
-                    onKeyEvent: (node, event) {
-                      if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter &&
-                          !HardwareKeyboard.instance.isShiftPressed) {
-                        node.nextFocus();
-                        askQuestion(_qaController.text);
-                        return KeyEventResult.handled;
-                      }
-                      return KeyEventResult.ignored;
-                    },
-                    child: TextField(
-                      controller: _qaController,
-                      decoration: InputDecoration(
-                        hintText: 'Shift+Enter 换行，Enter 发送',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
-                        contentPadding: padSym(h: Spacing.lg, v: Spacing.sm),
-                        filled: true,
-                        fillColor: theme.colorScheme.surface,
-                        isDense: true,
-                      ),
-                      maxLines: 4,
-                      minLines: 1,
+                  child: TextField(
+                    controller: _inputCtrl,
+                    maxLines: 3,
+                    minLines: 1,
+                    textInputAction: TextInputAction.send,
+                    decoration: InputDecoration(
+                      hintText: '问关于这篇论文的问题...',
+                      filled: true,
+                      fillColor: colors.surfaceContainerHighest,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      isDense: true,
                     ),
+                    onSubmitted: (_) => _loading ? null : _send(),
                   ),
                 ),
-                const SizedBox(width: Spacing.sm),
-                IconButton(
-                  icon: _qaLoading
-                      ? SizedBox(
-                          width: DesignTokens.sp4,
-                          height: DesignTokens.sp4,
-                          child: CircularProgressIndicator(strokeWidth: DesignTokens.borderXl, color: theme.colorScheme.secondary),
-                        )
-                      : const Icon(Icons.send),
-                  onPressed: _qaLoading ? null : () => askQuestion(_qaController.text),
+                const SizedBox(width: 8),
+                IconButton.filled(
+                  onPressed: _loading ? null : _send,
+                  icon: _loading
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.send, size: 18),
                 ),
               ],
             ),
@@ -152,40 +185,10 @@ class QAPanelState extends State<QAPanel> {
       ),
     );
   }
+}
 
-  Future<void> askQuestion(String question) async {
-    if (question.trim().isEmpty) return;
-
-    setState(() {
-      _qaMessages.add({'role': 'user', 'content': question});
-      _qaMessages.add({'role': 'assistant', 'content': ''});
-      _qaLoading = true;
-    });
-    _qaController.clear();
-
-    try {
-      final buffer = StringBuffer();
-      await for (final chunk in context.paperService.askQuestionStream(widget.paperId, question)) {
-        if (!mounted) break;
-        buffer.write(chunk);
-        setState(() {
-          _qaMessages.last['content'] = buffer.toString();
-        });
-      }
-      if (mounted) setState(() => _qaLoading = false);
-    } catch (e) {
-      _log.warning('askQuestion failed: $e');
-      if (mounted) {
-        setState(() {
-          _qaMessages.last['content'] = _describeQAError(e);
-          _qaLoading = false;
-        });
-      }
-    }
-  }
-
-  String _describeQAError(Object e) {
-    if (e is TimeoutException) return '回答超时，请重试或简化问题';
-    return '抱歉，回答时出现错误。';
-  }
+class _Message {
+  final String role;
+  final String text;
+  const _Message({required this.role, required this.text});
 }

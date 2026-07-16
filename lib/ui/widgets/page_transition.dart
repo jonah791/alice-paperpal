@@ -1,7 +1,8 @@
+/// Kori 风格页面过渡 — 简洁淡入
 import 'package:flutter/material.dart';
 
-class SlideInTransitionBuilder extends PageTransitionsBuilder {
-  const SlideInTransitionBuilder();
+class KoriPageTransition extends PageTransitionsBuilder {
+  const KoriPageTransition();
 
   @override
   Widget buildTransitions<T>(
@@ -11,17 +12,6 @@ class SlideInTransitionBuilder extends PageTransitionsBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    const curve = Cubic(0.77, 0.0, 0.18, 1.0);
-    return SlideTransition(
-      position: Tween<Offset>(
-        begin: const Offset(1.0, 0.0),
-        end: Offset.zero,
-      ).animate(CurvedAnimation(
-        parent: animation,
-        curve: curve,
-        reverseCurve: curve,
-      )),
-      child: child,
-    );
+    return FadeTransition(opacity: animation, child: child);
   }
 }

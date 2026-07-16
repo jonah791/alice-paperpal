@@ -159,9 +159,9 @@ class AppTheme {
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
-          TargetPlatform.windows: SlideInTransitionBuilder(),
-          TargetPlatform.android: SlideInTransitionBuilder(),
-          TargetPlatform.iOS: SlideInTransitionBuilder(),
+          TargetPlatform.windows: const KoriPageTransition(),
+          TargetPlatform.android: const KoriPageTransition(),
+          TargetPlatform.iOS: const KoriPageTransition(),
         },
       ),
     );
