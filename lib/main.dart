@@ -23,6 +23,9 @@ import 'ui/widgets/app_sidebar.dart';
 
 final _log = Logger('PaperPalApp');
 
+/// 配置变更通知 — settings 页保存后触发全 widget 树重建
+final configChangedNotifier = ChangeNotifier();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final locator = await createLocator();
@@ -124,6 +127,10 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _startupGreeting());
+    // 监听配置变更（settings 页保存后触发重建）
+    configChangedNotifier.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   Future<void> _handleDeepLink(String url) async {
@@ -206,16 +213,27 @@ class _PaperPalAppState extends State<PaperPalApp> with TrayListener {
 
   void _dismissWelcome() => setState(() => _welcomeShown = true);
 
+  /// 配置变更通知 — settings 页保存后调用
+  static final configNotifier = ChangeNotifier();
+
   @override
   Widget build(BuildContext context) {
+    // 每次 build 从 config 读取最新值，确保 settings 页保存后生效
+    final cfg = widget.locator.get<IConfigService>().config;
+    final effectiveVariant = ThemeVariant.values.firstWhere(
+      (t) => t.name == cfg.themeVariant,
+      orElse: () => _themeVariant,
+    );
+    final effectiveAmoled = cfg.amoledMode;
+
     return Dependencies(
       locator: widget.locator,
       child: MaterialApp(
         title: 'PaperPal',
         debugShowCheckedModeBanner: false,
         themeMode: _themeMode,
-        theme: AppTheme.fromVariant(_themeVariant, Brightness.light, amoled: _amoled),
-        darkTheme: AppTheme.fromVariant(_themeVariant, Brightness.dark, amoled: _amoled),
+        theme: AppTheme.fromVariant(effectiveVariant, Brightness.light, amoled: effectiveAmoled),
+        darkTheme: AppTheme.fromVariant(effectiveVariant, Brightness.dark, amoled: effectiveAmoled),
         home: _welcomeShown
             ? _AppShell(
                 locator: widget.locator,

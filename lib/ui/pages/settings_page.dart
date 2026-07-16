@@ -12,6 +12,8 @@ import '../widgets/avatar_picker.dart';
 import '../widgets/theme_selector.dart';
 import '../theme/themes/theme_variant.dart';
 
+import '../../main.dart' show configChangedNotifier;
+
 final _log = Logger('SettingsPage');
 
 class SettingsPage extends StatefulWidget {
@@ -342,6 +344,7 @@ class _SettingsPageState extends State<SettingsPage> {
       await ps.reconfigureLlm();
 
       if (mounted) {
+        configChangedNotifier.notifyListeners();
         messenger.showSnackBar(const SnackBar(
           content: Text('设置已保存'), duration: Duration(seconds: 2),
         ));
