@@ -21,7 +21,7 @@ void main() {
 
   setUpAll(() async {
     // Locate the real PDF
-    const pdfPath = r'C:\Users\tr\Documents\中国股市量化选股因子全解析：从基本面到情绪面.pdf';
+    const pdfPath = r'C:\Users\demo\Documents\中国股市量化选股因子全解析：从基本面到情绪面.pdf';
     realPdfFile = File(pdfPath);
     if (!await realPdfFile.exists()) {
       throw Exception('PDF not found: $pdfPath');
